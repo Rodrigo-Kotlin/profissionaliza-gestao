@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Brand } from '@/components/brand'
+import { BrandLogo } from '@/components/brand'
 import { Button, Checkbox, Input } from '@/components/ui/core'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { writeAuditLog } from '@/services/audit-service'
@@ -32,11 +32,11 @@ export function LoginPage() {
   return <main className="grid min-h-screen lg:grid-cols-[45%_55%]">
     <section className="relative hidden overflow-hidden bg-navy p-12 lg:flex lg:flex-col lg:justify-between">
       <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_2px_2px,rgba(255,255,255,.1)_1px,transparent_0)] [background-size:24px_24px]" />
-      <div className="relative"><Brand light /></div>
+      <div className="relative"><BrandLogo variant="horizontal" size="md" /></div>
       <div className="relative max-w-lg"><h1 className="text-5xl font-bold leading-[1.18] text-white">Educação profissional<br />com gestão inteligente.</h1><p className="mt-7 text-lg leading-7 text-white/55">A plataforma completa para instituições de ensino alcançarem a excelência administrativa e pedagógica.</p></div>
     </section>
     <section className="relative flex items-center justify-center bg-white px-4 py-24 sm:px-12">
-      <div className="absolute left-5 top-5 lg:hidden"><Brand /></div>
+      <div className="absolute left-5 top-5 lg:hidden"><BrandLogo variant="mark" size="md" /></div>
       <div className="w-full max-w-[420px]">
         <h1 className="text-[28px] font-bold md:text-[32px]">Bem-vindo de volta</h1>
         <p className="mt-1 text-base text-muted">Insira suas credenciais para acessar a plataforma.</p>
@@ -71,4 +71,4 @@ export function ResetPasswordPage() {
   return <AuthCard title="Definir nova senha" description="Escolha uma senha forte e exclusiva."><form className="space-y-5" onSubmit={handleSubmit(submit)}><Input label="Nova senha" type="password" autoComplete="new-password" error={errors.password?.message} {...register('password')} /><Button className="w-full" disabled={isSubmitting}>Atualizar senha</Button></form></AuthCard>
 }
 
-function AuthCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <main className="grid min-h-screen place-items-center bg-canvas p-4"><section className="w-full max-w-md rounded-card border bg-white p-6 shadow-ambient sm:p-8"><Brand /><h1 className="mt-10 text-2xl font-bold">{title}</h1><p className="mb-8 mt-1 text-sm text-muted">{description}</p>{children}</section></main> }
+function AuthCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <main className="grid min-h-screen place-items-center bg-canvas p-4"><section className="w-full max-w-md rounded-card border bg-white p-6 shadow-card sm:p-8"><BrandLogo variant="mark" size="md" /><h1 className="mt-8 text-2xl font-bold">{title}</h1><p className="mb-8 mt-1 text-sm text-muted">{description}</p>{children}</section></main> }

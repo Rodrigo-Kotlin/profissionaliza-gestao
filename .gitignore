@@ -54,3 +54,6 @@ Thumbs.db
 # Editor
 .editorconfig.tmp
 
+
+# Assets de branding nao versionados (apenas os usados ficam em public/)
+brand-assets.zip
