@@ -104,6 +104,42 @@ Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
 Veja `CONTRIBUTING.md` para o fluxo completo.
 
+## Remote Supabase Development
+
+O banco de desenvolvimento é gerenciado diretamente no projeto remoto do Supabase. Docker não é necessário neste workflow.
+
+### Conexão
+
+```bash
+npx supabase login
+npx supabase link --project-ref <PROJECT_REF>
+```
+
+### Migrations
+
+```bash
+# Verificar status local vs remoto
+npx supabase migration list
+
+# Preview antes de aplicar
+npx supabase db push --dry-run
+
+# Aplicar migrations
+npx supabase db push
+
+# Criar nova migration
+npx supabase migration new <nome>
+```
+
+### Tipos TypeScript
+
+```bash
+# Gerar tipos a partir do schema remoto
+npx supabase gen types --lang typescript --linked > src/types/database.types.ts
+```
+
+Consulte `docs/DATABASE.md` para detalhes sobre migrations e `docs/ARCHITECTURE.md` para a visão geral do schema.
+
 ## Licença
 
 Código **proprietário**. Nenhuma licença open source é concedida enquanto não houver decisão formal em contrário.
