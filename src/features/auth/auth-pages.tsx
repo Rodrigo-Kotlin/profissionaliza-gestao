@@ -36,7 +36,7 @@ export function LoginPage() {
       <div className="relative max-w-lg"><h1 className="text-5xl font-bold leading-[1.18] text-white">Educação profissional<br />com gestão inteligente.</h1><p className="mt-7 text-lg leading-7 text-white/55">A plataforma completa para instituições de ensino alcançarem a excelência administrativa e pedagógica.</p></div>
     </section>
     <section className="relative flex items-center justify-center bg-white px-4 py-24 sm:px-12">
-      <div className="absolute left-5 top-5 lg:hidden"><BrandLogo variant="mark" size="md" /></div>
+      <div className="absolute inset-x-0 top-5 flex justify-center lg:hidden"><BrandLogo variant="mark" size="md" className="scale-110" /></div>
       <div className="w-full max-w-[420px]">
         <h1 className="text-[28px] font-bold md:text-[32px]">Bem-vindo de volta</h1>
         <p className="mt-1 text-base text-muted">Insira suas credenciais para acessar a plataforma.</p>
