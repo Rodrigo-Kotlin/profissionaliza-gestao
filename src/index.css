@@ -66,6 +66,12 @@
 @layer components {
   .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #dbe3f3 transparent; }
 
+  .scrollbar-navy { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.14) transparent; }
+  .scrollbar-navy::-webkit-scrollbar { width: 5px; }
+  .scrollbar-navy::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-navy::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 9999px; }
+  .scrollbar-navy::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.24); }
+
   .skip-link {
     @apply fixed left-4 top-4 z-[100] -translate-y-24 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white shadow-floating transition focus:translate-y-0;
   }

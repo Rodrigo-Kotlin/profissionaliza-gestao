@@ -102,7 +102,7 @@ export function Badge({ className, variant, ...props }: React.HTMLAttributes<HTM
 }
 
 export function Avatar({ name, src, className }: { name: string; src?: string | null; className?: string }) {
-  return <div className={cn('grid size-9 shrink-0 place-items-center overflow-hidden rounded-full border bg-navy-50 text-xs font-semibold text-navy', className)}>{src ? <img src={src} alt="" className="size-full object-cover" /> : name.split(' ').slice(0, 2).map((x) => x[0]).join('').toUpperCase()}</div>
+  return <div className={cn('grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border bg-navy-50 text-xs font-semibold text-navy', className)}>{src ? <img src={src} alt="" className="size-full object-cover" /> : name.split(' ').slice(0, 2).map((x) => x[0]).join('').toUpperCase()}</div>
 }
 
 export function Skeleton({ className }: { className?: string }) {

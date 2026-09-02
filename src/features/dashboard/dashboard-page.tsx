@@ -61,7 +61,7 @@ export function DashboardPage() {
       </PageHeader>
       <section
         aria-label="Indicadores principais"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+        className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]"
       >
         {data.kpis.map((kpi) => (
           <KPICard
@@ -195,7 +195,7 @@ function DashboardSkeleton() {
         <Skeleton className="h-10 w-52" />
         <Skeleton className="mt-2 h-5 w-96 max-w-full" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
         {Array.from({ length: 6 }, (_, index) => (
           <Skeleton key={index} className="h-40" />
         ))}
