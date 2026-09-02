@@ -10,6 +10,7 @@ import { OfflineBanner } from '@/components/offline-banner'
 import { Avatar, Button } from '@/components/ui/core'
 import { Drawer, DropdownItem, DropdownMenu, Tooltip } from '@/components/ui/overlays'
 import { cn } from '@/lib/utils'
+import { isDevEnvironment } from '@/lib/env'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { writeAuditLog } from '@/services/audit-service'
 import { useAuth } from '@/features/auth/auth-context'
@@ -48,6 +49,7 @@ export function AppShell() {
         <button aria-label="Abrir menu" className="mr-2 grid size-11 place-items-center rounded-lg hover:bg-navy-50 lg:hidden" onClick={() => setMobileOpen(true)}><Menu className="size-5" /></button>
         <BrandLogo variant="mark" size="sm" className="mr-2 lg:hidden" />
         <button onClick={() => setCommandOpen(true)} className="relative hidden w-full max-w-[480px] text-left md:block"><Search className="absolute left-3 top-2.5 size-5 text-muted" /><span className="block min-h-11 rounded-lg border bg-navy-50 py-3 pl-10 pr-14 text-sm text-muted">Buscar aluno, venda, contrato, turma...</span><kbd className="absolute right-3 top-3 rounded border bg-white px-1.5 text-[10px] text-muted">Ctrl K</kbd></button>
+        {isDevEnvironment && <span className="mr-2 hidden rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 sm:inline-block" title="Ambiente de desenvolvimento/homologação">DEV</span>}
         <div className="ml-auto flex items-center gap-1 sm:gap-2"><Button aria-label="Abrir busca" variant="ghost" className="px-3 md:hidden" onClick={() => setCommandOpen(true)}><Search className="size-5" /></Button><Button aria-label="Notificações" variant="ghost" className="relative px-3"><Bell className="size-5" /><span className="absolute right-2 top-2 size-2 rounded-full bg-danger ring-2 ring-white" /></Button><Button aria-label="Ajuda" variant="ghost" className="hidden px-3 sm:inline-flex"><CircleHelp className="size-5" /></Button><Button aria-label="Aplicações" variant="ghost" className="hidden px-3 sm:inline-flex"><AppWindow className="size-5" /></Button><span className="mx-2 hidden h-8 w-px bg-line sm:block" /><Button className="hidden sm:inline-flex"><Plus className="size-4" />Criar</Button><DropdownMenu trigger={<button aria-label="Menu do usuário" className="ml-1 flex size-11 items-center justify-center rounded-lg p-1 hover:bg-navy-50"><div className="hidden text-right xl:block"><p className="text-sm font-semibold leading-4">{name}</p><p className="mt-1 text-xs text-muted">Gestão</p></div><Avatar name={name} src={profile?.avatar_url} /></button>}><DropdownItem onSelect={() => navigate('/perfil')}><UserCircle className="size-4" />Meu perfil</DropdownItem><DropdownItem onSelect={logout} danger><LogOut className="size-4" />Sair</DropdownItem></DropdownMenu></div>
       </header>
       <main id="main" className="min-h-screen pt-16"><div className="surface-max p-4 safe-bottom md:p-6 lg:p-8"><Outlet /></div></main>

@@ -42,11 +42,14 @@ No macOS/Linux, substitua o comando `copy` por `cp`.
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+VITE_APP_ENV=development
 ```
 
 Nunca inclua valores reais no repositório. A chave `anon` é pública por definição e opera sob RLS. Nunca coloque `service_role`, senha do banco ou outros segredos em variáveis `VITE_*`.
 
-Sem essas variáveis, a aplicação inicia e informa que o ambiente de autenticação não está configurado.
+Sem as variáveis do Supabase, a aplicação inicia e informa que o ambiente de autenticação não está configurado.
+
+`VITE_APP_ENV` indica o ambiente: `development` (padrão) exibe um selo discreto "DEV" no app shell; use `production` no ambiente final sem mudar código.
 
 ## Scripts
 
@@ -139,6 +142,17 @@ npx supabase gen types --lang typescript --linked > src/types/database.types.ts
 ```
 
 Consulte `docs/DATABASE.md` para detalhes sobre migrations e `docs/ARCHITECTURE.md` para a visão geral do schema.
+
+## Deployment
+
+O frontend (SPA/PWA) é publicado via **Cloudflare Pages** conectado ao GitHub. O branch `main` gera o build de produção; branches/PRs geram previews.
+
+- Framework: Vite — build `npm run build`, output `dist/`, Node 20.
+- Variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) configuradas no dashboard do Cloudflare para produção e preview.
+- `public/_redirects` garante o roteamento SPA em qualquer rota; `public/_headers` aplica headers de segurança.
+- Backend (esquema e autenticação) permanece no Supabase; não há Workers nem funções nesta fase.
+
+Veja o guia completo em `docs/DEPLOYMENT.md`.
 
 ## Licença
 
