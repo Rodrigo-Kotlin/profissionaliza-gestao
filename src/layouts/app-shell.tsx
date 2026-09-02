@@ -10,6 +10,7 @@ import { OfflineBanner } from '@/components/offline-banner'
 import { Avatar, Button } from '@/components/ui/core'
 import { Drawer, DropdownItem, DropdownMenu, Tooltip } from '@/components/ui/overlays'
 import { cn } from '@/lib/utils'
+import { can, PERMISSIONS } from '@/lib/rbac'
 import { writeAuditLog } from '@/services/audit-service'
 import { useAuth } from '@/features/auth/auth-context'
 import { CommandPalette } from '@/features/search/command-palette'
@@ -18,12 +19,12 @@ const navigation = [
   { label: 'Visão Geral', icon: LayoutDashboard, to: '/', available: true },
   { label: 'CRM', icon: UserRoundSearch, to: '/crm' },
   { label: 'Vendas', icon: ShoppingBag, to: '/vendas' },
-  { label: 'Alunos', icon: GraduationCap, to: '/alunos' },
+  { label: 'Alunos', icon: GraduationCap, to: '/alunos', available: true, permission: PERMISSIONS.STUDENTS_VIEW },
   { label: 'Pedagógico', icon: BookOpen, to: '/pedagogico' },
   { label: 'Financeiro', icon: CircleDollarSign, to: '/financeiro' },
   { label: 'Comissões', icon: Percent, to: '/comissoes' },
   { label: 'Relatórios', icon: AppWindow, to: '/relatorios' },
-  { label: 'Administração', icon: ShieldCheck, to: '/administracao/usuarios', available: true },
+  { label: 'Administração', icon: ShieldCheck, to: '/administracao/usuarios', available: true, permission: PERMISSIONS.USERS_VIEW },
   { label: 'Configurações', icon: Settings, to: '/configuracoes' }
 ]
 
@@ -58,10 +59,12 @@ export function AppShell() {
 
 function Sidebar({ collapsed = false, onCollapse, onLogout, onClose }: { collapsed?: boolean; onCollapse?: () => void; onLogout: () => void; onClose?: () => void }) {
   const navigate = useNavigate()
+  const { permissions } = useAuth()
+  const visibleNavigation = navigation.filter((item) => !item.permission || can(permissions, item.permission))
   return <div className="flex h-full flex-col overflow-y-auto scrollbar-thin">
     <div className={cn('flex items-center justify-between border-b border-white/10 p-5', collapsed && 'justify-center px-3')}><div className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>{collapsed ? <BrandLogo variant="mark" size="md" /> : <BrandLogo variant="horizontal" size="sm" />}{onClose && <button aria-label="Fechar menu" onClick={onClose} className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10"><X className="size-5" /></button>}</div></div>
     <div className={cn('p-4', collapsed && 'px-3')}><Tooltip content="Novo Registro"><Button variant="gold" className={cn('w-full', collapsed && 'px-0')}><Plus className="size-5" />{!collapsed && 'Novo Registro'}</Button></Tooltip></div>
-    <nav aria-label="Menu principal" className="flex-1 space-y-1 px-3 py-2">{navigation.map((item, index) => <div key={item.label}>{index === 8 && <div className="my-3 border-t border-white/10" />}{item.available ? <Tooltip content={item.label}><NavLink end={item.to === '/'} to={item.to} className={({ isActive }) => cn('flex min-h-11 items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white', isActive && 'border-gold bg-gold/10 text-gold-light', collapsed && 'justify-center px-2')}><item.icon className="size-5 shrink-0" />{!collapsed && item.label}</NavLink></Tooltip> : <Tooltip content={`${item.label} · disponível em breve`}><button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn('flex min-h-11 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center px-2')}><item.icon className="size-5 shrink-0" />{!collapsed && item.label}</button></Tooltip>}</div>)}</nav>
+    <nav aria-label="Menu principal" className="flex-1 space-y-1 px-3 py-2">{visibleNavigation.map((item) => <div key={item.label}>{item.label === 'Administração' && <div className="my-3 border-t border-white/10" />}{item.available ? <Tooltip content={item.label}><NavLink end={item.to === '/'} to={item.to} className={({ isActive }) => cn('flex min-h-11 items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white', isActive && 'border-gold bg-gold/10 text-gold-light', collapsed && 'justify-center px-2')}><item.icon className="size-5 shrink-0" />{!collapsed && item.label}</NavLink></Tooltip> : <Tooltip content={`${item.label} · disponível em breve`}><button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn('flex min-h-11 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center px-2')}><item.icon className="size-5 shrink-0" />{!collapsed && item.label}</button></Tooltip>}</div>)}</nav>
     <div className="border-t border-white/10 p-3"><Tooltip content="Perfil"><button onClick={() => navigate('/perfil')} className={cn('flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center')}><UserCircle className="size-5" />{!collapsed && 'Perfil'}</button></Tooltip><Tooltip content="Sair"><button onClick={onLogout} className={cn('flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center')}><LogOut className="size-5" />{!collapsed && 'Sair'}</button></Tooltip>{onCollapse && <button aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'} onClick={onCollapse} className="mt-2 flex min-h-10 w-full items-center justify-center rounded-lg text-white/55 hover:bg-white/[.07]">{collapsed ? <ChevronRight className="size-5" /> : <><ChevronLeft className="mr-2 size-5" /><span className="text-xs">Recolher menu</span></>}</button>}</div>
   </div>
 }

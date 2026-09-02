@@ -4,8 +4,42 @@ import { Card, Select } from './core'
 export function Table({ children, className }: { children: ReactNode; className?: string }) { return <div className="overflow-x-auto"><table className={cn('w-full border-collapse text-left text-sm', className)}>{children}</table></div> }
 
 type DataColumn<T> = { key: string; header: string; cell: (row: T) => ReactNode; priority?: 'high' | 'medium' | 'low'; hideOn?: string }
-export function DataTable<T>({ data, columns, getKey }: { data: T[]; columns: DataColumn<T>[]; getKey: (row: T) => string }) {
-  return <Table><thead><tr className="border-b bg-navy-50/60">{columns.map((column) => <th key={column.key} className={cn('px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted', column.priority === 'low' && 'hidden md:table-cell', column.priority === 'medium' && 'hidden sm:table-cell')}>{column.header}</th>)}</tr></thead><tbody className="divide-y">{data.map((row) => <tr key={getKey(row)} className="hover:bg-slate-50">{columns.map((column) => <td key={column.key} className={cn('px-4 py-4', column.priority === 'low' && 'hidden md:table-cell', column.priority === 'medium' && 'hidden sm:table-cell')}>{column.cell(row)}</td>)}</tr>)}</tbody></Table>
+export function DataTable<T>({ data, columns, getKey, mobileCard }: { data: T[]; columns: DataColumn<T>[]; getKey: (row: T) => string; mobileCard?: (row: T) => ReactNode }) {
+  return (
+    <>
+      <div className={mobileCard ? 'max-sm:hidden' : undefined}>
+        <Table>
+          <thead>
+            <tr className="border-b bg-navy-50/60">
+              {columns.map((column) => (
+                <th key={column.key} className={cn('px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted', column.priority === 'low' && 'hidden md:table-cell', column.priority === 'medium' && 'hidden sm:table-cell')}>
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {data.map((row) => (
+              <tr key={getKey(row)} className="hover:bg-slate-50">
+                {columns.map((column) => (
+                  <td key={column.key} className={cn('px-4 py-4', column.priority === 'low' && 'hidden md:table-cell', column.priority === 'medium' && 'hidden sm:table-cell')}>
+                    {column.cell(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
+      {mobileCard && (
+        <div className="grid gap-3 p-4 sm:hidden" role="list">
+          {data.map((row) => (
+            <Card key={getKey(row)} className="p-4">{mobileCard(row)}</Card>
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
 export function MultiSelect({ options, value, onChange, label = 'Selecionar' }: { options: string[]; value: string[]; onChange: (value: string[]) => void; label?: string }) { return <fieldset className="rounded-lg border p-3"><legend className="px-1 text-xs font-semibold">{label}</legend>{options.map((option) => <label key={option} className="flex min-h-9 items-center gap-2 text-sm"><input type="checkbox" checked={value.includes(option)} onChange={() => onChange(value.includes(option) ? value.filter((x) => x !== option) : [...value, option])} />{option}</label>)}</fieldset> }
 export function DatePicker(props: React.InputHTMLAttributes<HTMLInputElement>) { return <input type="date" className="min-h-11 rounded-lg border bg-white px-3 text-sm" {...props} /> }
