@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply border-line; }
+  html { @apply bg-canvas; }
+  body { @apply m-0 min-w-[320px] bg-canvas font-sans text-ink antialiased; }
+  h1, h2, h3, h4 { @apply font-display; }
+  button, a, input, select, textarea { @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30 focus-visible:ring-offset-2; }
+  button, [role='button'] { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer components {
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #dbe3f3 transparent; }
+}

@@ -1,0 +1,84 @@
+name: Bug Report
+description: Reporte um problema inesperado
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição
+      description: Descreva o problema de forma clara e objetiva.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Como reproduzir
+      description: Passos para reproduzir o problema.
+      placeholder: |
+        1. Vá para ...
+        2. Clique em ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: O que deveria acontecer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento atual
+      description: O que realmente aconteceu.
+    validations:
+      required: true
+
+  - type: input
+    id: module
+    attributes:
+      label: Módulo
+      description: Módulo afetado (CRM, Vendas, Financeiro, etc.).
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Produção, homologação, local.
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Navegador e versão utilizados.
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Anexe capturas de tela quando possível.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidade
+      options:
+        - Baixa
+        - Média
+        - Alta
+        - Crítica
+    validations:
+      required: true

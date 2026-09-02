@@ -1,0 +1,64 @@
+name: Feature Request
+description: Proponha uma nova funcionalidade ou melhoria
+title: "[Feature]: "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: Que problema ou necessidade motiva esta funcionalidade?
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objetivo
+      description: O que se espera alcançar com esta funcionalidade.
+    validations:
+      required: true
+
+  - type: input
+    id: module
+    attributes:
+      label: Módulo
+      description: Módulo relacionado (CRM, Vendas, Financeiro, Pedagógico, etc.).
+    validations:
+      required: false
+
+  - type: input
+    id: user_affected
+    attributes:
+      label: Usuário afetado
+      description: Perfil de usuário impactado (ex.: VENDEDOR, FINANCEIRO).
+    validations:
+      required: false
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução proposta
+      description: Descreva a solução desejada.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios de aceite
+      description: Condições para que a funcionalidade seja considerada concluída.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridade
+      options:
+        - Baixa
+        - Média
+        - Alta
+        - Crítica
+    validations:
+      required: true

@@ -1,0 +1,56 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+dist-ssr/
+*.local
+coverage/
+.vite/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Ambiente / Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Supabase (não versionar branches local e temp)
+supabase/.branches
+supabase/.temp
+
+# Ferramenta de geração (Stitch) — não é código-fonte da aplicação
+stitch_profissionaliza_gest_o_saas/
+stitch_profissionaliza_gest_o_saas.zip
+
+# Sistema e arquivos temporários
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.tmp
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Editor
+.editorconfig.tmp
+
