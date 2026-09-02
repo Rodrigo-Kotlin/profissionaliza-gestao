@@ -10,6 +10,10 @@ import { AppShell } from '@/layouts/app-shell'
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
 const ProfilePage = lazy(() => import('@/features/users/users-pages').then((m) => ({ default: m.ProfilePage })))
 const UsersPage = lazy(() => import('@/features/users/users-pages').then((m) => ({ default: m.UsersPage })))
+const StudentsPage = lazy(() => import('@/features/students/students-page').then((m) => ({ default: m.StudentsPage })))
+const StudentForm = lazy(() => import('@/features/students/student-form').then((m) => ({ default: m.StudentForm })))
+const StudentDetailsPage = lazy(() => import('@/features/students/student-details-page').then((m) => ({ default: m.StudentDetailsPage })))
+const StudentEditPage = lazy(() => import('@/features/students/student-edit-page').then((m) => ({ default: m.StudentEditPage })))
 
 function PageSkeleton() {
   return <div className="grid min-h-[60vh] place-items-center"><LoaderCircle className="size-7 animate-spin text-navy" /></div>
@@ -32,6 +36,10 @@ export const router = createBrowserRouter([
     { index: true, element: <Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense> },
     { path: 'perfil', element: <Suspense fallback={<PageSkeleton />}><ProfilePage /></Suspense> },
     { path: 'administracao/usuarios', element: <Suspense fallback={<PageSkeleton />}><UsersPage /></Suspense> },
+    { path: 'alunos', element: <Suspense fallback={<PageSkeleton />}><StudentsPage /></Suspense> },
+    { path: 'alunos/novo', element: <Suspense fallback={<PageSkeleton />}><StudentForm /></Suspense> },
+    { path: 'alunos/:id', element: <Suspense fallback={<PageSkeleton />}><StudentDetailsPage /></Suspense> },
+    { path: 'alunos/:id/editar', element: <Suspense fallback={<PageSkeleton />}><StudentEditPage /></Suspense> },
     { path: 'em-breve', element: <ComingSoonPage /> },
     { path: '*', element: <Navigate to="/" replace /> }
   ] }

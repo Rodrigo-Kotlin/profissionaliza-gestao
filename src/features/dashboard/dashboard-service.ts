@@ -1,4 +1,6 @@
 import { Banknote, CircleAlert, GraduationCap, Landmark, ReceiptText, UserPlus } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export type DashboardData = Awaited<ReturnType<typeof dashboardService.getOverview>>
 const demoData = {
@@ -33,4 +35,16 @@ const demoData = {
   ]
 } as const
 
-export const dashboardService = { async getOverview() { await new Promise((resolve) => setTimeout(resolve, 250)); return demoData } }
+export const dashboardService = {
+  async getOverview() {
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const kpis: { label: string; value: number; format: string; icon: LucideIcon; trend?: string; danger?: boolean }[] = [...demoData.kpis]
+    const { data, error } = await supabase.rpc('student_kpis')
+    if (!error && data && typeof data === 'object') {
+      const studentKpi = data as { active: number }
+      const index = kpis.findIndex((kpi) => kpi.label === 'Alunos ativos')
+      if (index >= 0) kpis.splice(index, 1, { label: 'Alunos ativos', value: Number(studentKpi.active) || 0, format: 'number', icon: GraduationCap })
+    }
+    return { ...demoData, kpis }
+  }
+}

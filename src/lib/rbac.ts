@@ -15,8 +15,56 @@ export const PERMISSIONS = {
   DASHBOARD_VIEW: 'dashboard.view',
   USERS_VIEW: 'users.view',
   USERS_MANAGE: 'users.manage',
-  AUDIT_VIEW: 'audit.view'
+  AUDIT_VIEW: 'audit.view',
+  PEOPLE_VIEW: 'people.view',
+  PEOPLE_CREATE: 'people.create',
+  PEOPLE_EDIT: 'people.edit',
+  STUDENTS_VIEW: 'students.view',
+  STUDENTS_CREATE: 'students.create',
+  STUDENTS_EDIT: 'students.edit',
+  STUDENTS_MANAGE_STATUS: 'students.manage_status',
+  STUDENTS_VIEW_SENSITIVE: 'students.view_sensitive',
+  GUARDIANS_VIEW: 'guardians.view',
+  GUARDIANS_MANAGE: 'guardians.manage'
 } as const satisfies Record<string, PermissionCode>
 
 export const can = (permissions: readonly string[], permission: PermissionCode) =>
   permissions.includes(permission)
+
+export const STUDENT_STATUSES = ['PRE_CADASTRO', 'ATIVO', 'INATIVO', 'CANCELADO', 'CONCLUIDO'] as const
+export type StudentStatus = (typeof STUDENT_STATUSES)[number]
+
+export const STUDENT_STATUS_LABELS: Record<StudentStatus, string> = {
+  PRE_CADASTRO: 'Pré-cadastro',
+  ATIVO: 'Ativo',
+  INATIVO: 'Inativo',
+  CANCELADO: 'Cancelado',
+  CONCLUIDO: 'Concluído'
+}
+
+export const GUARDIAN_RELATIONSHIPS = ['PAI', 'MAE', 'AVO', 'AVO_A', 'CONJUGE', 'IRMAO', 'IRMA', 'TUTOR', 'RESPONSAVEL_LEGAL', 'OUTRO'] as const
+export const GUARDIAN_RELATIONSHIP_LABELS: Record<string, string> = {
+  PAI: 'Pai',
+  MAE: 'Mãe',
+  AVO: 'Avô',
+  AVO_A: 'Avó',
+  CONJUGE: 'Cônjuge',
+  IRMAO: 'Irmão',
+  IRMA: 'Irmã',
+  TUTOR: 'Tutor',
+  RESPONSAVEL_LEGAL: 'Responsável legal',
+  OUTRO: 'Outro'
+}
+
+export const STUDENT_ORIGINS = ['SITE', 'WHATSAPP', 'INSTAGRAM', 'PRESENCIAL', 'INDICACAO', 'OUTRO'] as const
+export const STUDENT_ORIGIN_LABELS: Record<string, string> = {
+  SITE: 'Site',
+  WHATSAPP: 'WhatsApp',
+  INSTAGRAM: 'Instagram',
+  PRESENCIAL: 'Presencial',
+  INDICACAO: 'Indicação',
+  OUTRO: 'Outro'
+}
+
+export const canAny = (permissions: readonly string[], ...required: PermissionCode[]) =>
+  required.some((permission) => permissions.includes(permission))
