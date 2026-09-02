@@ -13,10 +13,25 @@ supabase/migrations/
   20260831000100_phase1_foundation.sql
 ```
 
+### Conexão remota
+
+```bash
+npx supabase login
+npx supabase link --project-ref <PROJECT_REF>
+```
+
+Docker não é necessário neste workflow. Toda validação de banco ocorre contra o projeto Supabase remoto DEV.
+
 ### Executar migrations
 
 ```bash
-npx supabase link --project-ref SEU_PROJECT_REF
+# Verificar status local vs remoto
+npx supabase migration list
+
+# Preview antes de aplicar (obrigatório)
+npx supabase db push --dry-run
+
+# Aplicar migrations
 npx supabase db push
 ```
 
@@ -69,6 +84,20 @@ Depois do bootstrap, a gestão de RBAC deve ocorrer apenas por usuários com `us
 
 Políticas baseadas em `has_role`, `has_permission`, `is_admin` e `get_my_permissions`. O acesso é definido no banco, nunca apenas na UI. Ver `docs/RBAC.md`.
 
+## Gerar tipos TypeScript
+
+Após aplicar migrations, gerar os tipos a partir do schema remoto:
+
+```bash
+npx supabase gen types --lang typescript --linked > src/types/database.types.ts
+```
+
+O arquivo `src/types/database.types.ts` é gerado automaticamente e não deve ser editado manualmente. O client Supabase em `src/lib/supabase.ts` utiliza esses tipos para queries tipadas.
+
 ## Seed
 
 `supabase/seed.sql` contém apenas dados fictícios. Nunca versionar dumps de produção, backups ou credenciais.
+
+## Cuidado com db reset remoto
+
+**NÃO** executar `npx supabase db reset --linked` sem autorização explícita. Esse comando é destrutivo. Mesmo em DEV, pedir confirmação antes.

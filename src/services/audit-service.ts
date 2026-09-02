@@ -5,7 +5,7 @@ export async function writeAuditLog(action: AuditAction, entityType: string, ent
   const { error } = await supabase.rpc('write_audit_log', {
     p_action: action,
     p_entity_type: entityType,
-    p_entity_id: entityId ?? null,
+    p_entity_id: entityId ?? undefined,
     p_metadata: {}
   })
   if (error) console.warn('Não foi possível registrar auditoria:', error.message)
