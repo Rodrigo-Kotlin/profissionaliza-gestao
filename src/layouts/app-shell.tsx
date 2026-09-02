@@ -105,18 +105,20 @@ function Sidebar({ collapsed = false, onCollapse, onLogout, onClose }: { collaps
 }
 
 function SidebarItem({ item, collapsed, navigate }: { item: NavigationItem; collapsed: boolean; navigate: (to: string) => void }) {
+  const content = (isActive = false) => (<><IconBox icon={item.icon} active={isActive} />{!collapsed && <span className="min-w-0 truncate">{item.label}</span>}</>)
+  const base = cn('flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium transition', collapsed && 'justify-center px-2')
   if (item.available) {
     return (
       <Tooltip content={item.label}>
-        <NavLink end={item.to === '/'} to={item.to} className={({ isActive }) => cn('flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition', collapsed && 'justify-center px-2', isActive ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/[.07] hover:text-white')}>
-          {({ isActive }) => <><IconBox icon={item.icon} active={isActive} />{!collapsed && <span className="min-w-0 truncate">{item.label}</span>}</>}
+        <NavLink end={item.to === '/'} to={item.to} className={({ isActive }) => cn(base, isActive ? 'bg-navy-100/25 text-white' : 'text-white/65 hover:bg-white/[.07] hover:text-white')}>
+          {({ isActive }) => content(isActive)}
         </NavLink>
       </Tooltip>
     )
   }
   return (
     <Tooltip content={`${item.label} · disponível em breve`}>
-      <button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn('flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-white/65 transition hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center px-2')}><IconBox icon={item.icon} />{!collapsed && <span className="min-w-0 truncate">{item.label}</span>}</button>
+      <button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn(base, 'text-white/65 hover:bg-white/[.07] hover:text-white')}>{content()}</button>
     </Tooltip>
   )
 }
