@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
-  { ignores: ['dist', 'stitch_profissionaliza_gest_o_saas'] },
+  { ignores: ['dist', 'stitch_profissionaliza_gest_o_saas', 'src/types/database.types.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,

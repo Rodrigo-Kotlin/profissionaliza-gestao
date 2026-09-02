@@ -5,8 +5,15 @@
 
 Autenticação, RBAC, shell responsivo, dashboard executivo, administração inicial, auditoria e PWA.
 
+## Fase 2.1 — Master Data: pessoas, alunos e responsáveis
+**Status: concluída**
+
+`people` como identidade central; `students` e `student_guardians` com RPCs de
+domínio, RLS por permissão e masking LGPD no back end (ver `docs/DATABASE.md` e
+`docs/RBAC.md`). Branch: `feature/master-data-people-students`.
+
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
-**Status: próxima / em desenvolvimento**
+**Status: em desenvolvimento
 
 - Pessoas
 - Alunos
