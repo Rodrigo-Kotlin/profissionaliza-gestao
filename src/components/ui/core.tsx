@@ -4,25 +4,36 @@ import { Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors duration-fast disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        primary: 'bg-navy text-white hover:bg-navy/90',
-        gold: 'bg-gold text-navy hover:bg-gold/85',
+        primary: 'bg-navy text-white hover:bg-navy/90 active:bg-navy/95',
+        gold: 'bg-gold text-navy hover:bg-gold-hover active:bg-gold-darker',
         secondary: 'border border-navy/20 bg-white text-navy hover:bg-navy-50',
         ghost: 'text-muted hover:bg-navy-50 hover:text-navy',
-        danger: 'bg-red-600 text-white hover:bg-red-700'
+        danger: 'bg-danger text-white hover:bg-red-700'
       },
-      size: { sm: 'min-h-9 px-3 text-xs', md: 'min-h-10', lg: 'min-h-12 px-5' }
+      size: { sm: 'min-h-10 px-3 text-xs', md: 'min-h-11', lg: 'min-h-12 px-5' }
     },
     defaultVariants: { variant: 'primary', size: 'md' }
   }
 )
 
-export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants>
-export function Button({ className, variant, size, ...props }: ButtonProps) {
-  return <button className={cn(buttonVariants({ variant, size }), className)} {...props} />
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & { loading?: boolean }
+export function Button({ className, variant, size, loading, disabled, children, ...props }: ButtonProps) {
+  return (
+    <button
+      className={cn(buttonVariants({ variant, size }), className)}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...props}
+    >
+      {loading && <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+      {children}
+    </button>
+  )
 }
 
 type FieldProps = React.InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string }
@@ -82,8 +93,8 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 
 const badgeVariants = cva('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold', {
   variants: { variant: {
-    neutral: 'bg-slate-100 text-slate-700', success: 'bg-emerald-100 text-emerald-800',
-    warning: 'bg-amber-100 text-amber-800', danger: 'bg-red-100 text-red-800', info: 'bg-blue-100 text-blue-800'
+    neutral: 'bg-slate-100 text-slate-700', success: 'bg-green-50 text-green-700',
+    warning: 'bg-amber-50 text-amber-700', danger: 'bg-red-50 text-red-700', info: 'bg-blue-50 text-blue-700'
   } }, defaultVariants: { variant: 'neutral' }
 })
 export function Badge({ className, variant, ...props }: React.HTMLAttributes<HTMLSpanElement> & VariantProps<typeof badgeVariants>) {
@@ -115,7 +126,7 @@ export function EmptyState({ icon: Icon, title, description }: { icon: React.Ele
 }
 
 export function PageHeader({ title, description, children }: { title: string; description?: string; children?: React.ReactNode }) {
-  return <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><h1 className="text-[28px] font-bold leading-9 tracking-tight md:text-[32px] md:leading-10">{title}</h1>{description && <p className="mt-1.5 text-sm text-muted md:text-base">{description}</p>}</div>{children}</header>
+  return <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div className="min-w-0"><h1 className="text-page-title font-bold tracking-tight text-balance">{title}</h1>{description && <p className="mt-1.5 text-sm text-muted md:text-base">{description}</p>}</div><div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div></header>
 }
 
 export function FilterBar({ children }: { children: React.ReactNode }) { return <Card className="flex flex-wrap items-center gap-3 p-4">{children}</Card> }

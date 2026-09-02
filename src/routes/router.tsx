@@ -1,12 +1,19 @@
+import { Suspense, lazy } from 'react'
 import { LoaderCircle, LockKeyhole } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { createBrowserRouter, Navigate, useSearchParams } from 'react-router-dom'
 import { Card, EmptyState } from '@/components/ui/core'
 import { LoginPage, RecoveryPage, ResetPasswordPage } from '@/features/auth/auth-pages'
 import { useAuth } from '@/features/auth/auth-context'
-import { DashboardPage } from '@/features/dashboard/dashboard-page'
-import { ProfilePage, UsersPage } from '@/features/users/users-pages'
 import { AppShell } from '@/layouts/app-shell'
+
+const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
+const ProfilePage = lazy(() => import('@/features/users/users-pages').then((m) => ({ default: m.ProfilePage })))
+const UsersPage = lazy(() => import('@/features/users/users-pages').then((m) => ({ default: m.UsersPage })))
+
+function PageSkeleton() {
+  return <div className="grid min-h-[60vh] place-items-center"><LoaderCircle className="size-7 animate-spin text-navy" /></div>
+}
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -22,9 +29,9 @@ export const router = createBrowserRouter([
   { path: '/recuperar-senha', element: <RecoveryPage /> },
   { path: '/redefinir-senha', element: <ResetPasswordPage /> },
   { path: '/', element: <ProtectedRoute><AppShell /></ProtectedRoute>, children: [
-    { index: true, element: <DashboardPage /> },
-    { path: 'perfil', element: <ProfilePage /> },
-    { path: 'administracao/usuarios', element: <UsersPage /> },
+    { index: true, element: <Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense> },
+    { path: 'perfil', element: <Suspense fallback={<PageSkeleton />}><ProfilePage /></Suspense> },
+    { path: 'administracao/usuarios', element: <Suspense fallback={<PageSkeleton />}><UsersPage /></Suspense> },
     { path: 'em-breve', element: <ComingSoonPage /> },
     { path: '*', element: <Navigate to="/" replace /> }
   ] }
