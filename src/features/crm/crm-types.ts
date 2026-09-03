@@ -133,7 +133,6 @@ export type CrmLeadDetail = {
   lost_reason_id: string | null
   lost_reason_name: string | null
   lost_notes: string | null
-  notes: string | null
   created_at: string
   updated_at: string
   closed_at: string | null

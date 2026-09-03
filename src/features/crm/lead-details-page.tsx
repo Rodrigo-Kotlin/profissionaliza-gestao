@@ -170,10 +170,10 @@ function ResumoTab({ lead }: { lead: CrmLeadDetail }) {
           <Row label="Valor proposto" value={formatCurrency(lead.proposed_value)} />
         </dl>
       </Card>
-      {lead.notes && (
+      {lead.commercial_notes && (
         <Card className="p-5 md:col-span-2">
           <h3 className="mb-3 text-sm font-semibold">Observações</h3>
-          <p className="whitespace-pre-wrap text-sm text-muted">{lead.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-muted">{lead.commercial_notes}</p>
         </Card>
       )}
     </div>
@@ -378,7 +378,7 @@ function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => voi
       source_id: lead.source_id ?? '',
       course_interest_id: lead.course_interest_id ?? '',
       temperature: lead.temperature ?? undefined,
-      notes: lead.notes ?? ''
+      commercial_notes: lead.commercial_notes ?? ''
     }
   })
 
@@ -418,7 +418,7 @@ function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => voi
       </div>
 
       <label className="block text-sm font-medium text-ink mb-1.5">Observações</label>
-      <Textarea rows={3} {...register('notes')} />
+      <Textarea rows={3} {...register('commercial_notes')} />
 
       <div className="flex justify-end gap-3">
         <Button type="button" variant="secondary" onClick={onDone}>Cancelar</Button>

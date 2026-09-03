@@ -29,7 +29,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
         source_code: values.source_code,
         course_interest_id: values.course_interest_id || undefined,
         temperature: values.temperature,
-        notes: values.notes,
+        commercial_notes: values.commercial_notes,
         first_activity_title: values.first_activity_title,
         first_activity_type: values.first_activity_type,
         first_activity_due_at: values.first_activity_due_at
@@ -108,7 +108,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
       </div>
 
       <label className="block text-sm font-medium text-ink mb-1.5">Observações</label>
-      <Textarea rows={3} {...register('notes')} placeholder="Notas sobre o lead..." />
+      <Textarea rows={3} {...register('commercial_notes')} placeholder="Notas sobre o lead..." />
 
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>

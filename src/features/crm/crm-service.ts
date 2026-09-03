@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/lib/supabase'
 import type { CrmLeadListParams, CrmLeadDetail, CrmLeadListResponse, CrmPipelineResponse, CrmActivityAgendaResponse, CrmDashboardKpis, Course } from './crm-types'
 
@@ -6,8 +5,10 @@ function emptyToUndefined<T>(v: T | '' | null | undefined): T | undefined {
   return v === '' || v === null ? undefined : v
 }
 
-// RPC helper — bypasses Supabase generated types until types are regenerated
-async function rpc(name: string, params?: Record<string, any>): Promise<{ data: any; error: any }> {
+// RPC helper — uses Supabase generated types from database.types.ts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function rpc(name: string, params?: Record<string, unknown>): Promise<{ data: any; error: any }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.rpc as any)(name, params)
 }
 
@@ -56,7 +57,7 @@ export const crmService = {
     course_interest_id?: string
     owner_user_id?: string
     temperature?: string
-    notes?: string
+    commercial_notes?: string
     first_activity_title?: string
     first_activity_type?: string
     first_activity_due_at?: string
@@ -70,7 +71,7 @@ export const crmService = {
       p_course_interest_id: emptyToUndefined(input.course_interest_id),
       p_owner_user_id: emptyToUndefined(input.owner_user_id),
       p_temperature: emptyToUndefined(input.temperature),
-      p_notes: emptyToUndefined(input.notes),
+      p_commercial_notes: emptyToUndefined(input.commercial_notes),
       p_first_activity_title: emptyToUndefined(input.first_activity_title),
       p_first_activity_type: emptyToUndefined(input.first_activity_type),
       p_first_activity_due_at: emptyToUndefined(input.first_activity_due_at)
@@ -85,7 +86,7 @@ export const crmService = {
       p_source_id: emptyToUndefined(input.source_id as string),
       p_course_interest_id: emptyToUndefined(input.course_interest_id as string),
       p_temperature: emptyToUndefined(input.temperature as string),
-      p_notes: emptyToUndefined(input.notes as string),
+      p_commercial_notes: emptyToUndefined(input.commercial_notes as string),
       p_qualification_start_period: emptyToUndefined(input.qualification_start_period as string),
       p_preferred_shift: emptyToUndefined(input.preferred_shift as string),
       p_preferred_modality: emptyToUndefined(input.preferred_modality as string),
@@ -93,8 +94,7 @@ export const crmService = {
       p_decision_maker: emptyToUndefined(input.decision_maker as string),
       p_source_detail: emptyToUndefined(input.source_detail as string),
       p_estimated_value: emptyToUndefined(input.estimated_value as number),
-      p_proposed_value: emptyToUndefined(input.proposed_value as number),
-      p_commercial_notes: emptyToUndefined(input.commercial_notes as string)
+      p_proposed_value: emptyToUndefined(input.proposed_value as number)
     })
     if (error) throw error
   },

@@ -10,7 +10,7 @@ export const leadFormSchema = z.object({
   owner_user_id: z.string().uuid().optional().or(z.literal('')),
   temperature: z.enum(['HOT', 'WARM', 'COLD']).optional(),
   entry_type: z.enum(['PROSPECTING', 'LEAD_RECEIVED']).optional(),
-  notes: z.string().max(2000).optional(),
+  commercial_notes: z.string().max(2000).optional(),
   first_activity_title: z.string().max(200).optional(),
   first_activity_type: z.enum(['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'FOLLOW_UP', 'OTHER']).optional(),
   first_activity_due_at: z.string().optional()
@@ -22,7 +22,6 @@ export const leadUpdateSchema = z.object({
   source_id: z.string().uuid().optional().or(z.literal('')),
   course_interest_id: z.string().uuid().optional().or(z.literal('')),
   temperature: z.enum(['HOT', 'WARM', 'COLD']).optional(),
-  notes: z.string().max(2000).optional(),
   qualification_start_period: z.string().max(100).optional(),
   preferred_shift: z.string().optional(),
   preferred_modality: z.string().optional(),
