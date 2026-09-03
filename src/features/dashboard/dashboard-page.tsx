@@ -20,6 +20,8 @@ import {
   Tabs
 } from '@/components/ui/core'
 import { KPICard, Timeline } from '@/components/ui/data'
+import { useAuth } from '@/features/auth/auth-context'
+import { can, PERMISSIONS } from '@/lib/rbac'
 import { formatCurrency } from '@/lib/utils'
 import { dashboardService } from './dashboard-service'
 
@@ -33,9 +35,11 @@ const valueLabel = (value: number, format: string) =>
 
 export function DashboardPage() {
   const [period, setPeriod] = useState(periods[0]!)
+  const { permissions } = useAuth()
+  const canViewStudents = can(permissions, PERMISSIONS.STUDENTS_VIEW)
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['dashboard', period],
-    queryFn: dashboardService.getOverview
+    queryKey: ['dashboard', period, canViewStudents],
+    queryFn: () => dashboardService.getOverview({ canViewStudents })
   })
   if (isLoading) return <DashboardSkeleton />
   if (isError || !data)
