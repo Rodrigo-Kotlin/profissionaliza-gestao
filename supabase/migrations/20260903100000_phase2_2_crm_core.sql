@@ -1122,8 +1122,8 @@ create or replace function public.create_crm_activity(
   p_lead_id uuid,
   p_type text,
   p_title text,
-  p_description text default null,
   p_due_at timestamptz,
+  p_description text default null,
   p_owner_user_id uuid default null
 )
 returns uuid
@@ -1631,7 +1631,7 @@ grant execute on function public.search_crm_leads(text,text,uuid,uuid,uuid,text,
 grant execute on function public.move_crm_lead_stage(uuid,uuid,text) to authenticated;
 grant execute on function public.assign_crm_lead(uuid,uuid) to authenticated;
 grant execute on function public.close_crm_lead_lost(uuid,uuid,text) to authenticated;
-grant execute on function public.create_crm_activity(uuid,text,text,text,timestamptz,uuid) to authenticated;
+grant execute on function public.create_crm_activity(uuid,text,text,timestamptz,text,uuid) to authenticated;
 grant execute on function public.complete_crm_activity(uuid,text) to authenticated;
 grant execute on function public.reschedule_crm_activity(uuid,timestamptz) to authenticated;
 grant execute on function public.crm_dashboard_kpis() to authenticated;
@@ -1650,7 +1650,7 @@ revoke execute on function public.search_crm_leads(text,text,uuid,uuid,uuid,text
 revoke execute on function public.move_crm_lead_stage(uuid,uuid,text) from public, anon;
 revoke execute on function public.assign_crm_lead(uuid,uuid) from public, anon;
 revoke execute on function public.close_crm_lead_lost(uuid,uuid,text) from public, anon;
-revoke execute on function public.create_crm_activity(uuid,text,text,text,timestamptz,uuid) from public, anon;
+revoke execute on function public.create_crm_activity(uuid,text,text,timestamptz,text,uuid) from public, anon;
 revoke execute on function public.complete_crm_activity(uuid,text) from public, anon;
 revoke execute on function public.reschedule_crm_activity(uuid,timestamptz) from public, anon;
 revoke execute on function public.crm_dashboard_kpis() from public, anon;
