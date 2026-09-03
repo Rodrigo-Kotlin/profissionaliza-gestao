@@ -86,7 +86,15 @@ function Sidebar({ collapsed = false, onCollapse, onLogout, onClose }: { collaps
     .filter((section) => section.items.length > 0)
   return <div className="flex h-full flex-col">
     <div className={cn('flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-5', collapsed && 'justify-center px-3')}><div className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>{collapsed ? <BrandLogo variant="mark" size="lg" className="mx-auto" /> : <BrandLogo variant="horizontal" size="md" />}{onClose && <button aria-label="Fechar menu" onClick={onClose} className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10"><X className="size-5" /></button>}</div></div>
-    <div className={cn('shrink-0 p-4 pb-2', collapsed && 'px-3')}><Tooltip content="Novo Registro"><Button variant="gold" className={cn('h-12 w-full', collapsed && 'px-0')}><Plus className="size-5 shrink-0" />{!collapsed && 'Novo Registro'}</Button></Tooltip></div>
+    <div className={cn('shrink-0 p-4 pb-2', collapsed && 'px-3')}>
+      {collapsed ? (
+        <Tooltip content="Novo Registro">
+          <Button variant="gold" className="h-12 w-full px-0"><Plus className="size-5 shrink-0" /></Button>
+        </Tooltip>
+      ) : (
+        <Button variant="gold" className="h-12 w-full"><Plus className="size-5 shrink-0" />Novo Registro</Button>
+      )}
+    </div>
     <nav aria-label="Menu principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-3 scrollbar-navy">
       {visibleSections.map((section) => (
         <div key={section.label ?? section.items[0]!.label} className="space-y-1">
@@ -97,29 +105,54 @@ function Sidebar({ collapsed = false, onCollapse, onLogout, onClose }: { collaps
       ))}
     </nav>
     <div className="shrink-0 border-t border-white/10 p-3">
-      <Tooltip content="Perfil"><button onClick={() => navigate('/perfil')} className={cn('flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center px-2')}><UserCircle className="size-5 shrink-0" />{!collapsed && 'Perfil'}</button></Tooltip>
-      <Tooltip content="Sair"><button onClick={onLogout} className={cn('flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 hover:bg-white/[.07] hover:text-white', collapsed && 'justify-center px-2')}><LogOut className="size-5 shrink-0" />{!collapsed && 'Sair'}</button></Tooltip>
+      {collapsed ? (
+        <>
+          <Tooltip content="Perfil">
+            <button onClick={() => navigate('/perfil')} className="flex h-11 w-full items-center justify-center gap-3 rounded-lg px-2 text-sm text-white/65 hover:bg-white/[.07] hover:text-white"><UserCircle className="size-5 shrink-0" /></button>
+          </Tooltip>
+          <Tooltip content="Sair">
+            <button onClick={onLogout} className="flex h-11 w-full items-center justify-center gap-3 rounded-lg px-2 text-sm text-white/65 hover:bg-white/[.07] hover:text-white"><LogOut className="size-5 shrink-0" /></button>
+          </Tooltip>
+        </>
+      ) : (
+        <>
+          <button onClick={() => navigate('/perfil')} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 hover:bg-white/[.07] hover:text-white"><UserCircle className="size-5 shrink-0" />Perfil</button>
+          <button onClick={onLogout} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 hover:bg-white/[.07] hover:text-white"><LogOut className="size-5 shrink-0" />Sair</button>
+        </>
+      )}
       {onCollapse && <button aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'} onClick={onCollapse} className="mt-1 flex h-10 w-full items-center justify-center rounded-lg text-white/55 hover:bg-white/[.07]">{collapsed ? <ChevronRight className="size-5" /> : <><ChevronLeft className="mr-2 size-5" /><span className="text-xs">Recolher menu</span></>}</button>}
     </div>
   </div>
 }
 
 function SidebarItem({ item, collapsed, navigate }: { item: NavigationItem; collapsed: boolean; navigate: (to: string) => void }) {
-  const content = (isActive = false) => (<><IconBox icon={item.icon} active={isActive} />{!collapsed && <span className="min-w-0 truncate">{item.label}</span>}</>)
   const base = cn('flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium transition', collapsed && 'justify-center px-2')
+  const icon = (active = false) => <IconBox icon={item.icon} active={active} />
+
   if (item.available) {
     return (
-      <Tooltip content={item.label}>
-        <NavLink end={item.to === '/'} to={item.to} className={({ isActive }) => cn(base, isActive ? 'bg-navy-100/25 text-white' : 'text-white/65 hover:bg-white/[.07] hover:text-white')}>
-          {({ isActive }) => content(isActive)}
-        </NavLink>
-      </Tooltip>
+      <NavLink end={item.to === '/'} to={item.to} className={({ isActive }) => cn(base, isActive ? 'bg-navy-100/25 text-white' : 'text-white/65 hover:bg-white/[.07] hover:text-white')}>
+        {({ isActive }) => (
+          collapsed ? (
+            <Tooltip content={item.label}>
+              {icon(isActive)}
+            </Tooltip>
+          ) : (
+            <>
+              {icon(isActive)}
+              <span className="min-w-0 truncate text-current">{item.label}</span>
+            </>
+          )
+        )}
+      </NavLink>
     )
   }
-  return (
+  return collapsed ? (
     <Tooltip content={`${item.label} · disponível em breve`}>
-      <button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn(base, 'text-white/65 hover:bg-white/[.07] hover:text-white')}>{content()}</button>
+      <button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn(base, 'text-white/65 hover:bg-white/[.07] hover:text-white')}>{icon()}</button>
     </Tooltip>
+  ) : (
+    <button onClick={() => navigate(`/em-breve?modulo=${encodeURIComponent(item.label)}`)} className={cn(base, 'text-white/65 hover:bg-white/[.07] hover:text-white')}>{icon()}<span className="min-w-0 truncate text-current">{item.label}</span></button>
   )
 }
 
