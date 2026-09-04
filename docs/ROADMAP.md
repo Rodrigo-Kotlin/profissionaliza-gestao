@@ -12,6 +12,12 @@ Autenticação, RBAC, shell responsivo, dashboard executivo, administração ini
 domínio, RLS por permissão e masking LGPD no back end (ver `docs/DATABASE.md` e
 `docs/RBAC.md`). Branch: `feature/master-data-people-students`.
 
+## Fase 2.2 — CRM Comercial: Prospecção, Leads, Pipeline, Atividades
+**Status: aguardando merge do PR #11**
+
+Pipeline, leads, atividades, catálogo de cursos, ownership, RPCs controladas.
+Migration aplicada no Supabase DEV; tipos regenerados.
+
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento
 
