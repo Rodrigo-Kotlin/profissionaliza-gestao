@@ -94,3 +94,14 @@ export function formatDueAt(dueAt: string): string {
 
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' + time
 }
+
+export function stageMoveErrorMessage(err: unknown): string | null {
+  const code = (err as { code?: string | number })?.code
+  const message = (err as { message?: string })?.message ?? ''
+  const rawCode = typeof code === 'number' ? String(code) : code
+  if (rawCode === '42501') return 'Você não possui permissão para mover este Lead.'
+  if (rawCode === '22023' && message.toLowerCase().includes('course')) {
+    return 'Informe o curso de interesse antes de qualificar o Lead.'
+  }
+  return null
+}

@@ -8,7 +8,8 @@ import {
   getDaysInStage,
   isOverdue,
   formatRelativeDate,
-  formatDueAt
+  formatDueAt,
+  stageMoveErrorMessage
 } from './crm-utils'
 
 describe('parseCrmLeadListParams', () => {
@@ -143,5 +144,27 @@ describe('formatDueAt', () => {
     tomorrow.setHours(9, 0, 0, 0)
     const result = formatDueAt(tomorrow.toISOString())
     expect(result).toContain('Amanhã')
+  })
+})
+
+describe('stageMoveErrorMessage', () => {
+  it('returns course message for 22023 with capitalized Course interest', () => {
+    expect(stageMoveErrorMessage({ code: '22023', message: 'Course interest is required to qualify a lead' }))
+      .toBe('Informe o curso de interesse antes de qualificar o Lead.')
+  })
+
+  it('returns course message when code arrives as number', () => {
+    expect(stageMoveErrorMessage({ code: 22023, message: 'Course interest is required to qualify a lead' }))
+      .toBe('Informe o curso de interesse antes de qualificar o Lead.')
+  })
+
+  it('returns permission message for 42501', () => {
+    expect(stageMoveErrorMessage({ code: '42501', message: 'Permission denied: crm.move_stage' }))
+      .toBe('Você não possui permissão para mover este Lead.')
+  })
+
+  it('returns null for unknown/unrelated errors', () => {
+    expect(stageMoveErrorMessage({ code: 'P0002', message: 'Lead not found' })).toBeNull()
+    expect(stageMoveErrorMessage(null)).toBeNull()
   })
 })

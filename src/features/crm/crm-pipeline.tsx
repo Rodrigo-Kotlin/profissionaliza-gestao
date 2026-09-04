@@ -23,6 +23,7 @@ import { can, PERMISSIONS } from '@/lib/rbac'
 import { toast } from 'sonner'
 import { crmKeys, useCrmPipeline, useMoveStage } from './crm-hooks'
 import { CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES } from './crm-constants'
+import { stageMoveErrorMessage } from './crm-utils'
 import type { CrmLeadCard, CrmPipelineColumn, CrmPipelineResponse } from './crm-types'
 
 export function CrmPipeline() {
@@ -117,15 +118,7 @@ export function CrmPipeline() {
         await moveStage.mutateAsync({ leadId, stageId: targetStageId, reason: 'Movido pelo Kanban' })
       } catch (err: unknown) {
         queryClient.setQueryData<CrmPipelineResponse>(crmKeys.pipeline(), snapshot)
-        const code = (err as { code?: string | number })?.code
-        const message = (err as { message?: string })?.message ?? ''
-        if (code === 22023 && message.includes('course')) {
-          toast.error('Informe o curso de interesse antes de qualificar o Lead.')
-        } else if (code === 42501) {
-          toast.error('Você não possui permissão para mover este Lead.')
-        } else {
-          toast.error('Não foi possível mover o lead.')
-        }
+        toast.error(stageMoveErrorMessage(err) ?? 'Não foi possível mover o lead.')
       } finally {
         setMovingLeadId(null)
       }
@@ -165,15 +158,7 @@ export function CrmPipeline() {
         await moveStage.mutateAsync({ leadId, stageId: targetStageId, reason: 'Movido pelo Kanban' })
       } catch (err: unknown) {
         queryClient.setQueryData<CrmPipelineResponse>(crmKeys.pipeline(), snapshot)
-        const code = (err as { code?: string | number })?.code
-        const message = (err as { message?: string })?.message ?? ''
-        if (code === 22023 && message.includes('course')) {
-          toast.error('Informe o curso de interesse antes de qualificar o Lead.')
-        } else if (code === 42501) {
-          toast.error('Você não possui permissão para mover este Lead.')
-        } else {
-          toast.error('Não foi possível mover o lead.')
-        }
+        toast.error(stageMoveErrorMessage(err) ?? 'Não foi possível mover o lead.')
       }
     },
     [findStageForLead, moveStage, queryClient],
