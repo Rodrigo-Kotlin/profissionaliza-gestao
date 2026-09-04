@@ -140,7 +140,10 @@ export function useMoveStage() {
       crmService.moveStage(leadId, stageId, reason),
     onSuccess: (_data, variables) => {
       void writeAuditLog('crm.stage_changed', 'crm_lead', variables.leadId, {})
-      qc.invalidateQueries({ queryKey: crmKeys.all })
+      qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
+      qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
+      qc.invalidateQueries({ queryKey: crmKeys.pipeline() })
+      qc.invalidateQueries({ queryKey: crmKeys.kpis })
     }
   })
 }
@@ -164,7 +167,10 @@ export function useCloseLost() {
       crmService.closeLost(leadId, reasonId, notes),
     onSuccess: (_data, variables) => {
       void writeAuditLog('crm.lead_lost', 'crm_lead', variables.leadId, {})
-      qc.invalidateQueries({ queryKey: crmKeys.all })
+      qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
+      qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
+      qc.invalidateQueries({ queryKey: crmKeys.pipeline() })
+      qc.invalidateQueries({ queryKey: crmKeys.kpis })
     }
   })
 }
@@ -185,12 +191,15 @@ export function useCreateActivity() {
 export function useCompleteActivity() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ activityId, outcome }: { activityId: string; outcome?: string }) =>
+    mutationFn: ({ activityId, outcome }: { activityId: string; outcome?: string; leadId?: string }) =>
       crmService.completeActivity(activityId, outcome),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void writeAuditLog('crm.activity_completed', 'crm_activity', undefined, {})
       qc.invalidateQueries({ queryKey: ['crm', 'agenda'] })
       qc.invalidateQueries({ queryKey: crmKeys.kpis })
+      if ('leadId' in variables && variables.leadId) {
+        qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
+      }
     }
   })
 }
@@ -198,11 +207,14 @@ export function useCompleteActivity() {
 export function useRescheduleActivity() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ activityId, newDueAt }: { activityId: string; newDueAt: string }) =>
+    mutationFn: ({ activityId, newDueAt }: { activityId: string; newDueAt: string; leadId?: string }) =>
       crmService.rescheduleActivity(activityId, newDueAt),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void writeAuditLog('crm.activity_rescheduled', 'crm_activity', undefined, {})
       qc.invalidateQueries({ queryKey: ['crm', 'agenda'] })
+      if ('leadId' in variables && variables.leadId) {
+        qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
+      }
     }
   })
 }

@@ -173,13 +173,13 @@ function ActivityCard({ activity, showComplete = true }: { activity: CrmActivity
 
           {showComplete && activity.status === 'PENDING' && (
             <div className="mt-2 flex flex-wrap gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowOutcome(true)}>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setShowOutcome(true)}>
                 <CheckCircle2 className="size-3.5" /> Concluir
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowReschedule(true)}>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setShowReschedule(true)}>
                 <Clock className="size-3.5" /> Reagendar
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => navigate(`/crm/leads/${activity.lead_id}`)}>
+              <Button type="button" size="sm" variant="ghost" onClick={() => navigate(`/crm/leads/${activity.lead_id}`)}>
                 Ver lead
               </Button>
             </div>
@@ -188,16 +188,16 @@ function ActivityCard({ activity, showComplete = true }: { activity: CrmActivity
           {showOutcome && (
             <div className="mt-3 flex gap-2">
               <Input placeholder="Resultado (opcional)" value={outcome} onChange={(e) => setOutcome(e.target.value)} className="max-w-xs" />
-              <Button size="sm" onClick={handleComplete} loading={completeActivity.isPending}>OK</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setShowOutcome(false); setOutcome('') }}>Cancelar</Button>
+              <Button type="button" size="sm" onClick={handleComplete} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setShowOutcome(false); setOutcome('') }}>Cancelar</Button>
             </div>
           )}
 
           {showReschedule && (
             <div className="mt-3 flex gap-2">
               <Input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="max-w-xs" />
-              <Button size="sm" onClick={handleReschedule} loading={rescheduleActivity.isPending}>Reagendar</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setShowReschedule(false); setNewDate('') }}>Cancelar</Button>
+              <Button type="button" size="sm" onClick={handleReschedule} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setShowReschedule(false); setNewDate('') }}>Cancelar</Button>
             </div>
           )}
         </div>

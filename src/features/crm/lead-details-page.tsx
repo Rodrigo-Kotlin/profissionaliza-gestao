@@ -50,17 +50,17 @@ export function LeadDetailsPage() {
     <div className="space-y-6 md:space-y-8">
       <PageHeader title="Lead">
         <Button variant="secondary" onClick={() => navigate('/crm/leads')}>Voltar</Button>
-        {canEdit && (
+        {canEdit && lead.status === 'OPEN' && (
           <Button variant="secondary" onClick={() => setEditOpen(true)}>
             <Pencil className="size-4" /> Editar
           </Button>
         )}
-        {canMoveStage && (
+        {canMoveStage && lead.status === 'OPEN' && (
           <Button variant="secondary" onClick={() => setMoveOpen(true)}>
             <ArrowRightLeft className="size-4" /> Mover etapa
           </Button>
         )}
-        {canManageActivity && (
+        {canManageActivity && lead.status === 'OPEN' && (
           <Button variant="secondary" onClick={() => setActivityOpen(true)}>
             <CalendarDays className="size-4" /> Nova atividade
           </Button>
@@ -85,7 +85,7 @@ export function LeadDetailsPage() {
         </div>
 
         <div className="hidden lg:block">
-          {lead.next_activity && <NextActivityCard activity={lead.next_activity} />}
+          {lead.status === 'OPEN' && lead.next_activity && <NextActivityCard activity={lead.next_activity} leadId={leadId} />}
         </div>
       </div>
 
@@ -180,7 +180,7 @@ function ResumoTab({ lead }: { lead: CrmLeadDetail }) {
   )
 }
 
-function AtividadesTab({ lead }: { leadId: string; lead: CrmLeadDetail }) {
+function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }) {
   const completeActivity = useCompleteActivity()
   const rescheduleActivity = useRescheduleActivity()
   const [outcomeActivityId, setOutcomeActivityId] = useState<string | null>(null)
@@ -192,7 +192,7 @@ function AtividadesTab({ lead }: { leadId: string; lead: CrmLeadDetail }) {
 
   const handleComplete = async (activityId: string) => {
     try {
-      await completeActivity.mutateAsync({ activityId, outcome: outcome || undefined })
+      await completeActivity.mutateAsync({ activityId, outcome: outcome || undefined, leadId })
       toast.success('Atividade concluída.')
       setOutcomeActivityId(null)
       setOutcome('')
@@ -204,7 +204,7 @@ function AtividadesTab({ lead }: { leadId: string; lead: CrmLeadDetail }) {
   const handleReschedule = async (activityId: string) => {
     if (!newDate) return
     try {
-      await rescheduleActivity.mutateAsync({ activityId, newDueAt: newDate })
+      await rescheduleActivity.mutateAsync({ activityId, newDueAt: newDate, leadId })
       toast.success('Atividade reagendada.')
       setRescheduleId(null)
       setNewDate('')
@@ -225,29 +225,31 @@ function AtividadesTab({ lead }: { leadId: string; lead: CrmLeadDetail }) {
                 <p className="text-sm font-semibold">{act.title}</p>
                 <p className="text-xs text-muted">{CRM_ACTIVITY_TYPE_LABELS[act.type]} · {formatDueAt(act.due_at)}</p>
               </div>
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant="ghost" onClick={() => setOutcomeActivityId(act.id)}>
-                  <CheckCircle2 className="size-4" /> Concluir
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setRescheduleId(act.id)}>
-                  <Clock className="size-4" /> Reagendar
-                </Button>
-              </div>
+              {lead.status === 'OPEN' && (
+                <div className="flex items-center gap-1">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setOutcomeActivityId(act.id)}>
+                    <CheckCircle2 className="size-4" /> Concluir
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setRescheduleId(act.id)}>
+                    <Clock className="size-4" /> Reagendar
+                  </Button>
+                </div>
+              )}
             </div>
 
             {outcomeActivityId === act.id && (
               <div className="mt-3 flex gap-2">
                 <Input placeholder="Resultado (opcional)" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
-                <Button size="sm" onClick={() => handleComplete(act.id)} loading={completeActivity.isPending}>OK</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setOutcomeActivityId(null); setOutcome('') }}>Cancelar</Button>
+                <Button type="button" size="sm" onClick={() => handleComplete(act.id)} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => { setOutcomeActivityId(null); setOutcome('') }}>Cancelar</Button>
               </div>
             )}
 
             {rescheduleId === act.id && (
               <div className="mt-3 flex gap-2">
                 <Input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-                <Button size="sm" onClick={() => handleReschedule(act.id)} loading={rescheduleActivity.isPending}>Reagendar</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setRescheduleId(null); setNewDate('') }}>Cancelar</Button>
+                <Button type="button" size="sm" onClick={() => handleReschedule(act.id)} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => { setRescheduleId(null); setNewDate('') }}>Cancelar</Button>
               </div>
             )}
           </Card>
@@ -337,10 +339,19 @@ function QualificacaoTab({ leadId, lead, canEdit }: { leadId: string; lead: CrmL
   )
 }
 
-function NextActivityCard({ activity }: { activity: CrmLeadDetail['next_activity'] }) {
+function NextActivityCard({ activity, leadId }: { activity: CrmLeadDetail['next_activity']; leadId: string }) {
   const completeActivity = useCompleteActivity()
 
   if (!activity) return null
+
+  const handleComplete = async () => {
+    try {
+      await completeActivity.mutateAsync({ activityId: activity.id, leadId })
+      toast.success('Atividade concluída.')
+    } catch {
+      toast.error('Não foi possível concluir a atividade.')
+    }
+  }
 
   return (
     <Card className="p-5">
@@ -352,10 +363,12 @@ function NextActivityCard({ activity }: { activity: CrmLeadDetail['next_activity
           {formatDueAt(activity.due_at)}
         </p>
         <Button
+          type="button"
           size="sm"
           className="mt-2 w-full"
-          onClick={() => completeActivity.mutateAsync({ activityId: activity.id })}
+          onClick={handleComplete}
           loading={completeActivity.isPending}
+          disabled={completeActivity.isPending}
         >
           <CheckCircle2 className="size-4" /> Concluir
         </Button>
