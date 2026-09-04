@@ -10,7 +10,7 @@ import { normalizePhone, normalizeEmail } from './crm-utils'
 
 export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel: () => void }) {
   const createLead = useCreateLead()
-  const courses = useCrmCourses()
+  const courses = useCrmCourses('ACTIVE')
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {

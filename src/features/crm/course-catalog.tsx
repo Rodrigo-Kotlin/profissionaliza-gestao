@@ -4,7 +4,9 @@ import { toast } from 'sonner'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Textarea } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
 import { Modal } from '@/components/ui/overlays'
-import { useCrmCourses } from './crm-hooks'
+import { useAuth } from '@/features/auth/auth-context'
+import { can, PERMISSIONS } from '@/lib/rbac'
+import { useCrmCourses, useCreateCourse, useUpdateCourse } from './crm-hooks'
 import { courseFormSchema, type CourseFormInput } from './crm-schemas'
 import type { Course, CourseStatus } from './crm-types'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,8 +33,10 @@ const MODALITY_LABELS: Record<string, string> = {
 }
 
 export function CourseCatalog() {
-  const [statusFilter, setStatusFilter] = useState('')
-  const courses = useCrmCourses(statusFilter || undefined)
+  const { permissions } = useAuth()
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const canManage = can(permissions, PERMISSIONS.COURSES_MANAGE)
+  const courses = useCrmCourses(statusFilter ?? undefined)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
 
@@ -49,14 +53,16 @@ export function CourseCatalog() {
   return (
     <div className="space-y-6 md:space-y-8">
       <PageHeader title="Catálogo de Cursos" description="Gerencie os cursos disponíveis para os leads.">
-        <Button onClick={handleCreate}>
-          <Plus className="size-4" /> Novo Curso
-        </Button>
+        {canManage && (
+          <Button onClick={handleCreate}>
+            <Plus className="size-4" /> Novo Curso
+          </Button>
+        )}
       </PageHeader>
 
       <Card className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filtrar por status">
+          <Select value={statusFilter ?? ''} onChange={(e) => setStatusFilter(e.target.value || null)} aria-label="Filtrar por status">
             <option value="">Todos os status</option>
             <option value="ACTIVE">Ativos</option>
             <option value="INACTIVE">Inativos</option>
@@ -80,7 +86,7 @@ export function CourseCatalog() {
           <DataTable
             data={courses.data}
             getKey={(row) => row.id}
-            mobileCard={(row) => <CourseMobileRow row={row} onEdit={() => handleEdit(row)} />}
+            mobileCard={(row) => <CourseMobileRow row={row} onEdit={() => handleEdit(row)} canManage={canManage} />}
             columns={[
               { key: 'code', header: 'Código', cell: (row) => <span className="font-mono text-xs text-muted">{row.code}</span> },
               {
@@ -101,11 +107,12 @@ export function CourseCatalog() {
                 key: 'actions',
                 header: '',
                 priority: 'high',
-                cell: (row) => (
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
-                    <Pencil className="size-3.5" /> Editar
-                  </Button>
-                )
+                cell: (row) =>
+                  canManage ? (
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Pencil className="size-3.5" /> Editar
+                    </Button>
+                  ) : null
               }
             ]}
           />
@@ -122,7 +129,7 @@ export function CourseCatalog() {
   )
 }
 
-function CourseMobileRow({ row, onEdit }: { row: Course; onEdit: () => void }) {
+function CourseMobileRow({ row, onEdit, canManage }: { row: Course; onEdit: () => void; canManage: boolean }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-start justify-between gap-2">
@@ -137,14 +144,18 @@ function CourseMobileRow({ row, onEdit }: { row: Course; onEdit: () => void }) {
         {row.workload_hours && <span>· {row.workload_hours}h</span>}
         {row.default_price && <span>· {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.default_price)}</span>}
       </div>
-      <Button variant="ghost" size="sm" onClick={onEdit}>
-        <Pencil className="size-3.5" /> Editar
-      </Button>
+      {canManage && (
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Pencil className="size-3.5" /> Editar
+        </Button>
+      )}
     </div>
   )
 }
 
 function CourseForm({ course, onDone }: { course: Course | null; onDone: () => void }) {
+  const createCourse = useCreateCourse()
+  const updateCourse = useUpdateCourse()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CourseFormInput>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: course ? {
@@ -153,41 +164,71 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
       short_name: course.short_name ?? '',
       category: course.category ?? '',
       modality: course.modality,
+      status: course.status,
       workload_hours: course.workload_hours ?? undefined,
       duration_value: course.duration_value ?? undefined,
       duration_unit: course.duration_unit ?? '',
       default_price: course.default_price ?? undefined,
       description: course.description ?? ''
     } : {
-      modality: 'PRESENCIAL'
+      modality: 'PRESENCIAL',
+      status: 'DRAFT'
     }
   })
 
-  const onSubmit = async () => {
+  const submitError = createCourse.error || updateCourse.error
+
+  const onSubmit = async (values: CourseFormInput) => {
     try {
       if (course) {
-        // Edit mode would call update service - simplified here
+        await updateCourse.mutateAsync({
+          courseId: course.id,
+          input: {
+            name: values.name,
+            short_name: values.short_name || undefined,
+            category: values.category || undefined,
+            modality: values.modality,
+            status: values.status,
+            workload_hours: values.workload_hours ?? undefined,
+            duration_value: values.duration_value ?? undefined,
+            duration_unit: values.duration_unit || undefined,
+            default_price: values.default_price ?? undefined,
+            description: values.description || undefined
+          }
+        })
         toast.success('Curso atualizado.')
       } else {
+        await createCourse.mutateAsync({
+          code: values.code,
+          name: values.name,
+          short_name: values.short_name || undefined,
+          category: values.category || undefined,
+          modality: values.modality,
+          workload_hours: values.workload_hours ?? undefined,
+          duration_value: values.duration_value ?? undefined,
+          duration_unit: values.duration_unit || undefined,
+          default_price: values.default_price ?? undefined,
+          description: values.description || undefined
+        })
         toast.success('Curso criado.')
       }
       onDone()
     } catch {
-      toast.error('Não foi possível salvar o curso.')
+      // não fecha o modal em caso de falha
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Código *" error={errors.code?.message} {...register('code')} placeholder="Ex: TEC01" />
+        <Input label="Código *" error={errors.code?.message} disabled={Boolean(course)} {...register('code')} placeholder="Ex: TEC01" />
         <Input label="Nome *" error={errors.name?.message} {...register('name')} placeholder="Nome do curso" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label="Nome abreviado" error={errors.short_name?.message} {...register('short_name')} />
         <Input label="Categoria" error={errors.category?.message} {...register('category')} placeholder="Ex: Tecnologia" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink">Modalidade *</label>
           <Select {...register('modality')}>
@@ -197,15 +238,28 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
           </Select>
           {errors.modality && <p className="mt-1 text-xs text-red-600">{errors.modality.message}</p>}
         </div>
-        <Input label="Carga horária (h)" type="number" error={errors.workload_hours?.message} {...register('workload_hours', { valueAsNumber: true })} />
-        <Input label="Valor (R$)" type="number" step="0.01" error={errors.default_price?.message} {...register('default_price', { valueAsNumber: true })} />
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-ink">Status</label>
+          <Select {...register('status')}>
+            <option value="DRAFT">Rascunho</option>
+            <option value="ACTIVE">Ativo</option>
+            <option value="INACTIVE">Inativo</option>
+            <option value="ARCHIVED">Arquivado</option>
+          </Select>
+          {errors.status && <p className="mt-1 text-xs text-red-600">{errors.status.message}</p>}
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Input label="Carga horária (h)" type="number" error={errors.workload_hours?.message} {...register('workload_hours', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
+        <Input label="Valor (R$)" type="number" step="0.01" error={errors.default_price?.message} {...register('default_price', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
+        <Input label="Duração (valor)" type="number" error={errors.duration_value?.message} {...register('duration_value', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Duração (valor)" type="number" error={errors.duration_value?.message} {...register('duration_value', { valueAsNumber: true })} />
         <Input label="Duração (unidade)" placeholder="Ex: meses" error={errors.duration_unit?.message} {...register('duration_unit')} />
       </div>
       <label className="block text-sm font-medium text-ink mb-1.5">Descrição</label>
       <Textarea rows={3} {...register('description')} />
+      {submitError && <p className="text-sm text-red-600">Não foi possível salvar o curso. Verifique sua permissão e tente novamente.</p>}
       <div className="flex justify-end gap-3">
         <Button type="button" variant="secondary" onClick={onDone}>Cancelar</Button>
         <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>

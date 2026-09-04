@@ -56,6 +56,57 @@ export function useCrmCourses(status?: string) {
   })
 }
 
+type CourseCreateInput = {
+  code: string
+  name: string
+  short_name?: string
+  category?: string
+  modality: string
+  workload_hours?: number
+  duration_value?: number
+  duration_unit?: string
+  default_price?: number
+  description?: string
+}
+
+type CourseUpdateInput = {
+  name?: string
+  short_name?: string
+  category?: string
+  modality?: string
+  status?: string
+  workload_hours?: number
+  duration_value?: number
+  duration_unit?: string
+  default_price?: number
+  description?: string
+}
+
+export function useCreateCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CourseCreateInput) => crmService.createCourse(input),
+    onSuccess: () => {
+      void writeAuditLog('crm.course_created', 'course', undefined, {})
+      qc.invalidateQueries({ queryKey: ['crm', 'courses'] })
+      qc.invalidateQueries({ queryKey: crmKeys.all })
+    }
+  })
+}
+
+export function useUpdateCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ courseId, input }: { courseId: string; input: CourseUpdateInput }) =>
+      crmService.updateCourse(courseId, input),
+    onSuccess: (_data, variables) => {
+      void writeAuditLog('crm.course_updated', 'course', variables.courseId, {})
+      qc.invalidateQueries({ queryKey: ['crm', 'courses'] })
+      qc.invalidateQueries({ queryKey: crmKeys.all })
+    }
+  })
+}
+
 export function useCreateLead() {
   const qc = useQueryClient()
   return useMutation({

@@ -80,7 +80,7 @@ export function LeadDetailsPage() {
         <div>
           {tab === 'Resumo' && <ResumoTab lead={lead} />}
           {tab === 'Atividades' && <AtividadesTab leadId={leadId} lead={lead} />}
-          {tab === 'Histórico' && <HistoricoTab leadId={leadId} />}
+          {tab === 'Histórico' && <HistoricoTab lead={lead} />}
           {tab === 'Qualificação' && <QualificacaoTab leadId={leadId} lead={lead} canEdit={canEdit} />}
         </div>
 
@@ -257,12 +257,7 @@ function AtividadesTab({ lead }: { leadId: string; lead: CrmLeadDetail }) {
   )
 }
 
-function HistoricoTab({ leadId }: { leadId: string }) {
-  const detail = useCrmLeadDetail(leadId)
-  const lead = detail.data
-
-  if (!lead) return <Skeleton className="h-40" />
-
+function HistoricoTab({ lead }: { lead: CrmLeadDetail }) {
   const events: { title: string; detail: string }[] = [
     { title: 'Lead criado', detail: `${new Date(lead.created_at).toLocaleDateString('pt-BR')} por ${lead.owner_name ?? 'Sistema'}` },
     { title: `Etapa: ${lead.stage_name}`, detail: `Posição no funil` },
@@ -371,7 +366,7 @@ function NextActivityCard({ activity }: { activity: CrmLeadDetail['next_activity
 
 function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => void }) {
   const updateLead = useUpdateLead()
-  const courses = useCrmCourses()
+  const courses = useCrmCourses('ACTIVE')
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LeadUpdateInput>({
     resolver: zodResolver(leadUpdateSchema),
     defaultValues: {

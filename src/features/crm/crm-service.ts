@@ -1,15 +1,25 @@
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/types/database.types'
 import type { CrmLeadListParams, CrmLeadDetail, CrmLeadListResponse, CrmPipelineResponse, CrmActivityAgendaResponse, CrmDashboardKpis, Course } from './crm-types'
+
+type Functions = Database['public']['Functions']
+
+type RpcArgs<K extends keyof Functions> = Functions[K] extends { Args: infer A } ? A : Record<string, never>
+type RpcReturns<K extends keyof Functions> = Functions[K] extends { Returns: infer R } ? R : unknown
+
+// RPC helper — usa as assinaturas geradas de database.types.ts
+// (Database['public']['Functions']) em vez de `any` irrestrito.
+async function rpc<K extends keyof Functions>(
+  fn: K,
+  args?: RpcArgs<K>
+): Promise<{ data: RpcReturns<K> | null; error: unknown }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await (supabase.rpc as any)(fn, args ?? {})
+  return res as { data: RpcReturns<K> | null; error: unknown }
+}
 
 function emptyToUndefined<T>(v: T | '' | null | undefined): T | undefined {
   return v === '' || v === null ? undefined : v
-}
-
-// RPC helper — uses Supabase generated types from database.types.ts
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function rpc(name: string, params?: Record<string, unknown>): Promise<{ data: any; error: any }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.rpc as any)(name, params)
 }
 
 export const crmService = {
@@ -177,10 +187,73 @@ export const crmService = {
     return data as CrmDashboardKpis
   },
 
-  async listCourses(status?: string): Promise<Course[]> {
-    const { data, error } = await rpc('list_courses', { p_status: status ?? 'ACTIVE' })
+  // p_status === undefined/null => todos os status
+  // p_status === 'ACTIVE' => apenas ativos (usado no formulário de Lead)
+  async listCourses(status?: string | null): Promise<Course[]> {
+    const { data, error } = await rpc('list_courses', {
+      p_status: emptyToUndefined(status)
+    })
     if (error) throw error
     return data as Course[]
+  },
+
+  async createCourse(input: {
+    code: string
+    name: string
+    short_name?: string
+    category?: string
+    modality: string
+    workload_hours?: number
+    duration_value?: number
+    duration_unit?: string
+    default_price?: number
+    description?: string
+  }): Promise<string> {
+    const { data, error } = await rpc('create_course', {
+      p_code: input.code,
+      p_name: input.name,
+      p_short_name: emptyToUndefined(input.short_name),
+      p_category: emptyToUndefined(input.category),
+      p_modality: input.modality,
+      p_workload_hours: emptyToUndefined(input.workload_hours),
+      p_duration_value: emptyToUndefined(input.duration_value),
+      p_duration_unit: emptyToUndefined(input.duration_unit),
+      p_default_price: emptyToUndefined(input.default_price),
+      p_description: emptyToUndefined(input.description)
+    })
+    if (error) throw error
+    return data as string
+  },
+
+  async updateCourse(
+    courseId: string,
+    input: {
+      name?: string
+      short_name?: string
+      category?: string
+      modality?: string
+      workload_hours?: number
+      duration_value?: number
+      duration_unit?: string
+      default_price?: number
+      description?: string
+      status?: string
+    }
+  ): Promise<void> {
+    const { error } = await rpc('update_course', {
+      p_course_id: courseId,
+      p_name: emptyToUndefined(input.name),
+      p_short_name: emptyToUndefined(input.short_name),
+      p_category: emptyToUndefined(input.category),
+      p_modality: emptyToUndefined(input.modality),
+      p_workload_hours: emptyToUndefined(input.workload_hours),
+      p_duration_value: emptyToUndefined(input.duration_value),
+      p_duration_unit: emptyToUndefined(input.duration_unit),
+      p_default_price: emptyToUndefined(input.default_price),
+      p_description: emptyToUndefined(input.description),
+      p_status: emptyToUndefined(input.status)
+    })
+    if (error) throw error
   },
 
   async searchLeadsLight(query: string): Promise<Array<{ id: string; lead_code: string; full_name: string; course_name: string | null }>> {

@@ -51,6 +51,7 @@ export const courseFormSchema = z.object({
   short_name: z.string().max(100).optional(),
   category: z.string().max(100).optional(),
   modality: z.enum(['PRESENCIAL', 'ONLINE', 'HIBRIDO']),
+  status: z.enum(['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
   workload_hours: z.number().int().positive().optional(),
   duration_value: z.number().int().positive().optional(),
   duration_unit: z.string().max(20).optional(),
