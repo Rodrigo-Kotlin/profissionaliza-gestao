@@ -742,7 +742,8 @@ $$;
 create or replace function public.list_crm_lead_activities(
   p_lead_id uuid,
   p_page integer default 1,
-  p_page_size integer default 50
+  p_page_size integer default 50,
+  p_status text default null
 )
 returns json
 language plpgsql
@@ -764,6 +765,10 @@ begin
 
   if not public.has_permission('crm.view') then
     raise exception 'Permission denied: crm.view' using errcode = '42501';
+  end if;
+
+  if p_status is not null and p_status not in ('PENDING', 'COMPLETED', 'CANCELED') then
+    raise exception 'Invalid activity status' using errcode = '22023';
   end if;
 
   v_has_view_all := public.has_permission('crm.view_all');
@@ -788,7 +793,8 @@ begin
   select count(*)::bigint into v_total
   from public.crm_activities a
   where a.lead_id = p_lead_id
-    and a.status in ('PENDING', 'COMPLETED', 'CANCELED');
+    and a.status in ('PENDING', 'COMPLETED', 'CANCELED')
+    and (p_status is null or a.status = p_status);
 
   -- Montagem paginada
   select coalesce(json_agg(act), '[]'::json)
@@ -796,12 +802,15 @@ begin
   from (
     select
       a.id,
+      a.lead_id,
       a.type,
       a.title,
       a.description,
       to_char(a.due_at, 'YYYY-MM-DD"T"HH24:MI:SS') as due_at,
       a.status,
       to_char(a.completed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as completed_at,
+      to_char(a.created_at, 'YYYY-MM-DD"T"HH24:MI:SS') as created_at,
+      to_char(a.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS') as updated_at,
       a.outcome,
       pr.full_name as owner_name,
       a.owner_user_id,
@@ -810,13 +819,16 @@ begin
     left join public.profiles pr on pr.id = a.owner_user_id
     where a.lead_id = p_lead_id
       and a.status in ('PENDING', 'COMPLETED', 'CANCELED')
+      and (p_status is null or a.status = p_status)
     order by a.due_at desc
     limit p_page_size offset v_offset
   ) act;
 
   return json_build_object(
     'data', v_rows,
-    'total', v_total
+    'total', v_total,
+    'page', greatest(p_page, 1),
+    'page_size', greatest(p_page_size, 1)
   );
 end;
 $$;
@@ -834,17 +846,15 @@ revoke execute on function public.get_crm_lead_timeline(uuid, integer, integer) 
 grant execute on function public.get_crm_lead_timeline(uuid, integer, integer) to authenticated;
 
 -- list_crm_lead_activities
-revoke execute on function public.list_crm_lead_activities(uuid, integer, integer) from public, anon;
-grant execute on function public.list_crm_lead_activities(uuid, integer, integer) to authenticated;
+revoke execute on function public.list_crm_lead_activities(uuid, integer, integer, text) from public, anon;
+grant execute on function public.list_crm_lead_activities(uuid, integer, integer, text) to authenticated;
 
--- create_crm_lead: revogar assinatura antiga, conceder nova assinatura
-revoke execute on function public.create_crm_lead(text,text,text,text,text,uuid,uuid,text,text,text,text,timestamptz) from authenticated, public, anon;
-revoke execute on function public.create_crm_lead(text,text,text,text,text,uuid,text,text,text,text,text,text,timestamptz) from authenticated, public, anon;
+-- create_crm_lead: a assinatura antiga foi DROPada acima (grants morrem com ela);
+-- conceder/revogar apenas na assinatura nova
 grant execute on function public.create_crm_lead(text,text,text,text,text,uuid,uuid,uuid,text,text,text,text,timestamptz) to authenticated;
 revoke execute on function public.create_crm_lead(text,text,text,text,text,uuid,uuid,uuid,text,text,text,text,timestamptz) from public, anon;
 
--- update_crm_lead: revogar assinatura antiga, conceder nova assinatura
-revoke execute on function public.update_crm_lead(uuid,uuid,uuid,text,text,text,text,text,text,text,text,numeric,numeric) from authenticated, public, anon;
+-- update_crm_lead: idem
 grant execute on function public.update_crm_lead(uuid,uuid,uuid,text,text,text,text,text,text,text,text,numeric,numeric,uuid) to authenticated;
 revoke execute on function public.update_crm_lead(uuid,uuid,uuid,text,text,text,text,text,text,text,text,numeric,numeric,uuid) from public, anon;
 

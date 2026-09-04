@@ -22,12 +22,6 @@ function emptyToUndefined<T>(v: T | '' | null | undefined): T | undefined {
   return v === '' || v === null ? undefined : v
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rpcRaw(fn: string, args?: Record<string, unknown>): Promise<{ data: any; error: unknown }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.rpc as any)(fn, args ?? {}) as Promise<{ data: any; error: unknown }>
-}
-
 export const crmService = {
   async listPipeline(ownerUserId?: string): Promise<CrmPipelineResponse> {
     const { data, error } = await rpc('list_crm_pipeline', {
@@ -79,7 +73,7 @@ export const crmService = {
     first_activity_type?: string
     first_activity_due_at?: string
   }): Promise<string> {
-    const { data, error } = await rpcRaw('create_crm_lead', {
+    const { data, error } = await rpc('create_crm_lead', {
       p_full_name: input.full_name,
       p_phone: emptyToUndefined(input.phone),
       p_whatsapp: emptyToUndefined(input.whatsapp),
@@ -99,7 +93,7 @@ export const crmService = {
   },
 
   async updateLead(leadId: string, input: Record<string, unknown>): Promise<void> {
-    const { error } = await rpcRaw('update_crm_lead', {
+    const { error } = await rpc('update_crm_lead', {
       p_lead_id: leadId,
       p_source_id: emptyToUndefined(input.source_id as string),
       p_course_interest_id: emptyToUndefined(input.course_interest_id as string),
@@ -283,13 +277,13 @@ export const crmService = {
   },
 
   async listPipelineStages(): Promise<CrmPipelineStage[]> {
-    const { data, error } = await rpcRaw('list_crm_pipeline_stages')
+    const { data, error } = await rpc('list_crm_pipeline_stages')
     if (error) throw error
     return data as CrmPipelineStage[]
   },
 
   async getLeadTimeline(leadId: string, page = 1, pageSize = 50): Promise<CrmTimelineResponse> {
-    const { data, error } = await rpcRaw('get_crm_lead_timeline', {
+    const { data, error } = await rpc('get_crm_lead_timeline', {
       p_lead_id: leadId,
       p_page: page,
       p_page_size: pageSize
@@ -299,7 +293,7 @@ export const crmService = {
   },
 
   async listLeadActivities(leadId: string, page = 1, pageSize = 50): Promise<CrmLeadActivitiesResponse> {
-    const { data, error } = await rpcRaw('list_crm_lead_activities', {
+    const { data, error } = await rpc('list_crm_lead_activities', {
       p_lead_id: leadId,
       p_page: page,
       p_page_size: pageSize
