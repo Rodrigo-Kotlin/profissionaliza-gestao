@@ -1,21 +1,51 @@
-import { ArrowRightLeft, CalendarDays, CheckCircle2, Clock, Eye, Pencil, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, CalendarDays, CheckCircle2, Clock, Eye, Pencil, Trash2, UserPlus, XCircle, CircleX, Phone, MessageSquare, Mail, Users, RotateCcw, MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Tabs, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
-import { Timeline } from '@/components/ui/data'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
-import { useCrmLeadDetail, useCrmCourses, useUpdateLead, useMoveStage, useCloseLost, useCompleteActivity, useRescheduleActivity, useCreateActivity } from './crm-hooks'
-import { CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES, CRM_STATUS_LABELS, CRM_STATUS_TONES, CRM_PIPELINE_STAGES, CRM_LOST_REASONS, CRM_LOST_REASON_LABELS, CRM_ACTIVITY_TYPE_LABELS, CRM_ACTIVITY_TYPES } from './crm-constants'
+import { useCrmLeadDetail, useCrmCourses, useUpdateLead, useMoveStage, useCloseLost, useCompleteActivity, useRescheduleActivity, useCreateActivity, useCrmLeadTimeline, useCrmLeadActivities, useCrmPipelineStages } from './crm-hooks'
+import { CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES, CRM_STATUS_LABELS, CRM_STATUS_TONES, CRM_LOST_REASONS, CRM_LOST_REASON_LABELS, CRM_ACTIVITY_TYPE_LABELS, CRM_ACTIVITY_TYPES } from './crm-constants'
 import { formatCurrency, formatDueAt } from './crm-utils'
-import type { CrmLeadDetail } from './crm-types'
+import type { CrmLeadDetail, CrmActivityType, CrmActivityStatus, CrmTimelineEventType } from './crm-types'
 import { leadUpdateSchema, type LeadUpdateInput, lostLeadSchema, type LostLeadInput, activityFormSchema, type ActivityFormInput } from './crm-schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
 const LEAD_TABS = ['Resumo', 'Atividades', 'Histórico', 'Qualificação'] as const
+
+const ACTIVITY_TYPE_ICONS: Record<CrmActivityType, typeof Phone> = {
+  CALL: Phone,
+  WHATSAPP: MessageSquare,
+  EMAIL: Mail,
+  MEETING: Users,
+  FOLLOW_UP: RotateCcw,
+  OTHER: MoreHorizontal
+}
+
+const ACTIVITY_STATUS_TONES: Record<CrmActivityStatus, 'warning' | 'success' | 'neutral'> = {
+  PENDING: 'warning',
+  COMPLETED: 'success',
+  CANCELED: 'neutral'
+}
+
+const ACTIVITY_STATUS_LABELS: Record<CrmActivityStatus, string> = {
+  PENDING: 'Pendente',
+  COMPLETED: 'Concluída',
+  CANCELED: 'Cancelada'
+}
+
+const TIMELINE_ICON_CONFIG: Record<CrmTimelineEventType, { icon: typeof UserPlus; color: string; label: string }> = {
+  LEAD_CREATED: { icon: UserPlus, color: 'text-blue-600', label: 'Lead criado' },
+  STAGE_CHANGED: { icon: ArrowRightLeft, color: 'text-amber-600', label: 'Etapa alterada' },
+  ACTIVITY_CREATED: { icon: CalendarDays, color: 'text-indigo-600', label: 'Atividade criada' },
+  ACTIVITY_COMPLETED: { icon: CheckCircle2, color: 'text-green-600', label: 'Atividade concluída' },
+  ACTIVITY_RESCHEDULED: { icon: Clock, color: 'text-orange-600', label: 'Atividade reagendada' },
+  ACTIVITY_CANCELED: { icon: XCircle, color: 'text-red-500', label: 'Atividade cancelada' },
+  LEAD_LOST: { icon: CircleX, color: 'text-red-600', label: 'Lead perdido' }
+}
 
 export function LeadDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -80,7 +110,7 @@ export function LeadDetailsPage() {
         <div>
           {tab === 'Resumo' && <ResumoTab lead={lead} />}
           {tab === 'Atividades' && <AtividadesTab leadId={leadId} lead={lead} />}
-          {tab === 'Histórico' && <HistoricoTab lead={lead} />}
+          {tab === 'Histórico' && <HistoricoTab leadId={leadId} lead={lead} />}
           {tab === 'Qualificação' && <QualificacaoTab leadId={leadId} lead={lead} canEdit={canEdit} />}
         </div>
 
@@ -90,7 +120,7 @@ export function LeadDetailsPage() {
       </div>
 
       <Modal open={editOpen} onOpenChange={setEditOpen} title="Editar lead">
-        <EditLeadForm lead={lead} onDone={() => setEditOpen(false)} />
+        <EditLeadForm lead={lead} onDone={() => setEditOpen(false)} canMoveStage={canMoveStage} />
       </Modal>
 
       <Modal open={moveOpen} onOpenChange={setMoveOpen} title="Mover etapa">
@@ -181,14 +211,33 @@ function ResumoTab({ lead }: { lead: CrmLeadDetail }) {
 }
 
 function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }) {
+  const activitiesQuery = useCrmLeadActivities(leadId)
   const completeActivity = useCompleteActivity()
   const rescheduleActivity = useRescheduleActivity()
+  const [filter, setFilter] = useState<'all' | 'PENDING' | 'COMPLETED' | 'CANCELED'>('all')
   const [outcomeActivityId, setOutcomeActivityId] = useState<string | null>(null)
   const [outcome, setOutcome] = useState('')
   const [rescheduleId, setRescheduleId] = useState<string | null>(null)
   const [newDate, setNewDate] = useState('')
 
-  const activities = lead.next_activity ? [lead.next_activity] : []
+  if (activitiesQuery.isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-24" />)}
+      </div>
+    )
+  }
+
+  if (activitiesQuery.isError) {
+    return (
+      <Card className="p-5">
+        <EmptyState icon={CalendarDays} title="Erro ao carregar atividades" description="Tente novamente mais tarde." />
+      </Card>
+    )
+  }
+
+  const allActivities = activitiesQuery.data?.data ?? []
+  const filtered = filter === 'all' ? allActivities : allActivities.filter((a) => a.status === filter)
 
   const handleComplete = async (activityId: string) => {
     try {
@@ -214,65 +263,177 @@ function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }
   }
 
   return (
-    <div className="space-y-3">
-      {activities.length === 0 ? (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {([['all', 'Todas'], ['PENDING', 'Pendentes'], ['COMPLETED', 'Concluídas'], ['CANCELED', 'Canceladas']] as const).map(([key, label]) => (
+          <Button
+            key={key}
+            type="button"
+            size="sm"
+            variant={filter === key ? 'primary' : 'ghost'}
+            onClick={() => setFilter(key)}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
         <EmptyState icon={CalendarDays} title="Nenhuma atividade" description="Crie uma atividade para este lead." />
       ) : (
-        activities.map((act) => (
-          <Card key={act.id} className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">{act.title}</p>
-                <p className="text-xs text-muted">{CRM_ACTIVITY_TYPE_LABELS[act.type]} · {formatDueAt(act.due_at)}</p>
+        filtered.map((act) => {
+          const IconComp = ACTIVITY_TYPE_ICONS[act.type]
+          const canAct = lead.status === 'OPEN' && act.status === 'PENDING'
+          return (
+            <Card key={act.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5 shrink-0">
+                    <IconComp className="size-4 text-muted" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">{act.title}</p>
+                      <Badge variant={ACTIVITY_STATUS_TONES[act.status]}>{ACTIVITY_STATUS_LABELS[act.status]}</Badge>
+                    </div>
+                    {act.description && <p className="mt-1 text-xs text-muted">{act.description}</p>}
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
+                      <span>{CRM_ACTIVITY_TYPE_LABELS[act.type]}</span>
+                      <span>·</span>
+                      <span>{formatDueAt(act.due_at)}</span>
+                      {act.completed_at && (
+                        <>
+                          <span>·</span>
+                          <span>Concluída em {new Date(act.completed_at).toLocaleDateString('pt-BR')}</span>
+                        </>
+                      )}
+                      {act.owner_name && (
+                        <>
+                          <span>·</span>
+                          <span>{act.owner_name}</span>
+                        </>
+                      )}
+                    </div>
+                    {act.status === 'COMPLETED' && act.outcome && (
+                      <p className="mt-1.5 text-xs text-muted italic">Resultado: {act.outcome}</p>
+                    )}
+                  </div>
+                </div>
+                {canAct && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setOutcomeActivityId(act.id)}>
+                      <CheckCircle2 className="size-4" /> Concluir
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setRescheduleId(act.id)}>
+                      <Clock className="size-4" /> Reagendar
+                    </Button>
+                  </div>
+                )}
               </div>
-              {lead.status === 'OPEN' && (
-                <div className="flex items-center gap-1">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setOutcomeActivityId(act.id)}>
-                    <CheckCircle2 className="size-4" /> Concluir
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setRescheduleId(act.id)}>
-                    <Clock className="size-4" /> Reagendar
-                  </Button>
+
+              {outcomeActivityId === act.id && (
+                <div className="mt-3 flex gap-2">
+                  <Input placeholder="Resultado (opcional)" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
+                  <Button type="button" size="sm" onClick={() => handleComplete(act.id)} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setOutcomeActivityId(null); setOutcome('') }}>Cancelar</Button>
                 </div>
               )}
-            </div>
 
-            {outcomeActivityId === act.id && (
-              <div className="mt-3 flex gap-2">
-                <Input placeholder="Resultado (opcional)" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
-                <Button type="button" size="sm" onClick={() => handleComplete(act.id)} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => { setOutcomeActivityId(null); setOutcome('') }}>Cancelar</Button>
-              </div>
-            )}
-
-            {rescheduleId === act.id && (
-              <div className="mt-3 flex gap-2">
-                <Input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-                <Button type="button" size="sm" onClick={() => handleReschedule(act.id)} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => { setRescheduleId(null); setNewDate('') }}>Cancelar</Button>
-              </div>
-            )}
-          </Card>
-        ))
+              {rescheduleId === act.id && (
+                <div className="mt-3 flex gap-2">
+                  <Input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+                  <Button type="button" size="sm" onClick={() => handleReschedule(act.id)} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setRescheduleId(null); setNewDate('') }}>Cancelar</Button>
+                </div>
+              )}
+            </Card>
+          )
+        })
       )}
     </div>
   )
 }
 
-function HistoricoTab({ lead }: { lead: CrmLeadDetail }) {
-  const events: { title: string; detail: string }[] = [
-    { title: 'Lead criado', detail: `${new Date(lead.created_at).toLocaleDateString('pt-BR')} por ${lead.owner_name ?? 'Sistema'}` },
-    { title: `Etapa: ${lead.stage_name}`, detail: `Posição no funil` },
-    { title: `Status: ${CRM_STATUS_LABELS[lead.status]}`, detail: new Date(lead.updated_at).toLocaleDateString('pt-BR') }
-  ]
+function HistoricoTab({ leadId }: { leadId: string; lead: CrmLeadDetail }) {
+  const timeline = useCrmLeadTimeline(leadId)
 
-  if (lead.closed_at) {
-    events.push({ title: 'Lead fechado', detail: new Date(lead.closed_at).toLocaleDateString('pt-BR') })
+  if (timeline.isLoading) {
+    return (
+      <Card className="p-5 sm:p-6">
+        <div className="space-y-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <Skeleton className="size-8 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-72" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    )
+  }
+
+  if (timeline.isError) {
+    return (
+      <Card className="p-5 sm:p-6">
+        <EmptyState icon={Clock} title="Erro ao carregar histórico" description="Tente novamente mais tarde." />
+      </Card>
+    )
+  }
+
+  const events = timeline.data?.data ?? []
+
+  if (events.length === 0) {
+    return (
+      <Card className="p-5 sm:p-6">
+        <EmptyState icon={Clock} title="Nenhum evento" description="Ainda não há eventos neste timeline." />
+      </Card>
+    )
   }
 
   return (
     <Card className="p-5 sm:p-6">
-      <Timeline items={events} />
+      <ol className="space-y-1 border-l-2 border-line pl-0">
+        {events.map((evt) => {
+          const config = TIMELINE_ICON_CONFIG[evt.event_type]
+          const Icon = config.icon
+          const meta = evt.metadata as Record<string, unknown>
+          let description = evt.description
+          if (evt.event_type === 'STAGE_CHANGED' && meta.old_stage_name && meta.new_stage_name) {
+            description = `${meta.old_stage_name} → ${meta.new_stage_name}`
+          }
+          return (
+            <li key={evt.id} className="relative pl-6">
+              <span className="absolute -left-[9px] top-1 size-4 rounded-full border-2 border-line bg-white flex items-center justify-center">
+                <Icon className={`size-2.5 ${config.color}`} />
+              </span>
+              <div className="pb-5">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">{config.label}</p>
+                  {evt.title && evt.event_type !== 'LEAD_CREATED' && evt.event_type !== 'STAGE_CHANGED' && (
+                    <span className="text-sm text-muted">— {evt.title}</span>
+                  )}
+                </div>
+                {description && (
+                  <p className="mt-0.5 text-xs text-muted">{description}</p>
+                )}
+                <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                  <span>{new Date(evt.occurred_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  {evt.actor_name && (
+                    <>
+                      <span>·</span>
+                      <span>{evt.actor_name}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
     </Card>
   )
 }
@@ -377,15 +538,17 @@ function NextActivityCard({ activity, leadId }: { activity: CrmLeadDetail['next_
   )
 }
 
-function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => void }) {
+function EditLeadForm({ lead, onDone, canMoveStage }: { lead: CrmLeadDetail; onDone: () => void; canMoveStage: boolean }) {
   const updateLead = useUpdateLead()
   const courses = useCrmCourses('ACTIVE')
+  const stagesQuery = useCrmPipelineStages()
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LeadUpdateInput>({
     resolver: zodResolver(leadUpdateSchema),
     defaultValues: {
       source_id: lead.source_id ?? '',
       course_interest_id: lead.course_interest_id ?? '',
       temperature: lead.temperature ?? undefined,
+      stage_id: lead.stage_id ?? '',
       commercial_notes: lead.commercial_notes ?? ''
     }
   })
@@ -399,6 +562,8 @@ function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => voi
       toast.error('Não foi possível salvar.')
     }
   }
+
+  const stages = stagesQuery.data ?? []
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -414,6 +579,23 @@ function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => voi
         </div>
         {errors.temperature && <p className="mt-1 text-xs text-red-600">{errors.temperature.message}</p>}
       </div>
+
+      {canMoveStage && lead.status === 'OPEN' ? (
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-ink">Etapa</label>
+          <Select {...register('stage_id')}>
+            <option value="">Selecione</option>
+            {stages.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}{s.probability != null ? ` (${s.probability}%)` : ''}</option>
+            ))}
+          </Select>
+        </div>
+      ) : (
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-ink">Etapa</label>
+          <Input value={lead.stage_name} disabled />
+        </div>
+      )}
 
       <div>
         <label className="mb-1.5 block text-sm font-medium text-ink">Curso de interesse</label>
@@ -438,8 +620,11 @@ function EditLeadForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => voi
 
 function MoveStageForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => void }) {
   const moveStage = useMoveStage()
+  const stagesQuery = useCrmPipelineStages()
   const [stageId, setStageId] = useState(lead.stage_id)
   const [reason, setReason] = useState('')
+
+  const stages = stagesQuery.data ?? []
 
   const handleMove = async () => {
     if (!stageId || stageId === lead.stage_id) return
@@ -457,8 +642,8 @@ function MoveStageForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => vo
       <div>
         <label className="mb-1.5 block text-sm font-medium text-ink">Nova etapa</label>
         <Select value={stageId} onChange={(e) => setStageId(e.target.value)}>
-          {CRM_PIPELINE_STAGES.map((stage) => (
-            <option key={stage.code} value={stage.code}>{stage.name} ({stage.probability}%)</option>
+          {stages.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}{s.probability != null ? ` (${s.probability}%)` : ''}</option>
           ))}
         </Select>
       </div>

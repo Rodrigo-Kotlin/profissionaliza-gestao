@@ -3,19 +3,25 @@ import { Save } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button, Input, Radio, Select, Textarea } from '@/components/ui/core'
-import { useCreateLead, useCrmCourses } from './crm-hooks'
+import { useCreateLead, useCrmCourses, useCrmPipelineStages } from './crm-hooks'
 import { leadFormSchema, type LeadFormInput } from './crm-schemas'
 import { CRM_LEAD_SOURCES, CRM_SOURCE_LABELS, CRM_ACTIVITY_TYPES, CRM_ACTIVITY_TYPE_LABELS, CRM_TEMPERATURE_LABELS } from './crm-constants'
 import { normalizePhone, normalizeEmail } from './crm-utils'
+import { can, PERMISSIONS } from '@/lib/rbac'
+import { useAuth } from '@/features/auth/auth-context'
 
 export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel: () => void }) {
   const createLead = useCreateLead()
   const courses = useCrmCourses('ACTIVE')
+  const stagesQuery = useCrmPipelineStages()
+  const { permissions } = useAuth()
+  const canMoveStage = can(permissions, PERMISSIONS.CRM_MOVE_STAGE)
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
       temperature: 'WARM',
-      source_code: ''
+      source_code: '',
+      stage_id: ''
     }
   })
 
@@ -28,6 +34,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
         email: values.email ? normalizeEmail(values.email) : undefined,
         source_code: values.source_code,
         course_interest_id: values.course_interest_id || undefined,
+        stage_id: values.stage_id || undefined,
         temperature: values.temperature,
         commercial_notes: values.commercial_notes,
         first_activity_title: values.first_activity_title,
@@ -75,6 +82,18 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
             ))}
           </Select>
         </div>
+
+        {canMoveStage && stagesQuery.data && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-ink">Etapa inicial</label>
+            <Select {...register('stage_id')}>
+              <option value="">Novo Lead</option>
+              {stagesQuery.data.filter(s => s.code !== 'WON' && s.code !== 'LOST').map((stage) => (
+                <option key={stage.id} value={stage.id}>{stage.name}</option>
+              ))}
+            </Select>
+          </div>
+        )}
 
         <div>
           <label className="mb-2 block text-sm font-medium text-ink">Temperatura</label>

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
-import type { CrmLeadListParams, CrmLeadDetail, CrmLeadListResponse, CrmPipelineResponse, CrmActivityAgendaResponse, CrmDashboardKpis, Course } from './crm-types'
+import type { CrmLeadListParams, CrmLeadDetail, CrmLeadListResponse, CrmPipelineResponse, CrmActivityAgendaResponse, CrmDashboardKpis, Course, CrmPipelineStage, CrmTimelineResponse, CrmLeadActivitiesResponse } from './crm-types'
 
 type Functions = Database['public']['Functions']
 
@@ -20,6 +20,12 @@ async function rpc<K extends keyof Functions>(
 
 function emptyToUndefined<T>(v: T | '' | null | undefined): T | undefined {
   return v === '' || v === null ? undefined : v
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rpcRaw(fn: string, args?: Record<string, unknown>): Promise<{ data: any; error: unknown }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabase.rpc as any)(fn, args ?? {}) as Promise<{ data: any; error: unknown }>
 }
 
 export const crmService = {
@@ -66,13 +72,14 @@ export const crmService = {
     source_code?: string
     course_interest_id?: string
     owner_user_id?: string
+    stage_id?: string
     temperature?: string
     commercial_notes?: string
     first_activity_title?: string
     first_activity_type?: string
     first_activity_due_at?: string
   }): Promise<string> {
-    const { data, error } = await rpc('create_crm_lead', {
+    const { data, error } = await rpcRaw('create_crm_lead', {
       p_full_name: input.full_name,
       p_phone: emptyToUndefined(input.phone),
       p_whatsapp: emptyToUndefined(input.whatsapp),
@@ -80,6 +87,7 @@ export const crmService = {
       p_source_code: input.source_code ?? 'OUTRO',
       p_course_interest_id: emptyToUndefined(input.course_interest_id),
       p_owner_user_id: emptyToUndefined(input.owner_user_id),
+      p_stage_id: emptyToUndefined(input.stage_id),
       p_temperature: emptyToUndefined(input.temperature),
       p_commercial_notes: emptyToUndefined(input.commercial_notes),
       p_first_activity_title: emptyToUndefined(input.first_activity_title),
@@ -91,7 +99,7 @@ export const crmService = {
   },
 
   async updateLead(leadId: string, input: Record<string, unknown>): Promise<void> {
-    const { error } = await rpc('update_crm_lead', {
+    const { error } = await rpcRaw('update_crm_lead', {
       p_lead_id: leadId,
       p_source_id: emptyToUndefined(input.source_id as string),
       p_course_interest_id: emptyToUndefined(input.course_interest_id as string),
@@ -104,7 +112,8 @@ export const crmService = {
       p_decision_maker: emptyToUndefined(input.decision_maker as string),
       p_source_detail: emptyToUndefined(input.source_detail as string),
       p_estimated_value: emptyToUndefined(input.estimated_value as number),
-      p_proposed_value: emptyToUndefined(input.proposed_value as number)
+      p_proposed_value: emptyToUndefined(input.proposed_value as number),
+      p_stage_id: emptyToUndefined(input.stage_id as string)
     })
     if (error) throw error
   },
@@ -271,5 +280,31 @@ export const crmService = {
       full_name: l.full_name,
       course_name: l.course_name
     }))
+  },
+
+  async listPipelineStages(): Promise<CrmPipelineStage[]> {
+    const { data, error } = await rpcRaw('list_crm_pipeline_stages')
+    if (error) throw error
+    return data as CrmPipelineStage[]
+  },
+
+  async getLeadTimeline(leadId: string, page = 1, pageSize = 50): Promise<CrmTimelineResponse> {
+    const { data, error } = await rpcRaw('get_crm_lead_timeline', {
+      p_lead_id: leadId,
+      p_page: page,
+      p_page_size: pageSize
+    })
+    if (error) throw error
+    return data as CrmTimelineResponse
+  },
+
+  async listLeadActivities(leadId: string, page = 1, pageSize = 50): Promise<CrmLeadActivitiesResponse> {
+    const { data, error } = await rpcRaw('list_crm_lead_activities', {
+      p_lead_id: leadId,
+      p_page: page,
+      p_page_size: pageSize
+    })
+    if (error) throw error
+    return data as CrmLeadActivitiesResponse
   }
 }

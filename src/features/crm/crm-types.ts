@@ -49,6 +49,7 @@ export type CrmLeadCard = {
   full_name: string
   course_name: string | null
   temperature: CrmTemperature | null
+  status: CrmLeadStatus
   owner_name: string | null
   owner_user_id: string
   created_at: string
@@ -198,4 +199,51 @@ export type CrmActivityListParams = {
   owner_user_id?: string
   page?: number
   page_size?: number
+}
+
+export type CrmTimelineEventType =
+  | 'LEAD_CREATED'
+  | 'STAGE_CHANGED'
+  | 'ACTIVITY_CREATED'
+  | 'ACTIVITY_COMPLETED'
+  | 'ACTIVITY_RESCHEDULED'
+  | 'ACTIVITY_CANCELED'
+  | 'LEAD_LOST'
+
+export type CrmTimelineEvent = {
+  id: string
+  event_type: CrmTimelineEventType
+  occurred_at: string
+  title: string
+  description: string
+  actor_user_id: string | null
+  actor_name: string | null
+  entity_type: string
+  entity_id: string
+  metadata: Record<string, unknown>
+}
+
+export type CrmTimelineResponse = {
+  data: CrmTimelineEvent[]
+  total: number
+}
+
+export type CrmLeadActivity = {
+  id: string
+  lead_id: string
+  type: CrmActivityType
+  title: string
+  description: string | null
+  due_at: string
+  status: CrmActivityStatus
+  completed_at: string | null
+  outcome: string | null
+  owner_name: string | null
+  owner_user_id: string
+  is_overdue: boolean
+}
+
+export type CrmLeadActivitiesResponse = {
+  data: CrmLeadActivity[]
+  total: number
 }

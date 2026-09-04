@@ -72,7 +72,24 @@ const mockState = vi.hoisted(() => ({
   closeLost: vi.fn(),
   closeIsPending: false,
   createActivity: vi.fn(),
-  createIsPending: false
+  createIsPending: false,
+  timelineData: null as null | {
+    data: Array<{
+      id: string
+      event_type: string
+      occurred_at: string
+      title: string
+      description: string
+      actor_user_id: string | null
+      actor_name: string | null
+      entity_type: string
+      entity_id: string
+      metadata: Record<string, unknown>
+    }>
+    total: number
+  },
+  timelineIsLoading: false,
+  timelineIsError: false
 }))
 
 vi.mock('./crm-hooks', () => ({
@@ -106,6 +123,42 @@ vi.mock('./crm-hooks', () => ({
   useCreateActivity: () => ({
     mutateAsync: mockState.createActivity,
     isPending: mockState.createIsPending
+  }),
+  useCrmLeadActivities: () => ({
+    data: {
+      data: [
+        {
+          id: 'act-1',
+          lead_id: 'lead-1',
+          type: 'CALL',
+          title: 'Ligação de follow-up',
+          description: null,
+          due_at: '2026-09-05T10:00:00Z',
+          status: 'PENDING',
+          completed_at: null,
+          outcome: null,
+          owner_user_id: 'user-1',
+          owner_name: 'Maria',
+          is_overdue: false
+        }
+      ],
+      total: 1
+    },
+    isLoading: false,
+    isError: false
+  }),
+  useCrmLeadTimeline: () => ({
+    data: mockState.timelineData,
+    isLoading: mockState.timelineIsLoading,
+    isError: mockState.timelineIsError
+  }),
+  useCrmPipelineStages: () => ({
+    data: [
+      { id: 'stage-1', code: 'PROSPECTING', name: 'Prospecção', position: 1, is_kanban: true },
+      { id: 'stage-2', code: 'NEW_LEAD', name: 'Novo Lead', position: 2, is_kanban: true }
+    ],
+    isLoading: false,
+    isError: false
   })
 }))
 
@@ -289,5 +342,91 @@ describe('LeadDetailsPage — loading/disabled states', () => {
     await user.click(screen.getByRole('button', { name: /mover etapa/i }))
     const moveButton = screen.getByRole('button', { name: /^mover etapa$/i })
     expect(moveButton).toBeDisabled()
+  })
+})
+
+describe('LeadDetailsPage — HistoricoTab (timeline)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage', 'crm.close_lost', 'crm.activities.manage']
+    mockState.leadData = mockLead('OPEN')
+    mockState.timelineData = null
+    mockState.timelineIsLoading = false
+    mockState.timelineIsError = false
+  })
+
+  async function openHistoricoTab() {
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: /histórico/i }))
+  }
+
+  it('shows loading skeletons while timeline loads', async () => {
+    mockState.timelineIsLoading = true
+    renderPage()
+    await openHistoricoTab()
+    const skeletons = document.querySelectorAll('[class*="animate-pulse"]')
+    expect(skeletons.length).toBeGreaterThan(0)
+  })
+
+  it('shows error state when timeline fails', async () => {
+    mockState.timelineIsError = true
+    renderPage()
+    await openHistoricoTab()
+    expect(screen.getByText(/erro ao carregar histórico/i)).toBeInTheDocument()
+  })
+
+  it('shows empty state when timeline has no events', async () => {
+    mockState.timelineData = { data: [], total: 0 }
+    renderPage()
+    await openHistoricoTab()
+    expect(screen.getByText(/nenhum evento/i)).toBeInTheDocument()
+  })
+
+  it('renders timeline events with correct labels', async () => {
+    mockState.timelineData = {
+      data: [
+        {
+          id: 'evt-1',
+          event_type: 'LEAD_CREATED',
+          occurred_at: '2026-09-01T10:00:00Z',
+          title: 'Lead criado',
+          description: 'Lead adicionado ao pipeline',
+          actor_user_id: 'user-1',
+          actor_name: 'Maria',
+          entity_type: 'lead',
+          entity_id: 'lead-1',
+          metadata: {}
+        }
+      ],
+      total: 1
+    }
+    renderPage()
+    await openHistoricoTab()
+    expect(screen.getByText('Lead criado')).toBeInTheDocument()
+    expect(screen.getByText('Lead adicionado ao pipeline')).toBeInTheDocument()
+    expect(screen.getByText('Maria')).toBeInTheDocument()
+  })
+
+  it('renders stage change with arrow notation', async () => {
+    mockState.timelineData = {
+      data: [
+        {
+          id: 'evt-1',
+          event_type: 'STAGE_CHANGED',
+          occurred_at: '2026-09-02T14:00:00Z',
+          title: 'Etapa alterada',
+          description: '',
+          actor_user_id: 'user-1',
+          actor_name: 'João',
+          entity_type: 'lead',
+          entity_id: 'lead-1',
+          metadata: { old_stage_name: 'Novo Lead', new_stage_name: 'Qualificado' }
+        }
+      ],
+      total: 1
+    }
+    renderPage()
+    await openHistoricoTab()
+    expect(screen.getByText('Novo Lead → Qualificado')).toBeInTheDocument()
   })
 })
