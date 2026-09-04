@@ -47,7 +47,6 @@ describe('CourseCatalog', () => {
     render(<CourseCatalog />)
     expect(screen.queryByRole('button', { name: /novo curso/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /editar/i })).toBeNull()
-    // catálogo continua visível
     expect(screen.getAllByText('Auxiliar Administrativo').length).toBeGreaterThan(0)
   })
 
@@ -64,7 +63,6 @@ describe('CourseCatalog', () => {
 
     await user.click(screen.getByRole('button', { name: /novo curso/i }))
 
-    // preenche os campos obrigatórios
     await user.type(screen.getAllByLabelText(/código/i)[0]!, 'ADM-TESTE')
     await user.type(screen.getAllByLabelText(/^nome/i)[0]!, 'Auxiliar Administrativo — Teste')
     await user.type(screen.getByLabelText(/carga horária \(/i), '40')
@@ -108,7 +106,108 @@ describe('CourseCatalog', () => {
       expect(mockState.createCourse).toHaveBeenCalledTimes(1)
     })
     expect(successSpy).not.toHaveBeenCalled()
-    // modal permanece aberto (campo código ainda visível)
     expect(screen.getAllByLabelText(/código/i).length).toBeGreaterThan(0)
+  })
+
+  it('mostra mensagem específica para código duplicado (23505)', async () => {
+    const user = userEvent.setup()
+    mockState.createCourse.mockRejectedValue({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "courses_code_key"'
+    })
+    render(<CourseCatalog />)
+
+    await user.click(screen.getByRole('button', { name: /novo curso/i }))
+    await user.type(screen.getAllByLabelText(/código/i)[0]!, 'ADM-TESTE')
+    await user.type(screen.getAllByLabelText(/^nome/i)[0]!, 'Curso Duplicado')
+    await user.click(screen.getByRole('button', { name: /criar curso/i }))
+
+    await waitFor(() => {
+      const matches = screen.getAllByText('Já existe um curso com esse código.')
+      expect(matches.length).toBeGreaterThanOrEqual(1)
+    })
+    expect(screen.getAllByLabelText(/código/i).length).toBeGreaterThan(0)
+  })
+
+  it('mostra mensagem de erro de permissão para 42501', async () => {
+    const user = userEvent.setup()
+    mockState.createCourse.mockRejectedValue({
+      code: '42501',
+      message: 'Permission denied'
+    })
+    render(<CourseCatalog />)
+
+    await user.click(screen.getByRole('button', { name: /novo curso/i }))
+    await user.type(screen.getAllByLabelText(/código/i)[0]!, 'ADM-TESTE')
+    await user.type(screen.getAllByLabelText(/^nome/i)[0]!, 'Curso Teste')
+    await user.click(screen.getByRole('button', { name: /criar curso/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Você não possui permissão para gerenciar cursos.')).toBeInTheDocument()
+    })
+  })
+
+  it('mostra mensagem genérica para erros desconhecidos', async () => {
+    const user = userEvent.setup()
+    mockState.createCourse.mockRejectedValue({
+      code: 'XX999',
+      message: 'unknown error'
+    })
+    render(<CourseCatalog />)
+
+    await user.click(screen.getByRole('button', { name: /novo curso/i }))
+    await user.type(screen.getAllByLabelText(/código/i)[0]!, 'ADM-TESTE')
+    await user.type(screen.getAllByLabelText(/^nome/i)[0]!, 'Curso Teste')
+    await user.click(screen.getByRole('button', { name: /criar curso/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Não foi possível salvar o curso.')).toBeInTheDocument()
+    })
+  })
+
+  it('não exibe select de status editável na criação de curso', async () => {
+    const user = userEvent.setup()
+    render(<CourseCatalog />)
+
+    await user.click(screen.getByRole('button', { name: /novo curso/i }))
+
+    expect(screen.getByText('Rascunho (padrão)')).toBeInTheDocument()
+    const selects = screen.queryAllByRole('combobox')
+    const statusSelects = selects.filter((s) => {
+      const options = Array.from(s.querySelectorAll('option'))
+      return options.some((o) => o.value === 'ACTIVE')
+    })
+    expect(statusSelects.length).toBe(0)
+  })
+
+  it('exibe select de status editável na edição de curso', async () => {
+    const user = userEvent.setup()
+    render(<CourseCatalog />)
+
+    await user.click(screen.getAllByRole('button', { name: /editar/i })[0]!)
+
+    const selects = screen.getAllByRole('combobox')
+    const statusSelects = selects.filter((s) => {
+      const options = Array.from(s.querySelectorAll('option'))
+      return options.some((o) => o.value === 'ACTIVE')
+    })
+    expect(statusSelects.length).toBe(1)
+  })
+
+  it('normaliza código em maiúsculas no submit', async () => {
+    const user = userEvent.setup()
+    mockState.createCourse.mockResolvedValue('new-course-id')
+    render(<CourseCatalog />)
+
+    await user.click(screen.getByRole('button', { name: /novo curso/i }))
+    await user.type(screen.getAllByLabelText(/código/i)[0]!, '  adm-teste  ')
+    await user.type(screen.getAllByLabelText(/^nome/i)[0]!, 'Curso Normalizado')
+    await user.click(screen.getByRole('button', { name: /criar curso/i }))
+
+    await waitFor(() => {
+      expect(mockState.createCourse).toHaveBeenCalledTimes(1)
+    })
+    const payload = mockState.createCourse.mock.calls[0]![0]!
+    expect(payload.code).toBe('ADM-TESTE')
   })
 })

@@ -5,6 +5,7 @@ import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, T
 import { DataTable } from '@/components/ui/data'
 import { Modal } from '@/components/ui/overlays'
 import { useAuth } from '@/features/auth/auth-context'
+import { getCourseErrorField, getCourseErrorMessage } from '@/lib/query'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useCrmCourses, useCreateCourse, useUpdateCourse } from './crm-hooks'
 import { courseFormSchema, type CourseFormInput } from './crm-schemas'
@@ -171,14 +172,16 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
       default_price: course.default_price ?? undefined,
       description: course.description ?? ''
     } : {
-      modality: 'PRESENCIAL',
-      status: 'DRAFT'
+      modality: 'PRESENCIAL'
     }
   })
 
-  const submitError = createCourse.error || updateCourse.error
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+  const [fieldServerErrors, setFieldServerErrors] = useState<Record<string, string>>({})
 
   const onSubmit = async (values: CourseFormInput) => {
+    setSubmitMessage(null)
+    setFieldServerErrors({})
     try {
       if (course) {
         await updateCourse.mutateAsync({
@@ -213,15 +216,24 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
         toast.success('Curso criado.')
       }
       onDone()
-    } catch {
-      // não fecha o modal em caso de falha
+    } catch (err: unknown) {
+      const msg = getCourseErrorMessage(err)
+      const field = getCourseErrorField(err)
+      setSubmitMessage(msg)
+      if (field) setFieldServerErrors({ [field]: msg })
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Código *" error={errors.code?.message} disabled={Boolean(course)} {...register('code')} placeholder="Ex: TEC01" />
+        <Input
+          label="Código *"
+          error={errors.code?.message ?? fieldServerErrors.code}
+          disabled={Boolean(course)}
+          {...register('code')}
+          placeholder="Ex: TEC01"
+        />
         <Input label="Nome *" error={errors.name?.message} {...register('name')} placeholder="Nome do curso" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -238,16 +250,23 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
           </Select>
           {errors.modality && <p className="mt-1 text-xs text-red-600">{errors.modality.message}</p>}
         </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink">Status</label>
-          <Select {...register('status')}>
-            <option value="DRAFT">Rascunho</option>
-            <option value="ACTIVE">Ativo</option>
-            <option value="INACTIVE">Inativo</option>
-            <option value="ARCHIVED">Arquivado</option>
-          </Select>
-          {errors.status && <p className="mt-1 text-xs text-red-600">{errors.status.message}</p>}
-        </div>
+        {course ? (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-ink">Status</label>
+            <Select {...register('status')}>
+              <option value="DRAFT">Rascunho</option>
+              <option value="ACTIVE">Ativo</option>
+              <option value="INACTIVE">Inativo</option>
+              <option value="ARCHIVED">Arquivado</option>
+            </Select>
+            {errors.status && <p className="mt-1 text-xs text-red-600">{errors.status.message}</p>}
+          </div>
+        ) : (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-ink">Status</label>
+            <p className="text-sm text-muted mt-2">Rascunho (padrão)</p>
+          </div>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Input label="Carga horária (h)" type="number" error={errors.workload_hours?.message} {...register('workload_hours', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
@@ -259,7 +278,7 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
       </div>
       <label className="block text-sm font-medium text-ink mb-1.5">Descrição</label>
       <Textarea rows={3} {...register('description')} />
-      {submitError && <p className="text-sm text-red-600">Não foi possível salvar o curso. Verifique sua permissão e tente novamente.</p>}
+      {submitMessage && <p className="text-sm text-red-600">{submitMessage}</p>}
       <div className="flex justify-end gap-3">
         <Button type="button" variant="secondary" onClick={onDone}>Cancelar</Button>
         <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
