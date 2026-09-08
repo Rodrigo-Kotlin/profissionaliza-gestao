@@ -291,7 +291,7 @@ function DraggableLeadCard({
   disabled: boolean
 }) {
   const navigate = useNavigate()
-  const isDraggable = canMoveStage && lead.status === 'OPEN' && !disabled
+  const isDraggable = canMoveStage && !disabled && (lead.status ?? 'OPEN') === 'OPEN'
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     disabled: !isDraggable,
@@ -408,7 +408,7 @@ function MobileLeadCard({
             </span>
           )}
         </div>
-        {canMoveStage && lead.status === 'OPEN' && (
+        {canMoveStage && (lead.status ?? 'OPEN') === 'OPEN' && (
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <span className="text-[10px] text-muted">Mover para:</span>
             <Select

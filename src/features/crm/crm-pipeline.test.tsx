@@ -26,21 +26,20 @@ const mockState = vi.hoisted(() => ({
       stage_name: string
       position: number
       total_count: number
-      leads: Array<{
-        id: string
-        lead_code: string
-        full_name: string
-        course_name: string | null
-        temperature: string | null
-        status: string
-        owner_name: string | null
-        owner_user_id: string
-        created_at: string
-        updated_at: string
-        days_in_stage: number
-        overdue_activities: number
-        pending_activities: number
-      }>
+leads: Array<{
+          id: string
+          lead_code: string
+          full_name: string
+          course_name: string | null
+          temperature: string | null
+          owner_name: string | null
+          owner_user_id: string
+          created_at: string
+          updated_at: string
+          days_in_stage: number
+          overdue_activities: number
+          pending_activities: number
+        }>
     }>
   },
   moveStage: vi.fn()
@@ -82,7 +81,6 @@ const baseLead = {
   lead_code: 'CRM-0001',
   course_name: 'Auxiliar Administrativo',
   temperature: 'WARM',
-  status: 'OPEN',
   owner_name: 'Maria',
   owner_user_id: 'user-1',
   created_at: '2026-01-01T10:00:00Z',
@@ -298,7 +296,7 @@ describe('CrmPipeline — separação card click × drag handle', () => {
     expect(screen.getByRole('link', { name: /abrir joão silva/i })).toBeInTheDocument()
   })
 
-  it('lead CLOSED não tem drag handle', () => {
+  it('payload real do pipeline (sem status) → drag handle renderiza', () => {
     mockState.data = {
       columns: [
         {
@@ -307,12 +305,13 @@ describe('CrmPipeline — separação card click × drag handle', () => {
           stage_name: 'Prospecção',
           position: 1,
           total_count: 1,
-          leads: [{ id: 'lead-1', full_name: 'João Silva', ...baseLead, status: 'CLOSED' }]
+          leads: [{ id: 'lead-1', full_name: 'João Silva', ...baseLead }]
         }
       ]
     }
     renderPipeline()
-    expect(screen.queryByRole('button', { name: /arrastar/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /arrastar joão silva/i })).toBeInTheDocument()
+    expect(screen.getByText(/mover para:/i)).toBeInTheDocument()
   })
 
   it('mantém o activator de teclado no drag handle', () => {
