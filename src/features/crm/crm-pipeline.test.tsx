@@ -1,8 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { CrmPipeline } from './crm-pipeline'
+
+const navigateMock = vi.hoisted(() => vi.fn())
+
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>()
+  return {
+    ...actual,
+    useNavigate: () => navigateMock
+  }
+})
 
 const mockState = vi.hoisted(() => ({
   permissions: ['crm.view', 'crm.edit', 'crm.move_stage'] as string[],
@@ -36,6 +47,9 @@ const mockState = vi.hoisted(() => ({
 }))
 
 vi.mock('./crm-hooks', () => ({
+  crmKeys: {
+    pipeline: () => ['crm', 'pipeline']
+  },
   useCrmPipeline: () => ({
     data: mockState.data,
     isLoading: mockState.isLoading,
@@ -99,9 +113,19 @@ const twoColumnData = {
   ]
 }
 
+function getMobileCard(name: string): HTMLElement {
+  for (const node of screen.getAllByText(name)) {
+    const card = node.closest('.p-3') as HTMLElement | null
+    if (card && card.querySelector('select')) return card
+  }
+  throw new Error(`Mobile card for "${name}" not found`)
+}
+
 describe('CrmPipeline', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockState.moveStage.mockReset()
+    navigationReset()
     mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage']
     mockState.isLoading = false
     mockState.isError = false
@@ -206,3 +230,145 @@ describe('CrmPipeline', () => {
     expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1)
   })
 })
+
+describe('CrmPipeline — separação card click × drag handle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.moveStage.mockReset()
+    navigationReset()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage']
+    mockState.isLoading = false
+    mockState.isError = false
+    mockState.data = twoColumnData
+  })
+
+  it('abre o Lead ao clicar no card (desktop)', () => {
+    renderPipeline()
+    fireEvent.click(screen.getByRole('link', { name: /abrir joão silva/i }))
+    expect(navigateMock).toHaveBeenCalledWith('/crm/leads/lead-1')
+  })
+
+  it('abre o Lead com Enter no card', () => {
+    renderPipeline()
+    fireEvent.keyDown(screen.getByRole('link', { name: /abrir joão silva/i }), { key: 'Enter' })
+    expect(navigateMock).toHaveBeenCalledWith('/crm/leads/lead-1')
+  })
+
+  it('abre o Lead com espaço no card', () => {
+    renderPipeline()
+    fireEvent.keyDown(screen.getByRole('link', { name: /abrir joão silva/i }), { key: ' ' })
+    expect(navigateMock).toHaveBeenCalledWith('/crm/leads/lead-1')
+  })
+
+  it('NÃO abre o Lead ao clicar no drag handle', () => {
+    renderPipeline()
+    fireEvent.click(screen.getByRole('button', { name: /arrastar joão silva/i }))
+    expect(navigateMock).not.toHaveBeenCalled()
+  })
+
+  it('NÃO abre o Lead em pointerdown/pointerup no drag handle', () => {
+    renderPipeline()
+    const handle = screen.getByRole('button', { name: /arrastar joão silva/i })
+    fireEvent.pointerDown(handle)
+    fireEvent.pointerUp(handle)
+    expect(navigateMock).not.toHaveBeenCalled()
+  })
+
+  it('card root não carrega listeners/atributos draggable', () => {
+    renderPipeline()
+    const cards = screen.getAllByRole('link', { name: /^abrir /i })
+    expect(cards.length).toBeGreaterThanOrEqual(1)
+    for (const card of cards) {
+      expect(card).not.toHaveAttribute('aria-roledescription')
+      expect(card).not.toHaveAttribute('aria-describedby')
+    }
+  })
+
+  it('drag handle recebe listeners e atributos draggable', () => {
+    renderPipeline()
+    const handle = screen.getByRole('button', { name: /arrastar joão silva/i })
+    expect(handle).toHaveAttribute('aria-roledescription', 'draggable')
+    expect(handle).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sem crm.move_stage não existe drag handle ativo', () => {
+    mockState.permissions = ['crm.view', 'crm.edit']
+    renderPipeline()
+    expect(screen.queryByRole('button', { name: /arrastar/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /abrir joão silva/i })).toBeInTheDocument()
+  })
+
+  it('lead CLOSED não tem drag handle', () => {
+    mockState.data = {
+      columns: [
+        {
+          stage_id: 'stage-1',
+          stage_code: 'PROSPECTING',
+          stage_name: 'Prospecção',
+          position: 1,
+          total_count: 1,
+          leads: [{ id: 'lead-1', full_name: 'João Silva', ...baseLead, status: 'CLOSED' }]
+        }
+      ]
+    }
+    renderPipeline()
+    expect(screen.queryByRole('button', { name: /arrastar/i })).not.toBeInTheDocument()
+  })
+
+  it('mantém o activator de teclado no drag handle', () => {
+    renderPipeline()
+    const handle = screen.getByRole('button', { name: /arrastar joão silva/i })
+    expect(handle.tagName).toBe('BUTTON')
+    expect(handle).toHaveAttribute('tabindex', '0')
+    expect(handle).toHaveAttribute('aria-roledescription', 'draggable')
+  })
+})
+
+describe('CrmPipeline — fallback mobile', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.moveStage.mockReset()
+    navigationReset()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage']
+    mockState.isLoading = false
+    mockState.isError = false
+    mockState.data = twoColumnData
+  })
+
+  it('mover via Select mobile chama moveStage uma vez', () => {
+    renderPipeline()
+    const moveSelect = within(getMobileCard('João Silva')).getByRole('combobox') as HTMLSelectElement
+    fireEvent.change(moveSelect, { target: { value: 'stage-2' } })
+    expect(mockState.moveStage).toHaveBeenCalledTimes(1)
+    expect(mockState.moveStage).toHaveBeenCalledWith({ leadId: 'lead-1', stageId: 'stage-2', reason: 'Movido pelo Kanban' })
+  })
+
+  it('mesma coluna no Select mobile → nenhuma chamada de moveStage', () => {
+    renderPipeline()
+    const moveSelect = within(getMobileCard('João Silva')).getByRole('combobox') as HTMLSelectElement
+    fireEvent.change(moveSelect, { target: { value: 'stage-1' } })
+    expect(mockState.moveStage).not.toHaveBeenCalled()
+  })
+
+  it('erro ao mover → rollback e toast de erro', async () => {
+    const errorSpy = vi.spyOn(toast, 'error')
+    mockState.moveStage.mockRejectedValue(new Error('RPC error'))
+    renderPipeline()
+    const moveSelect = within(getMobileCard('João Silva')).getByRole('combobox') as HTMLSelectElement
+    fireEvent.change(moveSelect, { target: { value: 'stage-2' } })
+    await vi.waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Não foi possível mover o lead.')
+    })
+    expect(mockState.moveStage).toHaveBeenCalledTimes(1)
+  })
+
+  it('clique no card mobile abre o Lead', () => {
+    renderPipeline()
+    fireEvent.click(getMobileCard('João Silva'))
+    expect(navigateMock).toHaveBeenCalledWith('/crm/leads/lead-1')
+  })
+})
+
+function navigationReset() {
+  navigateMock.mockReset()
+}

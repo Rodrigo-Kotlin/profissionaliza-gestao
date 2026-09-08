@@ -1,5 +1,5 @@
-import { Clock, AlertTriangle } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { Clock, AlertTriangle, GripVertical } from 'lucide-react'
+import { useCallback, useMemo, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -292,7 +292,7 @@ function DraggableLeadCard({
 }) {
   const navigate = useNavigate()
   const isDraggable = canMoveStage && lead.status === 'OPEN' && !disabled
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     disabled: !isDraggable,
   })
@@ -304,14 +304,24 @@ function DraggableLeadCard({
     navigate(`/crm/leads/${lead.id}`)
   }
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      navigate(`/crm/leads/${lead.id}`)
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-card border bg-white shadow-ambient p-3 transition hover:-translate-y-0.5 hover:shadow-md ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${isDragging ? 'opacity-40' : ''}`}
+      tabIndex={0}
+      role="link"
+      className={`rounded-card border bg-white shadow-ambient p-3 transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${isDragging ? 'opacity-40' : ''}`}
       onClick={handleClick}
-      aria-label={`${lead.full_name} — ${stageName}. Pressione espaço para iniciar movimentação.`}
-      {...(isDraggable ? { ...listeners, ...attributes } : {})}
+      onKeyDown={handleKeyDown}
+      aria-label={`Abrir ${lead.full_name} — ${stageName}`}
     >
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-2">
@@ -319,7 +329,24 @@ function DraggableLeadCard({
             <p className="truncate text-sm font-semibold text-navy">{lead.full_name}</p>
             <p className="truncate text-xs text-muted">{lead.course_name ?? 'Sem curso'}</p>
           </div>
-          {lead.temperature && <Badge variant={CRM_TEMPERATURE_TONES[lead.temperature]}>{CRM_TEMPERATURE_LABELS[lead.temperature]}</Badge>}
+          <div className="flex shrink-0 items-center gap-1">
+            {lead.temperature && <Badge variant={CRM_TEMPERATURE_TONES[lead.temperature]}>{CRM_TEMPERATURE_LABELS[lead.temperature]}</Badge>}
+            {isDraggable && (
+              <Tooltip content="Arrastar para outra etapa">
+                <button
+                  type="button"
+                  ref={setActivatorNodeRef}
+                  {...listeners}
+                  {...attributes}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Arrastar ${lead.full_name} para outra etapa`}
+                  className="cursor-grab rounded-md p-1 text-muted transition hover:bg-navy-50 hover:text-navy active:cursor-grabbing"
+                >
+                  <GripVertical className="size-4" />
+                </button>
+              </Tooltip>
+            )}
+          </div>
         </div>
         <div className="flex items-center justify-between text-xs text-muted">
           <div className="flex items-center gap-2">
