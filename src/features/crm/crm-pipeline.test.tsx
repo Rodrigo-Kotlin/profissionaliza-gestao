@@ -32,6 +32,7 @@ leads: Array<{
           full_name: string
           course_name: string | null
           temperature: string | null
+          status?: string
           owner_name: string | null
           owner_user_id: string
           created_at: string
@@ -312,6 +313,23 @@ describe('CrmPipeline — separação card click × drag handle', () => {
     renderPipeline()
     expect(screen.getByRole('button', { name: /arrastar joão silva/i })).toBeInTheDocument()
     expect(screen.getByText(/mover para:/i)).toBeInTheDocument()
+  })
+
+  it('contrato normal: card com status OPEN → drag handle renderiza', () => {
+    mockState.data = {
+      columns: [
+        {
+          stage_id: 'stage-1',
+          stage_code: 'PROSPECTING',
+          stage_name: 'Prospecção',
+          position: 1,
+          total_count: 1,
+          leads: [{ id: 'lead-1', full_name: 'João Silva', ...baseLead, status: 'OPEN' }]
+        }
+      ]
+    }
+    renderPipeline()
+    expect(screen.getByRole('button', { name: /arrastar joão silva/i })).toBeInTheDocument()
   })
 
   it('mantém o activator de teclado no drag handle', () => {
