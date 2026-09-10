@@ -19,10 +19,15 @@ Pipeline, leads, atividades, catálogo de cursos, ownership, RPCs controladas.
 Migration aplicada no Supabase DEV; tipos regenerados.
 
 ## Fase 2.2.1 — Hardening
-**Status: próximo passo**
+**Status: conteúdo implementado (aguardando revisão da PR)**
 
-Escopo: guards reutilizáveis de permissão por rota, consistência do RBAC,
-Playwright E2E mínimo e ajustes pontuais no setup de testes.
+- Guards de rota reutilizáveis (`AuthRoute`/`PermissionRoute`) com 403 genérico.
+- Consistência RBAC: matriz materializada por migration idempotente; seed sem RBAC.
+- 10 novos testes Vitest (guards + matriz) e cobertura v8 configurada.
+- Playwright E2E opcional (`tests/e2e/`, 5 fluxos) — ver `docs/E2E.md`.
+- `.nvmrc` e alinhamento de Node no `engines`.
+
+Branch: `feature/hardening-2-2-1`.
 
 ## Fase 2.3 — Sales
 **Status: não iniciada**

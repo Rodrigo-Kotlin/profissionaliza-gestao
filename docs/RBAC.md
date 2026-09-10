@@ -40,7 +40,38 @@ user_roles
 - `user_roles` — associação usuário → papel.
 - `profiles` — perfil do usuário autenticado.
 
-O seed (`supabase/seed.sql`) define as permissões padrão de cada papel. `ADMIN` recebe todas as permissões.
+O RBAC é materializado por **migrations** em `supabase/migrations/`
+(`supabase/migrations/20260910120000_phase2_2_1_rbac_consistency.sql`), que criam
+classes, permissões e a matriz `role_permissions` de forma idempotente. O seed
+(`supabase/seed.sql`) **não manipula RBAC** — ele apenas insere dados de demonstração.
+`ADMIN` recebe todas as permissões. As permissões de módulos futuros (`sales.*`,
+`finance.*`, `rbac.view`, etc.) já estão materializadas para evitar gaps quando as
+rotas forem liberadas.
+
+## Fase 2.2.1 — Guarda de rotas
+
+A autorização também é aplicada **no front-end** em nível de rota, de forma
+defensiva (nunca substitui a RLS):
+
+- `AuthRoute` — exige sessão; redireciona não autenticados para `/login` após o
+  carregamento dos dados de acesso (spinner "Validando acesso..." evita flash).
+- `PermissionRoute` — exige sessão **e** permissão; renderiza um 403 genérico
+  ("Você não tem acesso a esta área") que não revela permissão, papel ou rota interna.
+- `can()` / `canAny()` — checagens pontuais de permissão.
+
+Exemplos de rotas guardadas em `src/routes/router.tsx`:
+
+| Rota | Permissão exigida |
+| --- | --- |
+| `/` | `dashboard.view` |
+| `/alunos` | `students.view` |
+| `/alunos/novo` | `students.create` |
+| `/crm` | `crm.view` |
+| `/crm/cursos` | `courses.view` |
+| `/administracao/usuarios` | `users.view` **ou** `users.manage` |
+
+`rbac.view` habilita o futuro gerenciamento de papéis e não é atribuído a nenhum
+papel nesta fase.
 
 ## Fase 2.1 — Permissões de Pessoas/Alunos/Responsáveis
 
