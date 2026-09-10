@@ -13,10 +13,22 @@ domínio, RLS por permissão e masking LGPD no back end (ver `docs/DATABASE.md` 
 `docs/RBAC.md`). Branch: `feature/master-data-people-students`.
 
 ## Fase 2.2 — CRM Comercial: Prospecção, Leads, Pipeline, Atividades
-**Status: aguardando merge do PR #11**
+**Status: concluída**
 
 Pipeline, leads, atividades, catálogo de cursos, ownership, RPCs controladas.
 Migration aplicada no Supabase DEV; tipos regenerados.
+
+## Fase 2.2.1 — Hardening
+**Status: próximo passo**
+
+Escopo: guards reutilizáveis de permissão por rota, consistência do RBAC,
+Playwright E2E mínimo e ajustes pontuais no setup de testes.
+
+## Fase 2.3 — Sales
+**Status: não iniciada**
+
+Será preparada somente após o Hardening 2.2.1 e a aprovação das decisões de
+produto da venda. A conversão de Lead para Sale deverá ser atômica.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento
