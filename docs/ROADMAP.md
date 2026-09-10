@@ -29,10 +29,17 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Migration `20260910120000_phase2_2_1_rbac_consistency.sql` aplicada no Supabase DEV (Local = Remote).
 
 ## Fase 2.3 — Sales
-**Status: não iniciada**
+**Status: concluída (merged em `main` via PR #13, squash `0bcdfa1`)**
 
-Será preparada somente após o Hardening 2.2.1 e a aprovação das decisões de
-produto da venda. A conversão de Lead para Sale deverá ser atômica.
+- Sales table com `course_name_snapshot`, `sale_code_seq`, RLS, CHECK ENUM `payment_method`
+- Lead→Sale transacional atômica (FOR UPDATE, Student PRE_CADASTRO, ON CONFLICT DO NOTHING)
+- RBAC: `sales.view`, `sales.view_all`, `sales.create`, `sales.approve`, `sales.cancel`
+- Sales list com filtros (search, status, seller, course, period), paginação, page_size cap 100
+- Sale detail com timeline (sales.created, sales.canceled), cancelamento com motivo
+- CRM integration: Lead 360 mostra sale card, status WON da venda
+- 4 migrations aplicadas no Supabase DEV (Local = Remote)
+- 202 testes Vitest (16 arquivos), E2E smoke specs
+- 2 correções de BLOCKER (ADMIN RBAC, VENDEDOR/RECEPCAO courses.view)
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento
