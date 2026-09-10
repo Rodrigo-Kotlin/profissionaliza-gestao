@@ -10,6 +10,11 @@ dist-ssr/
 coverage/
 .vite/
 
+# Testes E2E (Playwright)
+test-results/
+playwright-report/
+blob-report/
+
 # Logs
 logs
 *.log

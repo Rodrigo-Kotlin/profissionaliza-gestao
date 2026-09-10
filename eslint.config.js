@@ -18,5 +18,9 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': 'off'
     }
+  },
+  {
+    files: ['playwright.config.ts', 'tests/e2e/**/*.ts'],
+    languageOptions: { ecmaVersion: 2022, globals: globals.node }
   }
 )
