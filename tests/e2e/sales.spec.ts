@@ -1,38 +1,39 @@
 import { expect, test } from '@playwright/test'
 import { e2eEnv, hasAdminCredentials, login } from './helpers'
 
-// E2E-SALES-01: Lead elegível → Fechar venda → Sale Detail → Lead WON
-test.describe('E2E-SALES-01 Fechar venda', () => {
+// E2E-SALES-01: Smoke — ADMIN can access /vendas
+// Real flow: Lead (NEGOTIATION) → Close Sale wizard → confirm → /vendas/:id → validate sale_code → Lead WON
+// Currently manual QA due to: requires pre-existing Lead fixture, course selection, wizard interaction
+test.describe('E2E-SALES-01 /vendas smoke (ADMIN)', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
-  test('navega para /vendas e verifica página de listagem', async ({ page }) => {
+  test('ADMIN can access /vendas and see page heading', async ({ page }) => {
     await login(page, e2eEnv.email, e2eEnv.password)
     await page.goto('/vendas')
     await expect(page.getByRole('heading', { name: 'Vendas' })).toBeVisible()
   })
 })
 
-// E2E-SALES-02: VENDEDOR não acessa Sale de outro vendedor
-test.describe('E2E-SALES-02 VENDEDOR restricted', () => {
+// E2E-SALES-02: Smoke — restricted user can access /vendas with limited rows
+// Real flow: VENDEDOR B → navigate to VENDEDOR A's Sale by ID → backend denies → no data visible
+// Currently manual QA due to: requires two separate seller accounts + pre-existing Sale
+test.describe('E2E-SALES-02 /vendas smoke (restricted user)', () => {
   test.skip(!e2eEnv.restrictedEmail, 'Defina E2E_EMAIL_RESTRICTED e E2E_PASSWORD_RESTRICTED.')
 
-  test('restricted user can see /vendas but limited to own', async ({ page }) => {
+  test('restricted user can see /vendas page', async ({ page }) => {
     await login(page, e2eEnv.restrictedEmail, e2eEnv.restrictedPassword)
     await page.goto('/vendas')
     await expect(page.getByRole('heading', { name: 'Vendas' })).toBeVisible()
-    const rows = page.locator('table tbody tr')
-    const count = await rows.count()
-    if (count === 0) {
-      expect(count).toBe(0)
-    }
   })
 })
 
-// E2E-SALES-03: Cancelar Sale → CANCELED → Lead permanece WON → vínculo permanece
-test.describe('E2E-SALES-03 Cancelar venda', () => {
+// E2E-SALES-03: Smoke — ADMIN can access /vendas for cancel flow verification
+// Real flow: ADMIN → open Sale (CONFIRMED) → Cancel → reason → CANCELED → Lead still WON → link preserved
+// Currently manual QA due to: requires CONFIRMED Sale with linked Lead
+test.describe('E2E-SALES-03 /vendas smoke (cancel flow prep)', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
-  test('accesses /vendas page without crash', async ({ page }) => {
+  test('ADMIN can access /vendas page', async ({ page }) => {
     await login(page, e2eEnv.email, e2eEnv.password)
     await page.goto('/vendas')
     await expect(page.getByRole('heading', { name: 'Vendas' })).toBeVisible()

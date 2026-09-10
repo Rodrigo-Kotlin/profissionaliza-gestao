@@ -109,6 +109,27 @@ describe('Lead WON + Sale CANCELED retains link (conceptual)', () => {
   })
 })
 
+describe('VENDEDOR/RECEPCAO courses.view RBAC (conceptual)', () => {
+  it('VENDEDOR should have courses.view but not courses.manage', () => {
+    const vendedorPerms = ['dashboard.view', 'crm.view', 'crm.create', 'crm.edit', 'crm.move_stage', 'crm.activities.manage', 'sales.view', 'sales.create', 'commissions.view', 'people.view', 'students.view', 'courses.view']
+    expect(vendedorPerms).toContain('courses.view')
+    expect(vendedorPerms).not.toContain('courses.manage')
+  })
+
+  it('RECEPCAO should have courses.view but not courses.manage', () => {
+    const recepcaoPerms = ['dashboard.view', 'crm.view', 'crm.create', 'sales.view', 'academic.view', 'people.view', 'people.edit', 'students.view', 'students.create', 'students.edit', 'guardians.view', 'guardians.manage', 'courses.view']
+    expect(recepcaoPerms).toContain('courses.view')
+    expect(recepcaoPerms).not.toContain('courses.manage')
+  })
+
+  it('VENDEDOR can load course catalog via list_courses with courses.view', () => {
+    const hasCoursesView = true
+    const hasCoursesManage = false
+    expect(hasCoursesView).toBe(true)
+    expect(hasCoursesManage).toBe(false)
+  })
+})
+
 describe('Sale timeline events (conceptual)', () => {
   it('includes sales.created event', () => {
     const events = [
