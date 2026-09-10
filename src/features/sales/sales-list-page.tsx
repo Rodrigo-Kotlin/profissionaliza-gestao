@@ -1,20 +1,51 @@
-import { ShoppingBag, Search, X } from 'lucide-react'
+import { ShoppingBag, Search, X, CalendarDays } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Badge, Button, Card, EmptyState, Input, PageHeader, Skeleton } from '@/components/ui/core'
+import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
+import { supabase } from '@/lib/supabase'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/features/auth/auth-context'
+import { can, PERMISSIONS } from '@/lib/rbac'
 import { useSaleList } from './sales-hooks'
+import { useCrmCourses } from '../crm/crm-hooks'
 import { SALE_STATUS_LABELS, SALE_STATUS_TONES, SALE_PAYMENT_METHOD_LABELS, SALE_PAGE_SIZE } from './sales-constants'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDateOnly } from '@/lib/utils'
 
 export function SalesPage() {
   const navigate = useNavigate()
+  const { permissions } = useAuth()
+  const hasViewAll = can(permissions, PERMISSIONS.SALES_VIEW_ALL)
+
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [sellerFilter, setSellerFilter] = useState('')
+  const [courseFilter, setCourseFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(1)
+
+  const courses = useCrmCourses('ACTIVE')
+
+  const sellersQuery = useQuery({
+    queryKey: ['sellers'],
+    enabled: hasViewAll,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .order('full_name')
+      if (error) throw error
+      return data as { id: string; full_name: string }[]
+    }
+  })
 
   const query = useSaleList({
     search: search || undefined,
     status: statusFilter || undefined,
+    seller_user_id: sellerFilter || undefined,
+    course_id: courseFilter || undefined,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
     page,
     page_size: SALE_PAGE_SIZE
   })
@@ -23,10 +54,13 @@ export function SalesPage() {
   const total = query.data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / SALE_PAGE_SIZE))
 
+  const resetPage = () => setPage(1)
+
   return (
     <div className="space-y-6">
       <PageHeader title="Vendas" description="Vendas realizadas no sistema." />
 
+      {/* Filters row 1: Search + Status */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[200px] flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 size-4 text-muted" />
@@ -34,11 +68,11 @@ export function SalesPage() {
             placeholder="Buscar por código ou cliente..."
             className="pl-9"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => { setSearch(e.target.value); resetPage() }}
           />
           {search && (
             <button
-              onClick={() => { setSearch(''); setPage(1) }}
+              onClick={() => { setSearch(''); resetPage() }}
               className="absolute right-3 top-2.5 text-muted hover:text-ink"
             >
               <X className="size-4" />
@@ -53,11 +87,49 @@ export function SalesPage() {
               type="button"
               size="sm"
               variant={statusFilter === key ? 'primary' : 'ghost'}
-              onClick={() => { setStatusFilter(key); setPage(1) }}
+              onClick={() => { setStatusFilter(key); resetPage() }}
             >
               {label}
             </Button>
           ))}
+        </div>
+      </div>
+
+      {/* Filters row 2: Seller (view_all only) + Course + Period */}
+      <div className="flex flex-wrap items-center gap-3">
+        {hasViewAll && (
+          <Select value={sellerFilter} onChange={(e) => { setSellerFilter(e.target.value); resetPage() }}>
+            <option value="">Todos os vendedores</option>
+            {sellersQuery.data?.map((s) => (
+              <option key={s.id} value={s.id}>{s.full_name}</option>
+            ))}
+          </Select>
+        )}
+
+        <Select value={courseFilter} onChange={(e) => { setCourseFilter(e.target.value); resetPage() }}>
+          <option value="">Todos os cursos</option>
+          {courses.data?.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </Select>
+
+        <div className="flex items-center gap-2">
+          <CalendarDays className="size-4 text-muted" />
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); resetPage() }}
+            className="w-[150px]"
+            placeholder="De"
+          />
+          <span className="text-muted">até</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); resetPage() }}
+            className="w-[150px]"
+            placeholder="Até"
+          />
         </div>
       </div>
 
@@ -105,7 +177,7 @@ export function SalesPage() {
                     <td className="py-3 pr-4">
                       <Badge variant={SALE_STATUS_TONES[sale.status]}>{SALE_STATUS_LABELS[sale.status]}</Badge>
                     </td>
-                    <td className="py-3 text-muted">{new Date(sale.created_at).toLocaleDateString('pt-BR')}</td>
+                    <td className="py-3 text-muted">{formatDateOnly(sale.sale_date)}</td>
                   </tr>
                 ))}
               </tbody>

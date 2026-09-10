@@ -1,12 +1,18 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
-import type { SaleListParams, SaleListResponse, SaleDetail } from './sales-types'
+import type { SaleListParams, SaleListResponse, SaleDetail, SaleTimelineResponse } from './sales-types'
 
 type Functions = Database['public']['Functions']
 
 type RpcArgs<K extends keyof Functions> = Functions[K] extends { Args: infer A } ? A : Record<string, never>
 type RpcReturns<K extends keyof Functions> = Functions[K] extends { Returns: infer R } ? R : unknown
 
+/**
+ * Generic typed RPC wrapper. Contains one localized `as any` cast because
+ * Supabase's generated Rpc function signature does not expose a fully typed
+ * overload for every function name. All calls are otherwise type-safe through
+ * the RpcArgs/RpcReturns helpers derived from database.types.ts.
+ */
 async function rpc<K extends keyof Functions>(
   fn: K,
   args?: RpcArgs<K>
@@ -70,5 +76,11 @@ export const salesService = {
       p_cancellation_reason: cancellationReason
     })
     if (error) throw error
+  },
+
+  async getSaleTimeline(saleId: string): Promise<SaleTimelineResponse> {
+    const { data, error } = await rpc('get_sale_timeline', { p_sale_id: saleId })
+    if (error) throw error
+    return data as SaleTimelineResponse
   }
 }

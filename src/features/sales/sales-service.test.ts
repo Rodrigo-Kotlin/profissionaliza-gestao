@@ -142,3 +142,33 @@ describe('salesService.cancelSale', () => {
     await expect(salesService.cancelSale('sale-1', 'Reason')).rejects.toThrow()
   })
 })
+
+describe('salesService.getSaleTimeline', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it('calls get_sale_timeline with p_sale_id', async () => {
+    rpcMock.mockResolvedValue({ data: { data: [], total: 0 }, error: null })
+    const result = await salesService.getSaleTimeline('sale-1')
+    expect(rpcMock).toHaveBeenCalledWith('get_sale_timeline', { p_sale_id: 'sale-1' })
+    expect(result.data).toEqual([])
+  })
+
+  it('returns timeline events', async () => {
+    const events = [
+      { id: 'a1', event_type: 'sales.created', occurred_at: '2026-01-01T00:00:00Z', title: 'Venda criada', description: null, actor_user_id: 'u1', actor_name: 'Admin', metadata: {} },
+      { id: 'a2', event_type: 'sales.canceled', occurred_at: '2026-01-02T00:00:00Z', title: 'Venda cancelada', description: 'Cliente desistiu', actor_user_id: 'u1', actor_name: 'Admin', metadata: {} }
+    ]
+    rpcMock.mockResolvedValue({ data: { data: events, total: 2 }, error: null })
+    const result = await salesService.getSaleTimeline('sale-1')
+    expect(result.data).toHaveLength(2)
+    expect(result.data[0]?.event_type).toBe('sales.created')
+    expect(result.data[1]?.event_type).toBe('sales.canceled')
+  })
+
+  it('throws on RPC error', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { message: 'Sale not found' } })
+    await expect(salesService.getSaleTimeline('sale-1')).rejects.toThrow()
+  })
+})

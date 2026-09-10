@@ -1,13 +1,14 @@
-import { ArrowLeft, Ban, CalendarDays, Eye, ShoppingBag, User, CreditCard, BookOpen } from 'lucide-react'
+import { ArrowLeft, Ban, CalendarDays, Eye, ShoppingBag, User, CreditCard, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
-import { useSaleDetail } from './sales-hooks'
+import { formatCurrency, formatDateOnly } from '@/lib/utils'
+import { useSaleDetail, useSaleTimeline } from './sales-hooks'
 import { CancelSaleDialog } from './cancel-sale-dialog'
 import { SALE_STATUS_LABELS, SALE_STATUS_TONES, SALE_PAYMENT_METHOD_LABELS } from './sales-constants'
-import { formatCurrency } from '@/lib/utils'
+import type { SaleTimelineEvent } from './sales-types'
 
 export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -17,6 +18,7 @@ export function SaleDetailPage() {
   const saleId = id ?? ''
 
   const detail = useSaleDetail(saleId)
+  const timeline = useSaleTimeline(saleId)
   const canCancel = can(permissions, PERMISSIONS.SALES_CANCEL)
 
   if (detail.isLoading) return <PageSkeleton />
@@ -31,6 +33,7 @@ export function SaleDetailPage() {
 
   const sale = detail.data
   const showCancel = canCancel && sale.status === 'CONFIRMED'
+  const events = timeline.data?.data ?? []
 
   return (
     <div className="space-y-6">
@@ -53,7 +56,7 @@ export function SaleDetailPage() {
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Badge variant={SALE_STATUS_TONES[sale.status]}>{SALE_STATUS_LABELS[sale.status]}</Badge>
               <span className="text-sm text-muted">
-                {new Date(sale.created_at).toLocaleDateString('pt-BR')}
+                {formatDateOnly(sale.sale_date)}
               </span>
             </div>
           </div>
@@ -92,7 +95,7 @@ export function SaleDetailPage() {
           <dl className="space-y-2 text-sm">
             <Row label="Forma" value={SALE_PAYMENT_METHOD_LABELS[sale.payment_method]} />
             <Row label="Parcelas" value={String(sale.installments)} />
-            <Row label="Data da venda" value={new Date(sale.sale_date).toLocaleDateString('pt-BR')} />
+            <Row label="Data da venda" value={formatDateOnly(sale.sale_date)} />
           </dl>
         </Card>
 
@@ -144,6 +147,24 @@ export function SaleDetailPage() {
         </Card>
       )}
 
+      {/* Histórico */}
+      <Card className="p-5">
+        <SectionHeader icon={Clock} title="Histórico" />
+        {timeline.isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }, (_, i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        ) : events.length === 0 ? (
+          <p className="text-sm text-muted">Nenhum evento registrado.</p>
+        ) : (
+          <ol className="space-y-1 border-l-2 border-line pl-0">
+            {events.map((evt) => (
+              <SaleTimelineRow key={evt.id} event={evt} />
+            ))}
+          </ol>
+        )}
+      </Card>
+
       <CancelSaleDialog
         saleId={sale.id}
         saleCode={sale.sale_code}
@@ -152,6 +173,35 @@ export function SaleDetailPage() {
         onCancelled={() => navigate('/vendas')}
       />
     </div>
+  )
+}
+
+function SaleTimelineRow({ event }: { event: SaleTimelineEvent }) {
+  const isCreated = event.event_type === 'sales.created'
+  const Icon = isCreated ? CheckCircle2 : Ban
+  const color = isCreated ? 'text-emerald-600' : 'text-red-500'
+
+  return (
+    <li className="relative pl-6">
+      <span className="absolute -left-[9px] top-1 size-4 rounded-full border-2 border-line bg-white flex items-center justify-center">
+        <Icon className={`size-2.5 ${color}`} />
+      </span>
+      <div className="pb-5">
+        <p className="text-sm font-semibold">{event.title}</p>
+        {event.description && (
+          <p className="mt-0.5 text-xs text-muted">{event.description}</p>
+        )}
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+          <span>{new Date(event.occurred_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+          {event.actor_name && (
+            <>
+              <span>·</span>
+              <span>{event.actor_name}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </li>
   )
 }
 

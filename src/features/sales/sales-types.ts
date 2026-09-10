@@ -69,3 +69,19 @@ export type SaleListResponse = {
   page: number
   page_size: number
 }
+
+export type SaleTimelineEvent = {
+  id: string
+  event_type: string
+  occurred_at: string
+  title: string
+  description: string | null
+  actor_user_id: string | null
+  actor_name: string | null
+  metadata: Record<string, unknown>
+}
+
+export type SaleTimelineResponse = {
+  data: SaleTimelineEvent[]
+  total: number
+}

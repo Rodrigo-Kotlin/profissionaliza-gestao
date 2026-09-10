@@ -71,10 +71,11 @@ describe('CloseSaleModal', () => {
     rpcMock.mockResolvedValue({ data: [], error: null })
   })
 
-  it('renders form fields when open', () => {
+  it('renders step 1 form fields when open', () => {
     render(<CloseSaleModal lead={baseLead} open={true} onOpenChange={vi.fn()} />, { wrapper })
     expect(screen.getByText('Fechar venda')).toBeInTheDocument()
-    expect(screen.getByText('Confirmar venda')).toBeInTheDocument()
+    expect(screen.getByText('Revisar venda')).toBeInTheDocument()
+    expect(screen.queryByText('Confirmar venda')).not.toBeInTheDocument()
   })
 
   it('does not render when closed', () => {
@@ -85,9 +86,41 @@ describe('CloseSaleModal', () => {
   it('shows validation error when submitting without course', async () => {
     const user = userEvent.setup()
     render(<CloseSaleModal lead={{ ...baseLead, course_interest_id: null }} open={true} onOpenChange={vi.fn()} />, { wrapper })
-    await user.click(screen.getByText('Confirmar venda'))
+    await user.click(screen.getByText('Revisar venda'))
     await waitFor(() => {
       expect(screen.getByText('Curso obrigatório')).toBeInTheDocument()
     })
+  })
+
+  it('navigates to step 2 review after valid step 1', async () => {
+    const user = userEvent.setup()
+    render(<CloseSaleModal lead={baseLead} open={true} onOpenChange={vi.fn()} />, { wrapper })
+    await user.click(screen.getByText('Revisar venda'))
+    await waitFor(() => {
+      expect(screen.getByText('Confirmar venda')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Voltar')).toBeInTheDocument()
+  })
+
+  it('goes back to step 1 from step 2', async () => {
+    const user = userEvent.setup()
+    render(<CloseSaleModal lead={baseLead} open={true} onOpenChange={vi.fn()} />, { wrapper })
+    await user.click(screen.getByText('Revisar venda'))
+    await waitFor(() => {
+      expect(screen.getByText('Confirmar venda')).toBeInTheDocument()
+    })
+    await user.click(screen.getByText('Voltar'))
+    expect(screen.getByText('Revisar venda')).toBeInTheDocument()
+  })
+
+  it('shows review info on step 2', async () => {
+    const user = userEvent.setup()
+    render(<CloseSaleModal lead={baseLead} open={true} onOpenChange={vi.fn()} />, { wrapper })
+    await user.click(screen.getByText('Revisar venda'))
+    await waitFor(() => {
+      expect(screen.getByText('Confirmar venda')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Maria Silva')).toBeInTheDocument()
+    expect(screen.getByText('João')).toBeInTheDocument()
   })
 })

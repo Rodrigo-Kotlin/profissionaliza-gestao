@@ -1117,6 +1117,7 @@ export type Database = {
       }
       get_my_permissions: { Args: never; Returns: string[] }
       get_sale_detail: { Args: { p_sale_id: string }; Returns: Json }
+      get_sale_timeline: { Args: { p_sale_id: string }; Returns: Json }
       get_student_detail: { Args: { p_student_id: string }; Returns: Json }
       get_student_history: { Args: { p_student_id: string }; Returns: Json }
       has_permission: {

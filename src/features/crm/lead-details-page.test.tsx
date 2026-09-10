@@ -515,6 +515,23 @@ describe('LeadDetailsPage — Sale card when WON', () => {
     expect(screen.getByText('VND-2026-000001')).toBeInTheDocument()
   })
 
+  it('shows sale card as CANCELED when lead is WON with CANCELED sale', () => {
+    mockState.leadData = {
+      ...mockLead('WON'),
+      stage_code: 'NEGOTIATION',
+      sale_id: 'sale-1',
+      sale_code: 'VND-2026-000001',
+      sale_status: 'CANCELED',
+      sale_net_value: 1200,
+      sale_created_at: '2026-01-01T00:00:00Z',
+      next_activity: null
+    } as unknown as ReturnType<typeof mockLead>
+    renderPage()
+    expect(screen.getByText('Venda cancelada')).toBeInTheDocument()
+    expect(screen.getByText('VND-2026-000001')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada')).toBeInTheDocument()
+  })
+
   it('hides sale card when lead is OPEN', () => {
     mockState.leadData = mockLead('OPEN')
     renderPage()

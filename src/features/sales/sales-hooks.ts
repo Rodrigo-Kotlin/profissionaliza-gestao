@@ -52,3 +52,11 @@ export function useCancelSale() {
     }
   })
 }
+
+export function useSaleTimeline(saleId: string) {
+  return useQuery({
+    queryKey: [...saleKeys.detail(saleId), 'timeline'] as const,
+    queryFn: () => salesService.getSaleTimeline(saleId),
+    enabled: Boolean(saleId)
+  })
+}

@@ -127,11 +127,11 @@ export function LeadDetailsPage() {
           {lead.status === 'OPEN' && lead.next_activity && <NextActivityCard activity={lead.next_activity} leadId={leadId} />}
           {lead.status === 'WON' && lead.sale_id && (
             <Card className="p-5">
-              <h3 className="mb-3 text-sm font-semibold">Venda confirmada</h3>
+              <h3 className="mb-3 text-sm font-semibold">{lead.sale_status === 'CANCELED' ? 'Venda cancelada' : 'Venda confirmada'}</h3>
               <dl className="space-y-2 text-sm">
                 <Row label="Código" value={lead.sale_code ?? '—'} />
                 <Row label="Valor" value={formatCurrency(lead.sale_net_value)} />
-                <Row label="Status" value={lead.sale_status === 'CONFIRMED' ? 'Confirmada' : lead.sale_status ?? '—'} />
+                <Row label="Status" value={lead.sale_status === 'CONFIRMED' ? 'Confirmada' : lead.sale_status === 'CANCELED' ? 'Cancelada' : lead.sale_status ?? '—'} />
               </dl>
               <Button
                 size="sm"
