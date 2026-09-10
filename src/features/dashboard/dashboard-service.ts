@@ -36,15 +36,22 @@ const demoData = {
 } as const
 
 export const dashboardService = {
-  async getOverview() {
+  async getOverview({ canViewStudents }: { canViewStudents: boolean }) {
     await new Promise((resolve) => setTimeout(resolve, 250))
     const kpis: { label: string; value: number; format: string; icon: LucideIcon; trend?: string; danger?: boolean }[] = [...demoData.kpis]
-    const { data, error } = await supabase.rpc('student_kpis')
-    if (!error && data && typeof data === 'object') {
-      const studentKpi = data as { active: number }
+
+    if (canViewStudents) {
+      const { data, error } = await supabase.rpc('student_kpis')
+      if (!error && data && typeof data === 'object') {
+        const studentKpi = data as { active: number }
+        const index = kpis.findIndex((kpi) => kpi.label === 'Alunos ativos')
+        if (index >= 0) kpis.splice(index, 1, { label: 'Alunos ativos', value: Number(studentKpi.active) || 0, format: 'number', icon: GraduationCap })
+      }
+    } else {
       const index = kpis.findIndex((kpi) => kpi.label === 'Alunos ativos')
-      if (index >= 0) kpis.splice(index, 1, { label: 'Alunos ativos', value: Number(studentKpi.active) || 0, format: 'number', icon: GraduationCap })
+      if (index >= 0) kpis.splice(index, 1)
     }
+
     return { ...demoData, kpis }
   }
 }

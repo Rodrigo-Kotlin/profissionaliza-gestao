@@ -14,6 +14,11 @@ const StudentsPage = lazy(() => import('@/features/students/students-page').then
 const StudentForm = lazy(() => import('@/features/students/student-form').then((m) => ({ default: m.StudentForm })))
 const StudentDetailsPage = lazy(() => import('@/features/students/student-details-page').then((m) => ({ default: m.StudentDetailsPage })))
 const StudentEditPage = lazy(() => import('@/features/students/student-edit-page').then((m) => ({ default: m.StudentEditPage })))
+const CrmPage = lazy(() => import('@/features/crm/crm-page').then((m) => ({ default: m.CrmPage })))
+const LeadsPage = lazy(() => import('@/features/crm/leads-page').then((m) => ({ default: m.LeadsPage })))
+const LeadDetailsPage = lazy(() => import('@/features/crm/lead-details-page').then((m) => ({ default: m.LeadDetailsPage })))
+const ActivitiesPage = lazy(() => import('@/features/crm/activities-page').then((m) => ({ default: m.ActivitiesPage })))
+const CourseCatalog = lazy(() => import('@/features/crm/course-catalog').then((m) => ({ default: m.CourseCatalog })))
 
 function PageSkeleton() {
   return <div className="grid min-h-[60vh] place-items-center"><LoaderCircle className="size-7 animate-spin text-navy" /></div>
@@ -40,6 +45,12 @@ export const router = createBrowserRouter([
     { path: 'alunos/novo', element: <Suspense fallback={<PageSkeleton />}><StudentForm /></Suspense> },
     { path: 'alunos/:id', element: <Suspense fallback={<PageSkeleton />}><StudentDetailsPage /></Suspense> },
     { path: 'alunos/:id/editar', element: <Suspense fallback={<PageSkeleton />}><StudentEditPage /></Suspense> },
+    { path: 'crm', element: <Suspense fallback={<PageSkeleton />}><CrmPage /></Suspense> },
+    { path: 'crm/leads', element: <Suspense fallback={<PageSkeleton />}><LeadsPage /></Suspense> },
+    { path: 'crm/leads/novo', element: <Suspense fallback={<PageSkeleton />}><LeadsPage /></Suspense> },
+    { path: 'crm/leads/:id', element: <Suspense fallback={<PageSkeleton />}><LeadDetailsPage /></Suspense> },
+    { path: 'crm/atividades', element: <Suspense fallback={<PageSkeleton />}><ActivitiesPage /></Suspense> },
+    { path: 'crm/cursos', element: <Suspense fallback={<PageSkeleton />}><CourseCatalog /></Suspense> },
     { path: 'em-breve', element: <ComingSoonPage /> },
     { path: '*', element: <Navigate to="/" replace /> }
   ] }

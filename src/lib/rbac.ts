@@ -25,7 +25,20 @@ export const PERMISSIONS = {
   STUDENTS_MANAGE_STATUS: 'students.manage_status',
   STUDENTS_VIEW_SENSITIVE: 'students.view_sensitive',
   GUARDIANS_VIEW: 'guardians.view',
-  GUARDIANS_MANAGE: 'guardians.manage'
+  GUARDIANS_MANAGE: 'guardians.manage',
+  CRM_VIEW: 'crm.view',
+  CRM_VIEW_ALL: 'crm.view_all',
+  CRM_CREATE: 'crm.create',
+  CRM_EDIT: 'crm.edit',
+  CRM_ASSIGN: 'crm.assign',
+  CRM_MOVE_STAGE: 'crm.move_stage',
+  CRM_CLOSE_LOST: 'crm.close_lost',
+  CRM_ACTIVITIES_MANAGE: 'crm.activities.manage',
+  CRM_ACTIVITIES_MANAGE_ALL: 'crm.activities.manage_all',
+  CRM_MANAGE_CATALOG: 'crm.manage_catalog',
+  CRM_REPORTS: 'crm.reports',
+  COURSES_VIEW: 'courses.view',
+  COURSES_MANAGE: 'courses.manage'
 } as const satisfies Record<string, PermissionCode>
 
 export const can = (permissions: readonly string[], permission: PermissionCode) =>
