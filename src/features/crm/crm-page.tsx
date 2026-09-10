@@ -12,7 +12,7 @@ const LeadsTab = lazy(() => import('./leads-page').then((m) => ({ default: m.Lea
 const ActivitiesTab = lazy(() => import('./activities-page').then((m) => ({ default: m.ActivitiesPage })))
 const CoursesTab = lazy(() => import('./course-catalog').then((m) => ({ default: m.CourseCatalog })))
 
-const CRM_TABS = ['Pipeline', 'Leads', 'Atividades', 'Cursos'] as const
+const CRM_TABS = ['Pipeline', 'Leads', 'Atividades'] as const
 
 function TabSkeleton() {
   return (
@@ -26,8 +26,10 @@ export function CrmPage() {
   const { permissions } = useAuth()
   const navigate = useNavigate()
   const canCreate = can(permissions, PERMISSIONS.CRM_CREATE)
+  const canViewCourses = can(permissions, PERMISSIONS.COURSES_VIEW)
   const [activeTab, setActiveTab] = useState<string>('Pipeline')
   const kpis = useCrmKpis()
+  const tabs = canViewCourses ? [...CRM_TABS, 'Cursos'] : [...CRM_TABS]
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -39,7 +41,7 @@ export function CrmPage() {
         )}
       </PageHeader>
 
-      <Tabs items={[...CRM_TABS]} value={activeTab} onChange={setActiveTab} />
+      <Tabs items={tabs} value={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'Pipeline' && kpis.data && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -54,7 +56,7 @@ export function CrmPage() {
         {activeTab === 'Pipeline' && <PipelineTab />}
         {activeTab === 'Leads' && <LeadsTab />}
         {activeTab === 'Atividades' && <ActivitiesTab />}
-        {activeTab === 'Cursos' && <CoursesTab />}
+        {activeTab === 'Cursos' && canViewCourses && <CoursesTab />}
       </Suspense>
     </div>
   )

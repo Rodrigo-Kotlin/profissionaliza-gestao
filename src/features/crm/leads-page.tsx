@@ -1,6 +1,6 @@
 import { GraduationCap, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
 import { Drawer } from '@/components/ui/overlays'
@@ -19,7 +19,9 @@ export function LeadsPage() {
   const canCreate = can(permissions, PERMISSIONS.CRM_CREATE)
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const location = useLocation()
+  const routedCreation = location.pathname.endsWith('/novo')
+  const [drawerOpen, setDrawerOpen] = useState(routedCreation)
   const [mobileFilters, setMobileFilters] = useState(false)
 
   const parsed = useMemo(() => parseCrmLeadListParams(params), [params])
@@ -196,14 +198,14 @@ export function LeadsPage() {
         </div>
       </div>
 
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen} title="Novo Lead">
+      <Drawer open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open && routedCreation) navigate('/crm/leads') }} title="Novo Lead">
         <div className="h-full overflow-y-auto bg-white p-5">
           <LeadForm
             onCreated={(id) => {
               setDrawerOpen(false)
               navigate(`/crm/leads/${id}`)
             }}
-            onCancel={() => setDrawerOpen(false)}
+            onCancel={() => { setDrawerOpen(false); if (routedCreation) navigate('/crm/leads') }}
           />
         </div>
       </Drawer>

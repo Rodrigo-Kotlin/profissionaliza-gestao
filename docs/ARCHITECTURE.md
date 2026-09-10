@@ -22,6 +22,8 @@ features/
   dashboard/   página, provider e dados demonstrativos
   search/      busca global e command palette
   users/       perfil e diretório
+  students/    alunos, responsáveis e status
+  crm/         pipeline, leads, atividades, cursos e catálogo
 ```
 
 Camadas transversais em:
@@ -51,7 +53,15 @@ O fluxo de dados segue **pages → services/querys → Supabase**, com component
 
 Toda tabela tem Row Level Security. Políticas baseadas nas funções `has_role`, `has_permission`, `is_admin` e `get_my_permissions`, definidas com `SECURITY DEFINER`, `search_path` fixo e grants mínimos.
 
-A segurança é aplicada **no banco**, nunca apenas na UI.
+A segurança é aplicada **no banco**, nunca apenas na UI. No front-end, `src/routes/permission-route.tsx` adiciona uma **segunda barreira** em nível de rota (`AuthRoute` + `PermissionRoute`), defensiva e transparente — ver `docs/RBAC.md`.
+
+## Testes
+
+- **Unitário/integração (Vitest)** em `src/**/*.test.{ts,tsx}`, ambiente `jsdom`, com
+  cobertura v8 (`npm run test:coverage`) sem threshold obrigatório.
+- **E2E (Playwright)** opcionais em `tests/e2e/` — rodam contra um target real
+  (`E2E_BASE_URL`, ex.: preview do Cloudflare Pages) e exigem credenciais via
+  ambiente. Sem env configurado, toda a suíte é **pulada** (ver `docs/E2E.md`).
 
 ## PWA
 

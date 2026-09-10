@@ -48,6 +48,7 @@ export type PermissionCode =
   | 'commissions.approve'
   | 'users.view'
   | 'users.manage'
+  | 'rbac.view'
   | 'reports.view'
   | 'reports.export'
   | 'audit.view'

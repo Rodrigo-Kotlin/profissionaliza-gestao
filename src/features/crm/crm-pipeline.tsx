@@ -255,7 +255,7 @@ function PipelineColumn({
   const { isOver, setNodeRef } = useDroppable({ id: column.stage_id })
 
   return (
-    <div ref={setNodeRef} className={`min-w-[280px] max-w-[320px] shrink-0 space-y-3 rounded-lg border-2 transition-colors ${isOver ? 'border-navy bg-navy/5' : 'border-transparent'}`}>
+    <div ref={setNodeRef} data-testid={`kanban-column-${column.stage_id}`} className={`min-w-[280px] max-w-[320px] shrink-0 space-y-3 rounded-lg border-2 transition-colors ${isOver ? 'border-navy bg-navy/5' : 'border-transparent'}`}>
       <div className="flex items-center justify-between rounded-lg bg-navy-50 px-3 py-2">
         <h3 className="text-sm font-semibold text-navy">{column.stage_name}</h3>
         <span className="rounded-full bg-navy/10 px-2 py-0.5 text-xs font-semibold text-navy">{column.total_count}</span>
@@ -318,6 +318,7 @@ function DraggableLeadCard({
       style={style}
       tabIndex={0}
       role="link"
+      data-testid={`kanban-card-${lead.id}`}
       className={`rounded-card border bg-white shadow-ambient p-3 transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${isDragging ? 'opacity-40' : ''}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -340,6 +341,7 @@ function DraggableLeadCard({
                   {...attributes}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`Arrastar ${lead.full_name} para outra etapa`}
+                  data-testid={`kanban-card-${lead.id}-drag`}
                   className="cursor-grab rounded-md p-1 text-muted transition hover:bg-navy-50 hover:text-navy active:cursor-grabbing"
                 >
                   <GripVertical className="size-4" />
