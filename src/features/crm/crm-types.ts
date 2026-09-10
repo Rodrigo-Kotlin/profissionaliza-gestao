@@ -138,6 +138,11 @@ export type CrmLeadDetail = {
   updated_at: string
   closed_at: string | null
   days_in_pipeline: number
+  sale_id: string | null
+  sale_code: string | null
+  sale_status: string | null
+  sale_net_value: number | null
+  sale_created_at: string | null
   next_activity: {
     id: string
     type: CrmActivityType
@@ -209,6 +214,7 @@ export type CrmTimelineEventType =
   | 'ACTIVITY_RESCHEDULED'
   | 'ACTIVITY_CANCELED'
   | 'LEAD_LOST'
+  | 'LEAD_WON'
 
 export type CrmTimelineEvent = {
   id: string

@@ -1,4 +1,4 @@
-import { ArrowRightLeft, CalendarDays, CheckCircle2, Clock, Eye, Pencil, Trash2, UserPlus, XCircle, CircleX, Phone, MessageSquare, Mail, Users, RotateCcw, MoreHorizontal } from 'lucide-react'
+import { ArrowRightLeft, CalendarDays, CheckCircle2, Clock, Eye, Pencil, Trash2, UserPlus, XCircle, CircleX, Phone, MessageSquare, Mail, Users, RotateCcw, MoreHorizontal, ShoppingBag } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,6 +11,8 @@ import { CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES, CRM_STATUS_LABELS, CRM_S
 import { formatCurrency, formatDueAt } from './crm-utils'
 import type { CrmLeadDetail, CrmActivityType, CrmActivityStatus, CrmTimelineEventType } from './crm-types'
 import { leadUpdateSchema, type LeadUpdateInput, lostLeadSchema, type LostLeadInput, activityFormSchema, type ActivityFormInput } from './crm-schemas'
+import { CloseSaleModal } from '../sales/close-sale-modal'
+import { SALE_ELIGIBLE_STAGES } from '../sales/sales-constants'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
@@ -44,19 +46,21 @@ const TIMELINE_ICON_CONFIG: Record<CrmTimelineEventType, { icon: typeof UserPlus
   ACTIVITY_COMPLETED: { icon: CheckCircle2, color: 'text-green-600', label: 'Atividade concluída' },
   ACTIVITY_RESCHEDULED: { icon: Clock, color: 'text-orange-600', label: 'Atividade reagendada' },
   ACTIVITY_CANCELED: { icon: XCircle, color: 'text-red-500', label: 'Atividade cancelada' },
-  LEAD_LOST: { icon: CircleX, color: 'text-red-600', label: 'Lead perdido' }
+  LEAD_LOST: { icon: CircleX, color: 'text-red-600', label: 'Lead perdido' },
+  LEAD_WON: { icon: CheckCircle2, color: 'text-emerald-600', label: 'Venda fechada' }
 }
 
 export function LeadDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { permissions } = useAuth()
+  const { permissions, user } = useAuth()
   const leadId = id ?? ''
   const [tab, setTab] = useState<string>('Resumo')
   const [editOpen, setEditOpen] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
   const [lostOpen, setLostOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
+  const [saleOpen, setSaleOpen] = useState(false)
 
   const detail = useCrmLeadDetail(leadId)
   const canEdit = can(permissions, PERMISSIONS.CRM_EDIT)
@@ -100,6 +104,11 @@ export function LeadDetailsPage() {
             <Trash2 className="size-4" /> Marcar como perdido
           </Button>
         )}
+        {can(permissions, PERMISSIONS.SALES_CREATE) && lead.status === 'OPEN' && SALE_ELIGIBLE_STAGES.includes(lead.stage_code as typeof SALE_ELIGIBLE_STAGES[number]) && (lead.owner_user_id === user?.id || can(permissions, PERMISSIONS.CRM_VIEW_ALL)) && (
+          <Button onClick={() => setSaleOpen(true)}>
+            <ShoppingBag className="size-4" /> Fechar venda
+          </Button>
+        )}
       </PageHeader>
 
       <LeadHeaderCard lead={lead} />
@@ -116,6 +125,23 @@ export function LeadDetailsPage() {
 
         <div className="hidden lg:block">
           {lead.status === 'OPEN' && lead.next_activity && <NextActivityCard activity={lead.next_activity} leadId={leadId} />}
+          {lead.status === 'WON' && lead.sale_id && (
+            <Card className="p-5">
+              <h3 className="mb-3 text-sm font-semibold">Venda confirmada</h3>
+              <dl className="space-y-2 text-sm">
+                <Row label="Código" value={lead.sale_code ?? '—'} />
+                <Row label="Valor" value={formatCurrency(lead.sale_net_value)} />
+                <Row label="Status" value={lead.sale_status === 'CONFIRMED' ? 'Confirmada' : lead.sale_status ?? '—'} />
+              </dl>
+              <Button
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => navigate(`/vendas/${lead.sale_id}`)}
+              >
+                Ver detalhes
+              </Button>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -134,6 +160,8 @@ export function LeadDetailsPage() {
       <Modal open={activityOpen} onOpenChange={setActivityOpen} title="Nova atividade">
         <NewActivityForm leadId={leadId} onDone={() => setActivityOpen(false)} />
       </Modal>
+
+      <CloseSaleModal lead={lead} open={saleOpen} onOpenChange={setSaleOpen} />
     </div>
   )
 }

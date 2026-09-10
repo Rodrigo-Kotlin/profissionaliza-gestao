@@ -39,7 +39,12 @@ export const PERMISSIONS = {
   CRM_MANAGE_CATALOG: 'crm.manage_catalog',
   CRM_REPORTS: 'crm.reports',
   COURSES_VIEW: 'courses.view',
-  COURSES_MANAGE: 'courses.manage'
+  COURSES_MANAGE: 'courses.manage',
+  SALES_VIEW: 'sales.view',
+  SALES_VIEW_ALL: 'sales.view_all',
+  SALES_CREATE: 'sales.create',
+  SALES_APPROVE: 'sales.approve',
+  SALES_CANCEL: 'sales.cancel'
 } as const satisfies Record<string, PermissionCode>
 
 export const can = (permissions: readonly string[], permission: PermissionCode) =>
