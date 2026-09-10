@@ -1,0 +1,57 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { can, canAny, PERMISSIONS } from './rbac'
+
+const migrationPath = path.resolve('supabase/migrations/20260910120000_phase2_2_1_rbac_consistency.sql')
+const seedPath = path.resolve('supabase/seed.sql')
+const migration = fs.readFileSync(migrationPath, 'utf8')
+const seed = fs.readFileSync(seedPath, 'utf8')
+const grantsBlock = migration.match(/with grants\(role_code, permission_code\) as \(values([\s\S]*?)\)\s*insert into public\.role_permissions/)?.[1] ?? ''
+const grants = new Set(
+  [...grantsBlock.matchAll(/\('([^']+)','([^']+)'\)/g)].map((match) => `${match[1]}:${match[2]}`)
+)
+
+describe('RBAC boundaries', () => {
+  it('mantém ADMIN com todo o catálogo atual', () => {
+    expect(migration).toContain("where r.code = 'ADMIN'")
+  })
+
+  it('mantém gerente com acesso amplo ao CRM e cursos', () => {
+    expect(grants).toContain('GERENTE_COMERCIAL:crm.view_all')
+    expect(grants).toContain('GERENTE_COMERCIAL:courses.manage')
+  })
+
+  it('limita vendedor a leads próprios e operação comercial', () => {
+    expect(grants).toContain('VENDEDOR:crm.move_stage')
+    expect(grants).toContain('VENDEDOR:crm.activities.manage')
+    expect(grants).not.toContain('VENDEDOR:crm.view_all')
+  })
+
+  it('permite cursos ao pedagógico sem conceder CRM', () => {
+    expect(grants).toContain('PEDAGOGICO:courses.view')
+    expect(grants).not.toContain('PEDAGOGICO:crm.view')
+  })
+
+  it('mantém recepção sem edição de lead', () => {
+    expect(grants).toContain('RECEPCAO:crm.view')
+    expect(grants).toContain('RECEPCAO:crm.create')
+    expect(grants).not.toContain('RECEPCAO:crm.edit')
+  })
+
+  it('não permite que o seed altere catálogo ou grants de RBAC', () => {
+    expect(seed).not.toMatch(/(?:insert|update|delete)\s+(?:into|from)?\s*public\.(?:roles|permissions|role_permissions)/i)
+  })
+})
+
+describe('permission helpers', () => {
+  it('avalia uma permissão exata', () => {
+    expect(can(['students.view'], PERMISSIONS.STUDENTS_VIEW)).toBe(true)
+    expect(can(['students.view'], PERMISSIONS.STUDENTS_EDIT)).toBe(false)
+  })
+
+  it('aceita qualquer permissão autorizada sem criar aliases implícitos', () => {
+    expect(canAny(['users.manage'], PERMISSIONS.USERS_VIEW, PERMISSIONS.USERS_MANAGE)).toBe(true)
+    expect(canAny(['crm.view'], PERMISSIONS.COURSES_VIEW, PERMISSIONS.COURSES_MANAGE)).toBe(false)
+  })
+})

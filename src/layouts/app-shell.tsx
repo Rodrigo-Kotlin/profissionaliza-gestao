@@ -11,24 +11,24 @@ import { Avatar, Button } from '@/components/ui/core'
 import { Drawer, DropdownItem, DropdownMenu, Tooltip } from '@/components/ui/overlays'
 import { cn } from '@/lib/utils'
 import { isDevEnvironment } from '@/lib/env'
-import { can, PERMISSIONS } from '@/lib/rbac'
+import { canAny, PERMISSIONS } from '@/lib/rbac'
 import type { PermissionCode } from '@/types/database'
 import { writeAuditLog } from '@/services/audit-service'
 import { useAuth } from '@/features/auth/auth-context'
 import { CommandPalette } from '@/features/search/command-palette'
 
 type NavigationSection = { label?: string; items: NavigationItem[] }
-type NavigationItem = { label: string; icon: React.ElementType; to: string; available?: boolean; permission?: PermissionCode }
+type NavigationItem = { label: string; icon: React.ElementType; to: string; available?: boolean; anyOf?: readonly PermissionCode[] }
 
 const navigationSections: NavigationSection[] = [
-  { items: [{ label: 'Visão Geral', icon: LayoutDashboard, to: '/', available: true }] },
+  { items: [{ label: 'Visão Geral', icon: LayoutDashboard, to: '/', available: true, anyOf: [PERMISSIONS.DASHBOARD_VIEW] }] },
   {
     label: 'Operação',
-    items: [{ label: 'CRM', icon: UserRoundSearch, to: '/crm', available: true, permission: PERMISSIONS.CRM_VIEW }, { label: 'Vendas', icon: ShoppingBag, to: '/vendas' }]
+    items: [{ label: 'CRM', icon: UserRoundSearch, to: '/crm', available: true, anyOf: [PERMISSIONS.CRM_VIEW] }, { label: 'Vendas', icon: ShoppingBag, to: '/vendas' }]
   },
   {
     label: 'Acadêmico',
-    items: [{ label: 'Alunos', icon: GraduationCap, to: '/alunos', available: true, permission: PERMISSIONS.STUDENTS_VIEW }, { label: 'Pedagógico', icon: BookOpen, to: '/pedagogico' }]
+    items: [{ label: 'Alunos', icon: GraduationCap, to: '/alunos', available: true, anyOf: [PERMISSIONS.STUDENTS_VIEW] }, { label: 'Cursos', icon: BookOpen, to: '/crm/cursos', available: true, anyOf: [PERMISSIONS.COURSES_VIEW] }, { label: 'Pedagógico', icon: BookOpen, to: '/pedagogico' }]
   },
   {
     label: 'Gestão',
@@ -36,7 +36,7 @@ const navigationSections: NavigationSection[] = [
   },
   {
     label: 'Administração',
-    items: [{ label: 'Configurações', icon: Settings, to: '/configuracoes' }, { label: 'Usuários', icon: ShieldCheck, to: '/administracao/usuarios', available: true, permission: PERMISSIONS.USERS_VIEW }]
+    items: [{ label: 'Configurações', icon: Settings, to: '/configuracoes' }, { label: 'Usuários', icon: ShieldCheck, to: '/administracao/usuarios', available: true, anyOf: [PERMISSIONS.USERS_VIEW, PERMISSIONS.USERS_MANAGE] }]
   }
 ]
 
@@ -82,7 +82,7 @@ function Sidebar({ collapsed = false, onCollapse, onLogout, onClose }: { collaps
   const navigate = useNavigate()
   const { permissions } = useAuth()
   const visibleSections = navigationSections
-    .map((section) => ({ ...section, items: section.items.filter((item) => !item.permission || can(permissions, item.permission)) }))
+    .map((section) => ({ ...section, items: section.items.filter((item) => !item.anyOf || canAny(permissions, ...item.anyOf)) }))
     .filter((section) => section.items.length > 0)
   return <div className="flex h-full flex-col">
     <div className={cn('flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-5', collapsed && 'justify-center px-3')}><div className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>{collapsed ? <BrandLogo variant="mark" size="lg" className="mx-auto" /> : <BrandLogo variant="horizontal" size="md" />}{onClose && <button aria-label="Fechar menu" onClick={onClose} className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10"><X className="size-5" /></button>}</div></div>

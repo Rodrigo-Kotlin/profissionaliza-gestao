@@ -15,6 +15,7 @@ export const PERMISSIONS = {
   DASHBOARD_VIEW: 'dashboard.view',
   USERS_VIEW: 'users.view',
   USERS_MANAGE: 'users.manage',
+  RBAC_VIEW: 'rbac.view',
   AUDIT_VIEW: 'audit.view',
   PEOPLE_VIEW: 'people.view',
   PEOPLE_CREATE: 'people.create',
