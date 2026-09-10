@@ -24,7 +24,7 @@ const navigationSections: NavigationSection[] = [
   { items: [{ label: 'Visão Geral', icon: LayoutDashboard, to: '/', available: true, anyOf: [PERMISSIONS.DASHBOARD_VIEW] }] },
   {
     label: 'Operação',
-    items: [{ label: 'CRM', icon: UserRoundSearch, to: '/crm', available: true, anyOf: [PERMISSIONS.CRM_VIEW] }, { label: 'Vendas', icon: ShoppingBag, to: '/vendas' }]
+    items: [{ label: 'CRM', icon: UserRoundSearch, to: '/crm', available: true, anyOf: [PERMISSIONS.CRM_VIEW] }, { label: 'Vendas', icon: ShoppingBag, to: '/vendas', available: true, anyOf: [PERMISSIONS.SALES_VIEW] }]
   },
   {
     label: 'Acadêmico',

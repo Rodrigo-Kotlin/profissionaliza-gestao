@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -668,6 +668,116 @@ export type Database = {
         }
         Relationships: []
       }
+      sales: {
+        Row: {
+          canceled_at: string | null
+          canceled_by: string | null
+          cancellation_reason: string | null
+          commercial_notes: string | null
+          course_id: string
+          course_name_snapshot: string
+          course_price_snapshot: number | null
+          created_at: string
+          created_by: string | null
+          discount_value: number
+          gross_value: number
+          id: string
+          installments: number
+          lead_id: string
+          net_value: number | null
+          payment_method: string
+          person_id: string
+          sale_code: string
+          sale_date: string
+          seller_user_id: string
+          status: string
+          student_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
+          commercial_notes?: string | null
+          course_id: string
+          course_name_snapshot: string
+          course_price_snapshot?: number | null
+          created_at?: string
+          created_by?: string | null
+          discount_value?: number
+          gross_value: number
+          id?: string
+          installments?: number
+          lead_id: string
+          net_value?: number | null
+          payment_method: string
+          person_id: string
+          sale_code: string
+          sale_date?: string
+          seller_user_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
+          commercial_notes?: string | null
+          course_id?: string
+          course_name_snapshot?: string
+          course_price_snapshot?: number | null
+          created_at?: string
+          created_by?: string | null
+          discount_value?: number
+          gross_value?: number
+          id?: string
+          installments?: number
+          lead_id?: string
+          net_value?: number | null
+          payment_method?: string
+          person_id?: string
+          sale_code?: string
+          sale_date?: string
+          seller_user_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_guardians: {
         Row: {
           created_at: string
@@ -891,6 +1001,10 @@ export type Database = {
         Args: { p_lead_id: string; p_new_owner_id: string }
         Returns: undefined
       }
+      cancel_sale: {
+        Args: { p_cancellation_reason: string; p_sale_id: string }
+        Returns: undefined
+      }
       change_student_status: {
         Args: { p_new_status: string; p_reason?: string; p_student_id: string }
         Returns: undefined
@@ -951,6 +1065,18 @@ export type Database = {
         }
         Returns: string
       }
+      create_sale_from_lead: {
+        Args: {
+          p_commercial_notes?: string
+          p_course_id: string
+          p_discount_value?: number
+          p_gross_value: number
+          p_installments?: number
+          p_lead_id: string
+          p_payment_method: string
+        }
+        Returns: Json
+      }
       create_student: {
         Args: {
           p_birth_date?: string
@@ -990,6 +1116,8 @@ export type Database = {
         Returns: Json
       }
       get_my_permissions: { Args: never; Returns: string[] }
+      get_sale_detail: { Args: { p_sale_id: string }; Returns: Json }
+      get_sale_timeline: { Args: { p_sale_id: string }; Returns: Json }
       get_student_detail: { Args: { p_student_id: string }; Returns: Json }
       get_student_history: { Args: { p_student_id: string }; Returns: Json }
       has_permission: {
@@ -1030,6 +1158,19 @@ export type Database = {
       }
       list_crm_pipeline_stages: { Args: never; Returns: Json }
       list_guardians: { Args: { p_student_id: string }; Returns: Json }
+      list_sales: {
+        Args: {
+          p_course_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+          p_seller_user_id?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       mask_cpf: { Args: { p_value: string }; Returns: string }
       mask_email: { Args: { p_value: string }; Returns: string }
       mask_phone: { Args: { p_value: string }; Returns: string }

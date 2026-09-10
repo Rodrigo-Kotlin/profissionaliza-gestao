@@ -45,6 +45,11 @@ function mockLead(status: string = 'OPEN') {
     updated_at: '2026-01-01T10:00:00Z',
     closed_at: null,
     days_in_pipeline: 10,
+    sale_id: null,
+    sale_code: null,
+    sale_status: null,
+    sale_net_value: null,
+    sale_created_at: null,
     next_activity: {
       id: 'act-1',
       type: 'CALL',
@@ -163,7 +168,11 @@ vi.mock('./crm-hooks', () => ({
 }))
 
 vi.mock('@/features/auth/auth-context', () => ({
-  useAuth: () => ({ permissions: mockState.permissions })
+  useAuth: () => ({ permissions: mockState.permissions, user: { id: 'user-1' } })
+}))
+
+vi.mock('../sales/close-sale-modal', () => ({
+  CloseSaleModal: ({ open }: { open: boolean }) => open ? <div data-testid="close-sale-modal">CloseSaleModal</div> : null
 }))
 
 function renderPage() {
@@ -428,5 +437,104 @@ describe('LeadDetailsPage — HistoricoTab (timeline)', () => {
     renderPage()
     await openHistoricoTab()
     expect(screen.getByText('Novo Lead → Qualificado')).toBeInTheDocument()
+  })
+})
+
+describe('LeadDetailsPage — Fechar venda button gating', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage', 'crm.close_lost', 'crm.activities.manage', 'sales.create']
+    mockState.leadData = mockLead('OPEN')
+  })
+
+  it('shows "Fechar venda" when owner + sales.create + eligible stage (NEGOTIATION)', () => {
+    mockState.leadData = { ...mockLead('OPEN'), stage_code: 'NEGOTIATION', owner_user_id: 'user-1' }
+    renderPage()
+    expect(screen.getByRole('button', { name: /fechar venda/i })).toBeInTheDocument()
+  })
+
+  it('shows "Fechar venda" when owner + sales.create + PROPOSAL_SENT', () => {
+    mockState.leadData = { ...mockLead('OPEN'), stage_code: 'PROPOSAL_SENT', owner_user_id: 'user-1' }
+    renderPage()
+    expect(screen.getByRole('button', { name: /fechar venda/i })).toBeInTheDocument()
+  })
+
+  it('hides "Fechar venda" when stage is not eligible (QUALIFIED)', () => {
+    mockState.leadData = { ...mockLead('OPEN'), stage_code: 'QUALIFIED', owner_user_id: 'user-1' }
+    renderPage()
+    expect(screen.queryByRole('button', { name: /fechar venda/i })).toBeNull()
+  })
+
+  it('hides "Fechar venda" when lead is LOST', () => {
+    mockState.leadData = { ...mockLead('LOST'), stage_code: 'NEGOTIATION', owner_user_id: 'user-1' }
+    renderPage()
+    expect(screen.queryByRole('button', { name: /fechar venda/i })).toBeNull()
+  })
+
+  it('hides "Fechar venda" when user lacks sales.create', () => {
+    mockState.permissions = ['crm.view', 'crm.edit']
+    mockState.leadData = { ...mockLead('OPEN'), stage_code: 'NEGOTIATION', owner_user_id: 'user-1' }
+    renderPage()
+    expect(screen.queryByRole('button', { name: /fechar venda/i })).toBeNull()
+  })
+
+  it('hides "Fechar venda" when non-owner and no crm.view_all', () => {
+    mockState.leadData = { ...mockLead('OPEN'), stage_code: 'NEGOTIATION', owner_user_id: 'user-other' }
+    renderPage()
+    expect(screen.queryByRole('button', { name: /fechar venda/i })).toBeNull()
+  })
+
+  it('shows "Fechar venda" when non-owner has crm.view_all', () => {
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.view_all', 'sales.create']
+    mockState.leadData = { ...mockLead('OPEN'), stage_code: 'NEGOTIATION', owner_user_id: 'user-other' }
+    renderPage()
+    expect(screen.getByRole('button', { name: /fechar venda/i })).toBeInTheDocument()
+  })
+})
+
+describe('LeadDetailsPage — Sale card when WON', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit']
+    mockState.timelineData = null
+  })
+
+  it('shows sale card in sidebar when lead is WON with sale data', () => {
+    mockState.leadData = {
+      ...mockLead('WON'),
+      stage_code: 'NEGOTIATION',
+      sale_id: 'sale-1',
+      sale_code: 'VND-2026-000001',
+      sale_status: 'CONFIRMED',
+      sale_net_value: 1200,
+      sale_created_at: '2026-01-01T00:00:00Z',
+      next_activity: null
+    } as unknown as ReturnType<typeof mockLead>
+    renderPage()
+    expect(screen.getByText('Venda confirmada')).toBeInTheDocument()
+    expect(screen.getByText('VND-2026-000001')).toBeInTheDocument()
+  })
+
+  it('shows sale card as CANCELED when lead is WON with CANCELED sale', () => {
+    mockState.leadData = {
+      ...mockLead('WON'),
+      stage_code: 'NEGOTIATION',
+      sale_id: 'sale-1',
+      sale_code: 'VND-2026-000001',
+      sale_status: 'CANCELED',
+      sale_net_value: 1200,
+      sale_created_at: '2026-01-01T00:00:00Z',
+      next_activity: null
+    } as unknown as ReturnType<typeof mockLead>
+    renderPage()
+    expect(screen.getByText('Venda cancelada')).toBeInTheDocument()
+    expect(screen.getByText('VND-2026-000001')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada')).toBeInTheDocument()
+  })
+
+  it('hides sale card when lead is OPEN', () => {
+    mockState.leadData = mockLead('OPEN')
+    renderPage()
+    expect(screen.queryByText('Venda confirmada')).not.toBeInTheDocument()
   })
 })
