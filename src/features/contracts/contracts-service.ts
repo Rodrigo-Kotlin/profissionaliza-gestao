@@ -5,10 +5,12 @@ import type {
   ContractListResponse,
   ContractDetail,
   ContractTimelineResponse,
+  ContractorDetail,
   ContractorSearchResponse,
   CreateContractResult,
   CreatePersonResult,
-  PersonFormPayload
+  PersonFormPayload,
+  UpdatePersonPayload
 } from './contracts-types'
 import type { CancelContractInput, EditDraftInput } from './contracts-schemas'
 import {
@@ -43,7 +45,7 @@ function emptyToUndefined<T>(v: T | '' | null | undefined): T | undefined {
   return v === '' || v === null ? undefined : v
 }
 
-const FH = (v?: string) => (v === '' ? undefined : v)
+const FH = (v?: string | null) => (v === '' || v === null ? undefined : v)
 const normalize = {
   cpf: (v?: string) => (v ? normalizeCpf(v) : undefined),
   email: (v?: string) => (v ? normalizeEmail(v) : undefined),
@@ -157,5 +159,35 @@ export const contractsService = {
     })
     if (error) throw error
     return data as CreatePersonResult
+  },
+
+  async getContractorDetail(personId: string): Promise<ContractorDetail> {
+    const { data, error } = await rpc('get_contractor_detail', { p_person_id: personId })
+    if (error) throw error
+    return data as ContractorDetail
+  },
+
+  async updatePerson(input: UpdatePersonPayload): Promise<{ person_id: string; updated: boolean }> {
+    const { data, error } = await rpc('update_person', {
+      p_person_id: input.person_id,
+      p_full_name: input.full_name,
+      p_preferred_name: FH(input.preferred_name),
+      p_birth_date: FH(input.birth_date),
+      p_email: normalize.email(input.email),
+      p_phone: normalize.phone(input.phone),
+      p_whatsapp: normalize.phone(input.whatsapp),
+      p_postal_code: normalize.cep(input.postal_code),
+      p_street: FH(input.street),
+      p_number: FH(input.number),
+      p_complement: FH(input.complement),
+      p_district: FH(input.district),
+      p_city: FH(input.city),
+      p_state: normalize.state(input.state),
+      p_emergency_contact_name: FH(input.emergency_contact_name),
+      p_emergency_contact_phone: normalize.phone(input.emergency_contact_phone),
+      p_notes: FH(input.notes)
+    })
+    if (error) throw error
+    return data as { person_id: string; updated: boolean }
   }
 }

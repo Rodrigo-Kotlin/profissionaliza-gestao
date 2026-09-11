@@ -4,8 +4,10 @@ import { Modal } from '@/components/ui/overlays'
 import { useCreatePerson } from './contracts-hooks'
 import { personFormSchema } from './contracts-schemas'
 import type { ContractorSearchResult, PersonFormPayload } from './contracts-types'
+import { useCepLookup } from './use-cep-lookup'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 type SelectedContractor = Pick<ContractorSearchResult, 'id' | 'full_name' | 'preferred_name'> & {
   reused?: boolean
@@ -19,9 +21,39 @@ type Props = {
 
 export function CreatePersonModal({ open, onOpenChange, onCreated }: Props) {
   const createPerson = useCreatePerson()
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<PersonFormPayload>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isSubmitting },
+    reset
+  } = useForm<PersonFormPayload>({
     resolver: zodResolver(personFormSchema)
   })
+
+  const postalCodeValue = useWatch({ control, name: 'postal_code' })
+  const cepLookup = useCepLookup(postalCodeValue, {
+    onFound: (address) => {
+      setValue('postal_code', address.postal_code, { shouldValidate: false })
+      setValue('street', address.street, { shouldValidate: false })
+      setValue('district', address.district, { shouldValidate: false })
+      setValue('city', address.city, { shouldValidate: false })
+      setValue('state', address.state, { shouldValidate: false })
+      toast.success('Endereço localizado pelo CEP. Revise os campos preenchidos.')
+    }
+  })
+
+  const cepStatusText =
+    cepLookup.status === 'loading'
+      ? 'Consultando CEP...'
+      : cepLookup.status === 'not_found'
+        ? 'CEP não encontrado. Preencha o endereço manualmente.'
+        : cepLookup.status === 'error'
+          ? 'Não foi possível consultar o CEP agora. Preencha o endereço manualmente.'
+          : cepLookup.status === 'invalid'
+            ? 'CEP com formato inválido.'
+            : null
 
   const onSubmit = async (values: PersonFormPayload) => {
     try {
@@ -46,7 +78,7 @@ export function CreatePersonModal({ open, onOpenChange, onCreated }: Props) {
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Cadastrar contratante">
+    <Modal open={open} onOpenChange={(next) => { if (!next) reset(); onOpenChange(next) }} title="Cadastrar contratante">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <p className="text-sm text-muted">
           Os dados informados são classificados como sensíveis (LGPD) e exibidos apenas conforme sua permissão de visualização.
@@ -68,7 +100,20 @@ export function CreatePersonModal({ open, onOpenChange, onCreated }: Props) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="WhatsApp" error={errors.whatsapp?.message} {...register('whatsapp')} />
-          <Input label="CEP" error={errors.postal_code?.message} {...register('postal_code')} />
+          <div>
+            <Input label="CEP" inputMode="numeric" error={errors.postal_code?.message} {...register('postal_code')} />
+            {cepStatusText && (
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                {cepLookup.status === 'loading' && <Loader2 className="size-3 animate-spin" />}
+                {cepStatusText}
+              </p>
+            )}
+            {cepLookup.status === 'found' && (
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-emerald-600">
+                <CheckCircle2 className="size-3" /> Endereço localizado pelo CEP.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

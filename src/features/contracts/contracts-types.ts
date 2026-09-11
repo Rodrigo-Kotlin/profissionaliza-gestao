@@ -152,3 +152,43 @@ export type PersonFormPayload = {
   emergency_contact_phone?: string
   notes?: string
 }
+
+export type ContractorDetail = {
+  person_id: string
+  full_name: string
+  preferred_name: string | null
+  cpf: string | null
+  rg: string | null
+  birth_date: string | null
+  email: string | null
+  phone: string | null
+  whatsapp: string | null
+  postal_code: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  district: string | null
+  city: string | null
+  state: string | null
+  sensitive: boolean
+}
+
+export type UpdatePersonPayload = {
+  person_id: string
+  full_name?: string
+  preferred_name?: string | null
+  birth_date?: string
+  email?: string
+  phone?: string
+  whatsapp?: string
+  postal_code?: string
+  street?: string
+  number?: string
+  complement?: string
+  district?: string
+  city?: string
+  state?: string
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  notes?: string
+}

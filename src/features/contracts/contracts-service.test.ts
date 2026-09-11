@@ -208,3 +208,63 @@ it('sends other optional fields when present', async () => {
     // No PII in audit metadata: { reused: true }
   })
 })
+
+describe('contractsService.getContractorDetail', () => {
+  beforeEach(() => rpcMock.mockReset())
+
+  it('calls get_contractor_detail with p_person_id', async () => {
+    rpcMock.mockResolvedValue({
+      data: { person_id: 'person-1', full_name: 'João Souza', cpf: '***.***.***-**', sensitive: false },
+      error: null
+    })
+    const result = await contractsService.getContractorDetail('person-1')
+    expect(rpcMock).toHaveBeenCalledWith('get_contractor_detail', { p_person_id: 'person-1' })
+    expect(result.full_name).toBe('João Souza')
+  })
+
+  it('throws on RPC error', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { code: '42501', message: 'not authorized' } })
+    await expect(contractsService.getContractorDetail('person-1')).rejects.toThrow()
+  })
+})
+
+describe('contractsService.updatePerson', () => {
+  beforeEach(() => rpcMock.mockReset())
+
+  it('calls update_person with normalized provided fields', async () => {
+    rpcMock.mockResolvedValue({ data: { person_id: 'person-1', updated: true }, error: null })
+    await contractsService.updatePerson({
+      person_id: 'person-1',
+      phone: '(11) 99999-0000',
+      street: 'Rua A',
+      state: 'sp'
+    })
+    expect(rpcMock).toHaveBeenCalledWith('update_person', expect.objectContaining({
+      p_person_id: 'person-1',
+      p_phone: '11999990000',
+      p_street: 'Rua A',
+      p_state: 'SP',
+      p_full_name: undefined,
+      p_birth_date: undefined
+    }))
+  })
+
+  it('treats empty strings as cleared (null-ish) without touching untouched fields', async () => {
+    rpcMock.mockResolvedValue({ data: { person_id: 'person-1', updated: true }, error: null })
+    await contractsService.updatePerson({
+      person_id: 'person-1',
+      preferred_name: '',
+      street: '',
+      city: 'Belém'
+    })
+    const arg = rpcMock.mock.calls[0]?.[1]
+    expect(arg.p_preferred_name).toBeUndefined()
+    expect(arg.p_street).toBeUndefined()
+    expect(arg.p_city).toBe('Belém')
+  })
+
+  it('throws on RPC error (e.g. missing people.edit)', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { code: '42501', message: 'not authorized' } })
+    await expect(contractsService.updatePerson({ person_id: 'person-1', full_name: 'Novo' })).rejects.toThrow()
+  })
+})

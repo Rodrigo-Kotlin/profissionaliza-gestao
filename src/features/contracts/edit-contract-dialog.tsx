@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
-import { useUpdateContractDraft } from './contracts-hooks'
+import { useUpdateContractDraft, useContractorDetail } from './contracts-hooks'
 import { ContractorSearch, type SelectedContractor } from './contractor-search'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
@@ -17,10 +17,14 @@ type Props = {
 
 export function EditContractDialog({ contract, open, onOpenChange, onSaved }: Props) {
   const { permissions } = useAuth()
-  const canCreate = can(permissions, PERMISSIONS.CONTRACTS_CREATE)
+  const canCreatePeople = can(permissions, PERMISSIONS.CONTRACTS_CREATE) && can(permissions, PERMISSIONS.PEOPLE_CREATE)
+  const canEditPeople = can(permissions, PERMISSIONS.PEOPLE_EDIT)
+  const canViewGuardians = can(permissions, PERMISSIONS.GUARDIANS_VIEW)
   const updateDraft = useUpdateContractDraft()
   const [contractor, setContractor] = useState<SelectedContractor | null>(null)
   const [notes, setNotes] = useState('')
+
+  const contractorDetail = useContractorDetail(contractor?.id)
 
   useEffect(() => {
     if (open) {
@@ -57,7 +61,16 @@ export function EditContractDialog({ contract, open, onOpenChange, onSaved }: Pr
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink">Contratante</label>
-          <ContractorSearch canCreate={canCreate} selected={contractor} onSelect={setContractor} />
+          <ContractorSearch
+            canCreate={canCreatePeople}
+            canEditPeople={canEditPeople}
+            canViewGuardians={canViewGuardians}
+            selected={contractor}
+            onSelect={setContractor}
+            detail={contractorDetail.data}
+            detailLoading={contractorDetail.isLoading}
+            onDetailUpdated={() => contractorDetail.refetch()}
+          />
         </div>
 
         <div>

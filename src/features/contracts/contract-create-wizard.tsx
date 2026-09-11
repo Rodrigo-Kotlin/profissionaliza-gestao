@@ -1,10 +1,10 @@
 import { CheckCircle2, UserRoundSearch } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
-import { useCreateContractFromSale } from './contracts-hooks'
+import { useCreateContractFromSale, useContractorDetail } from './contracts-hooks'
 import { ContractorSearch, type SelectedContractor } from './contractor-search'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
@@ -24,13 +24,25 @@ const STEPS = ['Contratante', 'Revisão', 'Resultado']
 export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
   const navigate = useNavigate()
   const { permissions } = useAuth()
-  const canCreate = can(permissions, PERMISSIONS.CONTRACTS_CREATE)
+  const canCreateContract = can(permissions, PERMISSIONS.CONTRACTS_CREATE)
+  const canCreatePeople = can(permissions, PERMISSIONS.PEOPLE_CREATE)
+  const canEditPeople = can(permissions, PERMISSIONS.PEOPLE_EDIT)
+  const canViewGuardians = can(permissions, PERMISSIONS.GUARDIANS_VIEW)
   const createContract = useCreateContractFromSale()
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [contractor, setContractor] = useState<SelectedContractor | null>(null)
   const [notes, setNotes] = useState('')
   const [result, setResult] = useState<CreateContractResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const contractorDetail = useContractorDetail(contractor?.id)
+
+  useEffect(() => {
+    if (open && sale.person_id) {
+      setContractor({ id: sale.person_id, full_name: sale.full_name, preferred_name: null, reused: true })
+      setStep(1)
+    }
+  }, [open, sale])
 
   const reset = () => {
     setStep(1)
@@ -69,6 +81,16 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
     reset()
   }
 
+  const detail = contractorDetail.data
+  const contactLine = detail
+    ? [detail.email, detail.phone, detail.whatsapp].filter(Boolean).join(' · ') || 'Contato não informado'
+    : '—'
+  const addressLine = detail
+    ? [detail.street, detail.number, detail.district, `${detail.city}${detail.state ? `/${detail.state}` : ''}`, detail.postal_code]
+        .filter(Boolean)
+        .join(', ') || 'Endereço não informado'
+    : '—'
+
   return (
     <Modal open={open} onOpenChange={(next) => { if (!next) close() }} title="Gerar contrato">
       {/* Steps indicator */}
@@ -105,7 +127,20 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
             </div>
           </div>
 
-          <ContractorSearch canCreate={canCreate} selected={contractor} onSelect={setContractor} />
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Dados do contratante</p>
+            <ContractorSearch
+              canCreate={canCreateContract && canCreatePeople}
+              canEditPeople={canEditPeople}
+              canViewGuardians={canViewGuardians}
+              studentId={sale.person_id ?? ''}
+              selected={contractor}
+              onSelect={setContractor}
+              detail={detail}
+              detailLoading={contractorDetail.isLoading}
+              onDetailUpdated={() => contractorDetail.refetch()}
+            />
+          </div>
 
           <div className="flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={close}>Cancelar</Button>
@@ -118,6 +153,8 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
         <div className="space-y-4">
           <div className="space-y-3 text-sm">
             <ReviewRow label="Contratante" value={contractor?.full_name ?? '—'} />
+            <ReviewRow label="Contato" value={contactLine} />
+            <ReviewRow label="Endereço" value={addressLine} />
             <ReviewRow label="Aluno" value={sale.student_code} />
             <ReviewRow label="Curso" value={sale.course_name_snapshot} />
             <ReviewRow label="Valor bruto" value={formatCurrency(sale.gross_value)} />

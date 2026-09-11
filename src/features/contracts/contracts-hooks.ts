@@ -103,6 +103,20 @@ export function useSearchContractorPeople(query: string) {
   })
 }
 
+export function useContractorDetail(personId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['contracts', 'contractor-detail', personId] as const,
+    queryFn: () => contractsService.getContractorDetail(personId!),
+    enabled: Boolean(personId)
+  })
+}
+
+export function useUpdatePerson() {
+  return useMutation({
+    mutationFn: contractsService.updatePerson
+  })
+}
+
 export function useCreatePerson() {
   return useMutation({
     mutationFn: contractsService.createPerson

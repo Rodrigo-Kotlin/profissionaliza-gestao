@@ -1274,6 +1274,7 @@ export type Database = {
       crm_dashboard_kpis: { Args: never; Returns: Json }
       get_contract_detail: { Args: { p_contract_id: string }; Returns: Json }
       get_contract_timeline: { Args: { p_contract_id: string }; Returns: Json }
+      get_contractor_detail: { Args: { p_person_id: string }; Returns: Json }
       get_crm_lead_detail: { Args: { p_lead_id: string }; Returns: Json }
       get_crm_lead_timeline: {
         Args: { p_lead_id: string; p_page?: number; p_page_size?: number }
@@ -1439,6 +1440,28 @@ export type Database = {
           p_temperature?: string
         }
         Returns: undefined
+      }
+      update_person: {
+        Args: {
+          p_birth_date?: string
+          p_city?: string
+          p_complement?: string
+          p_district?: string
+          p_email?: string
+          p_emergency_contact_name?: string
+          p_emergency_contact_phone?: string
+          p_full_name?: string
+          p_notes?: string
+          p_number?: string
+          p_person_id: string
+          p_phone?: string
+          p_postal_code?: string
+          p_preferred_name?: string
+          p_state?: string
+          p_street?: string
+          p_whatsapp?: string
+        }
+        Returns: Json
       }
       update_student: {
         Args: {
