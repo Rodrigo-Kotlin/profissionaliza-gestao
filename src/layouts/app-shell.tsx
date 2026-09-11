@@ -1,6 +1,6 @@
 import {
   AppWindow, Bell, BookOpen, ChevronLeft, ChevronRight, CircleDollarSign, CircleHelp,
-  GraduationCap, LayoutDashboard, LogOut, Menu, Percent, Plus, Search, Settings,
+  FileSignature, GraduationCap, LayoutDashboard, LogOut, Menu, Percent, Plus, Search, Settings,
   ShieldCheck, ShoppingBag, UserCircle, UserRoundSearch, X
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -24,7 +24,7 @@ const navigationSections: NavigationSection[] = [
   { items: [{ label: 'Visão Geral', icon: LayoutDashboard, to: '/', available: true, anyOf: [PERMISSIONS.DASHBOARD_VIEW] }] },
   {
     label: 'Operação',
-    items: [{ label: 'CRM', icon: UserRoundSearch, to: '/crm', available: true, anyOf: [PERMISSIONS.CRM_VIEW] }, { label: 'Vendas', icon: ShoppingBag, to: '/vendas', available: true, anyOf: [PERMISSIONS.SALES_VIEW] }]
+    items: [{ label: 'CRM', icon: UserRoundSearch, to: '/crm', available: true, anyOf: [PERMISSIONS.CRM_VIEW] }, { label: 'Vendas', icon: ShoppingBag, to: '/vendas', available: true, anyOf: [PERMISSIONS.SALES_VIEW] }, { label: 'Contratos', icon: FileSignature, to: '/contratos', available: true, anyOf: [PERMISSIONS.CONTRACTS_VIEW] }]
   },
   {
     label: 'Acadêmico',

@@ -21,6 +21,8 @@ const ActivitiesPage = lazy(() => import('@/features/crm/activities-page').then(
 const CourseCatalog = lazy(() => import('@/features/crm/course-catalog').then((m) => ({ default: m.CourseCatalog })))
 const SalesPage = lazy(() => import('@/features/sales/sales-list-page').then((m) => ({ default: m.SalesPage })))
 const SaleDetailPage = lazy(() => import('@/features/sales/sale-detail-page').then((m) => ({ default: m.SaleDetailPage })))
+const ContractsPage = lazy(() => import('@/features/contracts/contracts-list-page').then((m) => ({ default: m.ContractsPage })))
+const ContractDetailPage = lazy(() => import('@/features/contracts/contract-detail-page').then((m) => ({ default: m.ContractDetailPage })))
 
 function PageSkeleton() {
   return <div className="grid min-h-[60vh] place-items-center"><LoaderCircle className="size-7 animate-spin text-navy" /></div>
@@ -48,6 +50,8 @@ export const router = createBrowserRouter([
     { path: 'crm/cursos', element: <PermissionRoute permission={PERMISSIONS.COURSES_VIEW}><Suspense fallback={<PageSkeleton />}><CourseCatalog /></Suspense></PermissionRoute> },
     { path: 'vendas', element: <PermissionRoute permission={PERMISSIONS.SALES_VIEW}><Suspense fallback={<PageSkeleton />}><SalesPage /></Suspense></PermissionRoute> },
     { path: 'vendas/:id', element: <PermissionRoute permission={PERMISSIONS.SALES_VIEW}><Suspense fallback={<PageSkeleton />}><SaleDetailPage /></Suspense></PermissionRoute> },
+    { path: 'contratos', element: <PermissionRoute permission={PERMISSIONS.CONTRACTS_VIEW}><Suspense fallback={<PageSkeleton />}><ContractsPage /></Suspense></PermissionRoute> },
+    { path: 'contratos/:id', element: <PermissionRoute permission={PERMISSIONS.CONTRACTS_VIEW}><Suspense fallback={<PageSkeleton />}><ContractDetailPage /></Suspense></PermissionRoute> },
     { path: 'em-breve', element: <ComingSoonPage /> },
     { path: '*', element: <Navigate to="/" replace /> }
   ] }
