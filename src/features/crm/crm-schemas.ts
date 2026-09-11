@@ -13,7 +13,7 @@ export const leadFormSchema = z.object({
   entry_type: z.enum(['PROSPECTING', 'LEAD_RECEIVED']).optional(),
   commercial_notes: z.string().max(2000).optional(),
   first_activity_title: z.string().max(200).optional(),
-  first_activity_type: z.enum(['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'FOLLOW_UP', 'OTHER']).optional(),
+  first_activity_type: z.enum(['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'FOLLOW_UP', 'OTHER']).optional().or(z.literal('')),
   first_activity_due_at: z.string().optional()
 })
 

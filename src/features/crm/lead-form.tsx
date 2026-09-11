@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button, Input, Radio, Select, Textarea } from '@/components/ui/core'
@@ -7,8 +8,15 @@ import { useCreateLead, useCrmCourses, useCrmPipelineStages } from './crm-hooks'
 import { leadFormSchema, type LeadFormInput } from './crm-schemas'
 import { CRM_LEAD_SOURCES, CRM_SOURCE_LABELS, CRM_ACTIVITY_TYPES, CRM_ACTIVITY_TYPE_LABELS, CRM_TEMPERATURE_LABELS } from './crm-constants'
 import { normalizePhone, normalizeEmail } from './crm-utils'
+import { saveLeadDraft, loadLeadDraft, clearLeadDraft } from './lead-draft'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
+
+const DEFAULT_LEAD_DEFAULTS = {
+  temperature: 'WARM' as const,
+  source_code: '',
+  stage_id: ''
+}
 
 export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel: () => void }) {
   const createLead = useCreateLead()
@@ -16,14 +24,16 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
   const stagesQuery = useCrmPipelineStages()
   const { permissions } = useAuth()
   const canMoveStage = can(permissions, PERMISSIONS.CRM_MOVE_STAGE)
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
+  const [defaults] = useState(() => ({ ...DEFAULT_LEAD_DEFAULTS, ...loadLeadDraft() }))
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
     resolver: zodResolver(leadFormSchema),
-    defaultValues: {
-      temperature: 'WARM',
-      source_code: '',
-      stage_id: ''
-    }
+    defaultValues: defaults
   })
+
+  useEffect(() => {
+    const subscription = watch((values) => saveLeadDraft(values as Partial<LeadFormInput>))
+    return () => subscription.unsubscribe()
+  }, [watch])
 
   const onSubmit = async (values: LeadFormInput) => {
     try {
@@ -42,6 +52,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
         first_activity_due_at: values.first_activity_due_at
       })
       toast.success('Lead criado com sucesso.')
+      clearLeadDraft()
       onCreated(id)
     } catch (err) {
       toast.error(err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : 'Não foi possível criar o lead.')
@@ -121,6 +132,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
                 <option key={type} value={type}>{CRM_ACTIVITY_TYPE_LABELS[type]}</option>
               ))}
             </Select>
+            {errors.first_activity_type && <p className="mt-1 text-xs text-red-600">{errors.first_activity_type.message}</p>}
           </div>
           <Input label="Data e hora" type="datetime-local" error={errors.first_activity_due_at?.message} {...register('first_activity_due_at')} />
         </div>
