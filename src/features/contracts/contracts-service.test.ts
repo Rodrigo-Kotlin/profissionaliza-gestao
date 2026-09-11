@@ -76,6 +76,14 @@ describe('contractsService.updateDraft / issue / sign / cancel', () => {
     await contractsService.cancel({ contract_id: 'ct-1', cancellation_reason: 'Motivo' })
     expect(rpcMock).toHaveBeenCalledWith('cancel_contract', { p_contract_id: 'ct-1', p_reason: 'Motivo' })
   })
+
+  it('cancel returns CANCELED status (audit metadata excludes free-text PII server-side)', async () => {
+    rpcMock.mockResolvedValue({ data: { contract_id: 'ct-1', contract_code: 'CTR-2026-000001', status: 'CANCELED' }, error: null })
+    const result = await contractsService.cancel({ contract_id: 'ct-1', cancellation_reason: 'Cliente desistiu' })
+    expect(result.status).toBe('CANCELED')
+    // Audit metadata (server-side): { contract_code, sale_id, previous_status, new_status }
+    // cancellation_reason is stored in contracts.cancellation_reason, never in audit_logs.metadata.
+  })
 })
 
 describe('contractsService.list', () => {
@@ -172,13 +180,13 @@ describe('contractsService.createPerson', () => {
     expect(result).toEqual({ person_id: 'person-1', reused: false })
   })
 
-  it('sends other optional fields when present', async () => {
+it('sends other optional fields when present', async () => {
     rpcMock.mockResolvedValue({ data: { person_id: 'person-1', reused: false }, error: null })
     await contractsService.createPerson({
       full_name: 'João Souza',
       preferred_name: 'Jo',
       city: 'São Paulo',
-postal_code: '13456000'
+      postal_code: '13456000'
     })
     expect(rpcMock).toHaveBeenCalledWith('create_person', expect.objectContaining({
       p_preferred_name: 'Jo',
@@ -187,5 +195,16 @@ postal_code: '13456000'
       p_rg: undefined,
       p_birth_date: undefined
     }))
+  })
+
+  it('returns reused=true when CPF already exists (audit emits people.reused, not people.created)', async () => {
+    rpcMock.mockResolvedValue({ data: { person_id: 'person-existing', reused: true }, error: null })
+    const result = await contractsService.createPerson({
+      full_name: 'João Souza',
+      cpf: '52998224725'
+    })
+    expect(result).toEqual({ person_id: 'person-existing', reused: true })
+    // Server-side: audit event = 'people.reused' (not 'people.created')
+    // No PII in audit metadata: { reused: true }
   })
 })

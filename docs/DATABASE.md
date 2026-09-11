@@ -179,7 +179,10 @@ DRAFT ──emitir──▶ PENDING_SIGNATURE ──assinar──▶ SIGNED
 ```
 
 - `DRAFT` / `PENDING_SIGNATURE` são canceláveis; `SIGNED` e `CANCELED` são terminais.
-- Código `CTR-YYYY-NNNNNN` via sequence `contract_code_seq` (annual).
+- Código `CTR-YYYY-NNNNNN` via sequence `contract_code_seq` global e
+  concorrente-segura; o ano compõe apenas o prefixo e a sequence não é
+  reiniciada anualmente.
+- `status` é `text` com CHECK constraint (não ENUM do PostgreSQL).
 - Auditoria e transições são **100% server-side** via RPCs; o frontend nunca grava
   em `contracts` diretamente.
 

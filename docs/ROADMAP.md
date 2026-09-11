@@ -42,7 +42,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - 2 correções de BLOCKER (ADMIN RBAC, VENDEDOR/RECEPCAO courses.view)
 
 ## Fase 2.4 — Contracts
-**Status: concluída (branch `feature/contracts-phase-2-4`, aguardando homologação via PR)**
+**Status: implementada — aguardando homologação (branch `feature/contracts-phase-2-4`, PR #14)**
 
 - `contracts` nasce de Sale CONFIRMED (`sale_id NOT NULL UNIQUE`); estados DRAFT → PENDING_SIGNATURE → SIGNED
 - Ciclo de vida e auditoria 100% no back end (RPCs SECURITY DEFINER, RLS por permissão, ownership do vendedor)

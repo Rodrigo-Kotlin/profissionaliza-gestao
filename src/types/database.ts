@@ -100,6 +100,7 @@ export type AuditAction =
   | 'sales.created'
   | 'sales.canceled'
   | 'people.created'
+  | 'people.reused'
   | 'contracts.created'
   | 'contracts.updated_draft'
   | 'contracts.issued'
