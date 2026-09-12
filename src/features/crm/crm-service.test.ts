@@ -86,3 +86,58 @@ describe('crmService.getLeadDetail', () => {
     expect(rpcMock).toHaveBeenCalledWith('get_crm_lead_detail', { p_lead_id: 'lead-uuid' })
   })
 })
+
+describe('crmService.createLead', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+    rpcMock.mockResolvedValue({ data: 'lead-uuid', error: null })
+  })
+
+  it('repassa o CPF informado para a RPC (normalização no form/RPC)', async () => {
+    await crmService.createLead({ full_name: 'Ana Souza', cpf: '111.444.777-35' })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.objectContaining({ p_cpf: '111.444.777-35' }))
+  })
+
+  it('envia CPF com 11 dígitos já normalizados', async () => {
+    await crmService.createLead({ full_name: 'Ana Souza', cpf: '11144477735' })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.objectContaining({ p_cpf: '11144477735' }))
+  })
+
+  it('não envia p_cpf quando o CPF é vazio', async () => {
+    await crmService.createLead({ full_name: 'Ana Souza', cpf: '' })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.not.objectContaining({ p_cpf: expect.anything() }))
+  })
+
+  it('não envia p_cpf quando o CPF é omitido', async () => {
+    await crmService.createLead({ full_name: 'Ana Souza' })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.not.objectContaining({ p_cpf: expect.anything() }))
+  })
+
+  it('envia p_cpf junto dos demais parâmetros do lead', async () => {
+    await crmService.createLead({
+      full_name: 'Ana Souza',
+      cpf: '11144477735',
+      phone: '11999998888',
+      whatsapp: '11988887777',
+      email: 'ana@exemplo.com',
+      source_code: 'WHATSAPP',
+      temperature: 'WARM'
+    })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', {
+      p_full_name: 'Ana Souza',
+      p_cpf: '11144477735',
+      p_phone: '11999998888',
+      p_whatsapp: '11988887777',
+      p_email: 'ana@exemplo.com',
+      p_source_code: 'WHATSAPP',
+      p_course_interest_id: undefined,
+      p_owner_user_id: undefined,
+      p_stage_id: undefined,
+      p_temperature: 'WARM',
+      p_commercial_notes: undefined,
+      p_first_activity_title: undefined,
+      p_first_activity_type: undefined,
+      p_first_activity_due_at: undefined
+    })
+  })
+})

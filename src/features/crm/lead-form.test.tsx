@@ -95,4 +95,65 @@ describe('LeadForm', () => {
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith('lead-1'))
     expect(sessionStorage.getItem('crm:lead-draft:v1')).toBeNull()
   })
+
+  it('renders o campo CPF com label e placeholder', () => {
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    expect(screen.getByRole('textbox', { name: 'CPF' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('000.000.000-00')).toBeInTheDocument()
+  })
+
+  it('permite CPF vazio no cadastro do lead', async () => {
+    const user = userEvent.setup()
+    const mutateAsync = vi.fn().mockResolvedValue('lead-1')
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Silva')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled())
+    expect(mutateAsync).toHaveBeenCalledWith(expect.not.objectContaining({ cpf: expect.anything() }))
+  })
+
+  it('aceita CPF válido mascarado e envia normalizado com 11 dígitos', async () => {
+    const user = userEvent.setup()
+    const mutateAsync = vi.fn().mockResolvedValue('lead-1')
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Silva')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.type(screen.getByRole('textbox', { name: 'CPF' }), '111.444.777-35')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled())
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ cpf: '11144477735' }))
+  })
+
+  it('rejeita CPF inválido com a mensagem "CPF inválido."', async () => {
+    const user = userEvent.setup()
+    const mutateAsync = vi.fn().mockResolvedValue('lead-1')
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Silva')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.type(screen.getByRole('textbox', { name: 'CPF' }), '111.444.777-99')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(screen.getByText('CPF inválido.')).toBeInTheDocument())
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('salva CPF mascarado no rascunho conforme o campo é preenchido', async () => {
+    const user = userEvent.setup()
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: 'CPF' }), '11144477735')
+    const draft = JSON.parse(sessionStorage.getItem('crm:lead-draft:v1') as string)
+    expect(draft.cpf).toBe('111.444.777-35')
+  })
 })

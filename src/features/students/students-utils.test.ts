@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatCpf,
+  formatCpfInput,
   getNextStatuses,
   isValidCpf,
   maskCpf,
@@ -71,6 +72,26 @@ describe('formatCpf', () => {
   })
   it('returns raw digits when invalid', () => {
     expect(formatCpf('123')).toBe('123')
+  })
+})
+
+describe('formatCpfInput', () => {
+  it('keeps digits only up to 11', () => {
+    expect(formatCpfInput('11144477735123')).toBe('111.444.777-35')
+  })
+  it('formats progressively while typing', () => {
+    expect(formatCpfInput('1')).toBe('1')
+    expect(formatCpfInput('111')).toBe('111')
+    expect(formatCpfInput('111444')).toBe('111.444')
+    expect(formatCpfInput('111444777')).toBe('111.444.777')
+    expect(formatCpfInput('11144477735')).toBe('111.444.777-35')
+  })
+  it('strips punctuation and letters', () => {
+    expect(formatCpfInput('111.444.777-35abc')).toBe('111.444.777-35')
+    expect(formatCpfInput('(111) 444')).toBe('111.444')
+  })
+  it('returns empty string for empty input', () => {
+    expect(formatCpfInput('')).toBe('')
   })
 })
 

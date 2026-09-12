@@ -1,6 +1,6 @@
 import {
   AppWindow, Bell, BookOpen, ChevronLeft, ChevronRight, CircleDollarSign, CircleHelp,
-  FileSignature, GraduationCap, LayoutDashboard, LogOut, Menu, Percent, Plus, Search, Settings,
+  FileSignature, GraduationCap, LayoutDashboard, LogOut, Menu, Percent, Search, Settings,
   ShieldCheck, ShoppingBag, UserCircle, UserRoundSearch, X
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -67,7 +67,6 @@ export function AppShell() {
           <Button aria-label="Ajuda" variant="ghost" className="hidden shrink-0 px-3 lg:inline-flex"><CircleHelp className="size-5" /></Button>
           <Button aria-label="Notificações" variant="ghost" className="relative shrink-0 px-3"><Bell className="size-5" /><span className="absolute right-2 top-2 size-2 rounded-full bg-danger ring-2 ring-white" /></Button>
           <span className="mx-1 hidden h-8 w-px shrink-0 bg-line sm:block" />
-          <Button className="hidden shrink-0 whitespace-nowrap sm:inline-flex"><Plus className="size-4" />Criar</Button>
           <DropdownMenu trigger={<button aria-label="Menu do usuário" className="ml-1 flex shrink-0 items-center gap-2.5 rounded-lg p-1 pr-1 hover:bg-navy-50"><Avatar name={name} src={profile?.avatar_url} /><span className="hidden min-w-0 text-right xl:block"><span className="block max-w-[140px] truncate text-sm font-semibold leading-4 text-ink">{name}</span><span className="mt-0.5 block text-xs text-muted">Gestão</span></span></button>}><DropdownItem onSelect={() => navigate('/perfil')}><UserCircle className="size-4" />Meu perfil</DropdownItem><DropdownItem onSelect={logout} danger><LogOut className="size-4" />Sair</DropdownItem></DropdownMenu>
         </div>
       </header>
@@ -86,15 +85,6 @@ function Sidebar({ collapsed = false, onCollapse, onLogout, onClose }: { collaps
     .filter((section) => section.items.length > 0)
   return <div className="flex h-full flex-col">
     <div className={cn('flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-5', collapsed && 'justify-center px-3')}><div className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>{collapsed ? <BrandLogo variant="mark" size="lg" className="mx-auto" /> : <BrandLogo variant="horizontal" size="md" />}{onClose && <button aria-label="Fechar menu" onClick={onClose} className="grid size-10 place-items-center rounded-lg text-white/70 hover:bg-white/10"><X className="size-5" /></button>}</div></div>
-    <div className={cn('shrink-0 p-4 pb-2', collapsed && 'px-3')}>
-      {collapsed ? (
-        <Tooltip content="Novo Registro">
-          <Button variant="gold" className="h-12 w-full px-0"><Plus className="size-5 shrink-0" /></Button>
-        </Tooltip>
-      ) : (
-        <Button variant="gold" className="h-12 w-full"><Plus className="size-5 shrink-0" />Novo Registro</Button>
-      )}
-    </div>
     <nav aria-label="Menu principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-3 scrollbar-navy">
       {visibleSections.map((section) => (
         <div key={section.label ?? section.items[0]!.label} className="space-y-1">

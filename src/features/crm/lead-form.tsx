@@ -8,6 +8,7 @@ import { useCreateLead, useCrmCourses, useCrmPipelineStages } from './crm-hooks'
 import { leadFormSchema, type LeadFormInput } from './crm-schemas'
 import { CRM_LEAD_SOURCES, CRM_SOURCE_LABELS, CRM_ACTIVITY_TYPES, CRM_ACTIVITY_TYPE_LABELS, CRM_TEMPERATURE_LABELS } from './crm-constants'
 import { normalizePhone, normalizeEmail } from './crm-utils'
+import { formatCpfInput, normalizeCpf } from '../students/students-utils'
 import { saveLeadDraft, loadLeadDraft, clearLeadDraft } from './lead-draft'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
@@ -25,7 +26,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
   const { permissions } = useAuth()
   const canMoveStage = can(permissions, PERMISSIONS.CRM_MOVE_STAGE)
   const [defaults] = useState(() => ({ ...DEFAULT_LEAD_DEFAULTS, ...loadLeadDraft() }))
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: defaults
   })
@@ -39,6 +40,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
     try {
       const id = await createLead.mutateAsync({
         full_name: values.full_name,
+        cpf: values.cpf ? normalizeCpf(values.cpf) : undefined,
         phone: values.phone ? normalizePhone(values.phone) : undefined,
         whatsapp: values.whatsapp ? normalizePhone(values.whatsapp) : undefined,
         email: values.email ? normalizeEmail(values.email) : undefined,
@@ -65,11 +67,22 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
         <Input label="Nome completo *" error={errors.full_name?.message} {...register('full_name')} placeholder="Nome do lead" />
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="CPF"
+            inputMode="numeric"
+            placeholder="000.000.000-00"
+            maxLength={14}
+            error={errors.cpf?.message}
+            {...register('cpf')}
+            onChange={(event) => {
+              const masked = formatCpfInput(event.target.value)
+              setValue('cpf', masked, { shouldValidate: false, shouldDirty: true })
+            }}
+          />
           <Input label="Telefone" inputMode="tel" placeholder="(00) 00000-0000" error={errors.phone?.message} {...register('phone')} />
           <Input label="WhatsApp" inputMode="tel" placeholder="(00) 00000-0000" error={errors.whatsapp?.message} {...register('whatsapp')} />
+          <Input label="E-mail" type="email" error={errors.email?.message} {...register('email')} />
         </div>
-
-        <Input label="E-mail" type="email" error={errors.email?.message} {...register('email')} />
       </div>
 
       <div className="space-y-4">

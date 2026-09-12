@@ -1,7 +1,12 @@
 import { z } from 'zod'
+import { isValidCpf } from '../students/students-utils'
 
 export const leadFormSchema = z.object({
   full_name: z.string().min(1, 'Nome é obrigatório').max(240),
+  cpf: z
+    .string()
+    .optional()
+    .refine((v) => !v || isValidCpf(v), { message: 'CPF inválido.' }),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),

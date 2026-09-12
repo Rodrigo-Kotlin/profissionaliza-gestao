@@ -1190,6 +1190,7 @@ export type Database = {
         Args: {
           p_commercial_notes?: string
           p_course_interest_id?: string
+          p_cpf?: string
           p_email?: string
           p_first_activity_due_at?: string
           p_first_activity_title?: string

@@ -60,6 +60,7 @@ export const crmService = {
 
   async createLead(input: {
     full_name: string
+    cpf?: string
     phone?: string
     whatsapp?: string
     email?: string
@@ -75,6 +76,7 @@ export const crmService = {
   }): Promise<string> {
     const { data, error } = await rpc('create_crm_lead', {
       p_full_name: input.full_name,
+      p_cpf: emptyToUndefined(input.cpf),
       p_phone: emptyToUndefined(input.phone),
       p_whatsapp: emptyToUndefined(input.whatsapp),
       p_email: emptyToUndefined(input.email),
