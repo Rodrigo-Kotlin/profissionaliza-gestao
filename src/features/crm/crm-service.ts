@@ -73,6 +73,7 @@ export const crmService = {
     first_activity_title?: string
     first_activity_type?: string
     first_activity_due_at?: string
+    force_create?: boolean
   }): Promise<string> {
     const { data, error } = await rpc('create_crm_lead', {
       p_full_name: input.full_name,
@@ -88,7 +89,8 @@ export const crmService = {
       p_commercial_notes: emptyToUndefined(input.commercial_notes),
       p_first_activity_title: emptyToUndefined(input.first_activity_title),
       p_first_activity_type: emptyToUndefined(input.first_activity_type),
-      p_first_activity_due_at: emptyToUndefined(input.first_activity_due_at)
+      p_first_activity_due_at: emptyToUndefined(input.first_activity_due_at),
+      p_force_create: input.force_create ?? false
     })
     if (error) throw error
     return data as string

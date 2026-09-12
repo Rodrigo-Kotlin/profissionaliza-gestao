@@ -76,7 +76,9 @@ describe('LeadForm', () => {
     const user = userEvent.setup()
     render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
     await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos')
-    expect(JSON.parse(sessionStorage.getItem('crm:lead-draft:v1') as string)).toMatchObject({ full_name: 'Carlos' })
+    const envelope = JSON.parse(sessionStorage.getItem('crm:lead-draft:v2') as string)
+    expect(envelope.values).toMatchObject({ full_name: 'Carlos' })
+    expect(envelope.version).toBe(2)
   })
 
   it('limpa rascunho após criação bem-sucedida', async () => {
@@ -93,7 +95,7 @@ describe('LeadForm', () => {
     await user.selectOptions(origemSelect, 'OUTRO')
     await user.click(screen.getByRole('button', { name: /criar lead/i }))
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith('lead-1'))
-    expect(sessionStorage.getItem('crm:lead-draft:v1')).toBeNull()
+    expect(sessionStorage.getItem('crm:lead-draft:v2')).toBeNull()
   })
 
   it('renders o campo CPF com label e placeholder', () => {
@@ -153,7 +155,45 @@ describe('LeadForm', () => {
     const user = userEvent.setup()
     render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
     await user.type(screen.getByRole('textbox', { name: 'CPF' }), '11144477735')
-    const draft = JSON.parse(sessionStorage.getItem('crm:lead-draft:v1') as string)
-    expect(draft.cpf).toBe('111.444.777-35')
+    const envelope = JSON.parse(sessionStorage.getItem('crm:lead-draft:v2') as string)
+    expect(envelope.values.cpf).toBe('111.444.777-35')
+  })
+
+  it('mostra aviso de possível duplicidade e permite criar mesmo assim (force)', async () => {
+    const user = userEvent.setup()
+    const mutateAsync = vi.fn()
+      .mockRejectedValueOnce({ message: 'POSSIBLE_DUPLICATE:phone,email' })
+      .mockResolvedValueOnce('lead-1')
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Silva')
+    await user.type(screen.getByRole('textbox', { name: 'Telefone' }), '(11) 98888-7777')
+    await user.type(screen.getByRole('textbox', { name: 'E-mail' }), 'carlos@exemplo.com')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.getByText(/Já existe uma pessoa com este telefone \/ e-mail/)).toBeInTheDocument()
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+    await user.click(screen.getByRole('button', { name: /criar lead mesmo assim/i }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2))
+    expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ force_create: true, full_name: 'Carlos Silva' }))
+  })
+
+  it('não aciona o fluxo de força para erros comuns', async () => {
+    const user = userEvent.setup()
+    const mutateAsync = vi.fn().mockRejectedValue({ message: 'algum erro qualquer' })
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Silva')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    expect(screen.queryByRole('button', { name: /criar lead mesmo assim/i })).toBeNull()
   })
 })

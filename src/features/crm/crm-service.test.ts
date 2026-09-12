@@ -137,7 +137,18 @@ describe('crmService.createLead', () => {
       p_commercial_notes: undefined,
       p_first_activity_title: undefined,
       p_first_activity_type: undefined,
-      p_first_activity_due_at: undefined
+      p_first_activity_due_at: undefined,
+      p_force_create: false
     })
+  })
+
+  it('envia p_force_create false por padrão', async () => {
+    await crmService.createLead({ full_name: 'Ana Souza' })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.objectContaining({ p_force_create: false }))
+  })
+
+  it('envia p_force_create true quando confirmada possível duplicidade', async () => {
+    await crmService.createLead({ full_name: 'Ana Souza', force_create: true })
+    expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.objectContaining({ p_force_create: true }))
   })
 })

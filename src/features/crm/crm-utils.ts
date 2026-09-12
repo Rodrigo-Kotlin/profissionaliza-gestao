@@ -105,3 +105,31 @@ export function stageMoveErrorMessage(err: unknown): string | null {
   }
   return null
 }
+
+const LEAD_CONFLICT_PREFIX = 'POSSIBLE_DUPLICATE:'
+
+export function parsePossibleDuplicateError(err: unknown): { fields: string[] } | null {
+  const message = (err as { message?: string })?.message ?? ''
+  const marker = message.indexOf(LEAD_CONFLICT_PREFIX)
+  if (marker === -1) return null
+  const fields = message
+    .slice(marker + LEAD_CONFLICT_PREFIX.length)
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean)
+  if (fields.length === 0) return null
+  return { fields }
+}
+
+const CONTACT_FIELD_LABELS: Record<string, string> = {
+  phone: 'telefone',
+  whatsapp: 'WhatsApp',
+  email: 'e-mail',
+  name: 'nome',
+  cpf: 'CPF'
+}
+
+export function possibleDuplicateMessage(fields: string[]): string {
+  const labels = fields.map((f) => CONTACT_FIELD_LABELS[f] ?? f)
+  return `Já existe uma pessoa com este ${labels.join(' / ')}. Revise os dados antes de continuar.`
+}

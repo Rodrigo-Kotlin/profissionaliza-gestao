@@ -1120,6 +1120,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _crm_name_overlap: {
+        Args: { p_name_a: string; p_name_b: string }
+        Returns: boolean
+      }
       _crm_validate_stage_move: {
         Args: { p_course_interest_id?: string; p_stage_id: string }
         Returns: string
@@ -1195,6 +1199,7 @@ export type Database = {
           p_first_activity_due_at?: string
           p_first_activity_title?: string
           p_first_activity_type?: string
+          p_force_create?: boolean
           p_full_name: string
           p_owner_user_id?: string
           p_phone?: string
