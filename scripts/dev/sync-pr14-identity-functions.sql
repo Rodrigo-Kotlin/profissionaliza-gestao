@@ -1,4 +1,15 @@
 -- ============================================================================
+-- ============================================================================
+-- *** DEPRECATED / NÃO NECESSÁRIO — NÃO EXECUTAR ***
+-- ============================================================================
+-- A reconciliação oficial foi aplicada em 2026-09-13 pela migration versionada
+--   supabase/migrations/20260913100000_phase2_4_identity_cep_corrections.sql
+-- (push + local = remote no Supabase DEV). A partir dela NÃO existe mais drift:
+-- o conteúdo de create_crm_lead v2 / _crm_name_matches é a fonte única no
+-- repositório. Este arquivo fica apenas como registro histórico do catch-up
+-- temporário aplicado na fase E2E. NÃO confiar, NÃO usar.
+-- ============================================================================
+-- ============================================================================
 -- SYNC PR #14 (CREATE_CRM_LEAD v2) — DEV Supabase
 -- ============================================================================
 -- Propósito:

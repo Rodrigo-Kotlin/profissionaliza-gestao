@@ -2,8 +2,8 @@
 
 - **Branch**: `feature/contracts-phase-2-4` (PR #14)
 - **Escopo**: fluxo `Venda fechada → Wizard → Contrato (DRAFT → Emitido → Assinado)`, reuso de dados de People, CEP automático com fallback manual, LGPD/RBAC.
-- **Data**: 2026-09-11
-- **Status**: `FASE 2.4 CONTRACTS — AUDITORIA E2E CONCLUÍDA, AGUARDANDO HOMOLOGAÇÃO`
+- **Data**: 2026-09-11 (auditoria) · 2026-09-13 (correção final pós-E2E)
+- **Status**: `PR #14 — E2E VALIDADO E CORREÇÕES PÓS-HOMOLOGAÇÃO APLICADAS — AGUARDANDO HOMOLOGAÇÃO FINAL`
 
 ---
 
@@ -249,15 +249,58 @@ Trabalho realizado na branch `feature/contracts-phase-2-4` (mesmo PR). **Não me
 4. Decisão de produto: conceder `people.edit` a GERENTE_COMERCIAL/VENDEDOR para permitir completar contratante no fluxo? (por padrão esta auditoria **não** concedeu).
 5. Regenerar `database.types.ts`.
 
-## 30. Recomendação Final
+## 31. Correção Final Pós-E2E (2026-09-13)
 
-**Status**: `FASE 2.4 CONTRACTS — AUDITORIA E2E CONCLUÍDA, AGUARDANDO HOMOLOGAÇÃO`
+A validação E2E end-to-end com 5 clientes completos (Lead → Venda → Contrato → Aluno) revelou
+dois problemas que impediam a homologação. Ambos foram corrigidos formalmente.
 
-Roteiro de homologação (checklist):
-- [ ] `npm run dev` + fluxo: Venda → Gerar contrato → aluno pré-selecionado → ficha carregada
-- [ ] Badge de completude; completar campos faltantes no DEV (RECEPCAO)
-- [ ] CEP automático (ex.: `01001-000`) e fallback manual
-- [ ] Trocar contratante → responsável sugerido em 1 clique
-- [ ] Revisão com contato/endereço → criar DRAFT → emitir → assinar
-- [ ] Confirmar que VENDEDOR não vê "Cadastrar novo contratante" (sem `people.create`)
-- [ ] `supabase gen types` e novo `npm run test/build`
+### 31.1. Bug de CEP com zero à esquerda (BLOCKER)
+
+**Problema:** `create_person` e `create_student` aplicavam
+`nullif(ltrim(coalesce(p_postal_code, ''), '0'), '')`, removendo o primeiro zero de CEPs
+com prefixo 0 (ex.: `01001-000` virava `1001000` — 7 dígitos, violando a CHECK constraint
+`^[0-9]{8}$` e quebrando o cadastro).
+
+**Correção:** Normalização uniforme em todas as portas de entrada — `regexp_replace(...,
+'\D', '', 'g')` + `NULLIF(..., '')` preserva todos os dígitos (inclusive zeros à esquerda)
+e `raise exception 'Postal code must have 8 digits'` (errcode 22023) valida comprimento.
+
+RPCs corrigidas: `create_person`, `update_person` (validação explícita adicionada), `create_student`,
+`update_student` (validação explícita adicionada). Verificação via smoke test `postal_code_smoke.sql`
+(8 cenários PASS).
+
+### 31.2. Drift da migration `20260912100000` (BLOCKER)
+
+**Problema:** No DEV, a migration `20260912100000` foi registrada em `schema_migrations` com o
+conteúdo antigo (commit `b355657`), enquanto o repositório avançou para `8a9626a`. O drift
+foi contornado temporariamente com um script manual de sincronização (`sync-pr14-identity-functions.sql`).
+
+**Correção:** Reconciliação oficial via NOVA migration versionada
+`20260913100000_phase2_4_identity_cep_corrections.sql` que:
+- Reaplica o conteúdo FINAL de `_crm_name_matches` (CREATE OR REPLACE).
+- Reaplica o conteúdo FINAL de `create_crm_lead` v2 (15 params).
+- Remove o helper antigo `_crm_name_overlap` (DROP IF EXISTS genérico via DO block).
+- Corrigi as portas de entrada CEP (ver 31.1).
+
+`npx supabase db push --dry-run` → apenas a nova migration. `npx supabase db push` → aplicada.
+`npx supabase migration list` → **Local = Remote** (21 migrations).
+
+### 31.3. Resultados
+
+- **E2E 5 clientes:** Lead → Venda → Contrato → Aluno completa em todos (01–05).
+- **Identity safety:** Revalidada — `cpf_exact`, `LEAD_NAME_MISMATCH` → `cpf_exact_forced`,
+  `POSSIBLE_DUPLICATE:phone` → `contact_conflict_forced`.
+- **CEP via RPCs:** Revalidação E2E (1 cliente, sem UPDATE direto em `people`):
+  - `create_person(p_postal_code => '01001-000')` → `01001000`.
+  - `update_student(p_postal_code => '01001-000')` → `people.postal_code 01001000`.
+  - `contracts.contractor_address_snapshot->>'postal_code'` → `01001000`.
+- **Supabase DEV:** `local = remote` com 21 migrations; funções validadas remotamente
+  (sem `ltrim` bug, com `v_normalized_postal`, `_crm_name_matches` presente, `_crm_name_overlap` ausente).
+
+### 31.4. Scripts DEV
+
+- `reset-e2e-data.sql` — mantido.
+- `seed-e2e-sales-contracts.sql` — mantido.
+- `revalidate-cep-rpc-e2e.sql` — novo; reexecutável, transacional (ROLLBACK), sem residuo.
+- `sync-pr14-identity-functions.sql` — **DEPRECATED** (não necessário; mantido apenas como
+  registro histórico do catch-up temporário). NUNCA executar após a 20260913100000.
