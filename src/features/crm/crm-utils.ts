@@ -107,26 +107,37 @@ export function stageMoveErrorMessage(err: unknown): string | null {
 }
 
 const LEAD_CONFLICT_PREFIX = 'POSSIBLE_DUPLICATE:'
+const ALLOWED_CONFLICT_FIELDS = ['phone', 'whatsapp', 'email'] as const
 
 export function parsePossibleDuplicateError(err: unknown): { fields: string[] } | null {
   const message = (err as { message?: string })?.message ?? ''
   const marker = message.indexOf(LEAD_CONFLICT_PREFIX)
   if (marker === -1) return null
-  const fields = message
+  const rawFields = message
     .slice(marker + LEAD_CONFLICT_PREFIX.length)
     .split(',')
     .map((f) => f.trim())
     .filter(Boolean)
+  // Política de identidade: somente contatos podem ser conflito automático.
+  // Nome nunca é campo de deduplicação e CPF nunca é POSSIBLE_DUPLICATE.
+  const fields = rawFields.filter((f): f is (typeof ALLOWED_CONFLICT_FIELDS)[number] =>
+    ALLOWED_CONFLICT_FIELDS.includes(f as (typeof ALLOWED_CONFLICT_FIELDS)[number])
+  )
   if (fields.length === 0) return null
   return { fields }
+}
+
+export const LEAD_NAME_MISMATCH_MARKER = 'LEAD_NAME_MISMATCH'
+
+export function isLeadNameMismatchError(err: unknown): boolean {
+  const message = (err as { message?: string })?.message ?? ''
+  return message.includes(LEAD_NAME_MISMATCH_MARKER)
 }
 
 const CONTACT_FIELD_LABELS: Record<string, string> = {
   phone: 'telefone',
   whatsapp: 'WhatsApp',
-  email: 'e-mail',
-  name: 'nome',
-  cpf: 'CPF'
+  email: 'e-mail'
 }
 
 export function possibleDuplicateMessage(fields: string[]): string {

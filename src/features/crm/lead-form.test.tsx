@@ -182,6 +182,34 @@ describe('LeadForm', () => {
     expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ force_create: true, full_name: 'Carlos Silva' }))
   })
 
+  it('mostra aviso de divergência de nome (CPF existente) e permite vincular ao cadastro (force)', async () => {
+    const user = userEvent.setup()
+    const mutateAsync = vi.fn()
+      .mockRejectedValueOnce({ message: 'LEAD_NAME_MISMATCH' })
+      .mockResolvedValueOnce('lead-1')
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Maria de Souza')
+    await user.type(screen.getByRole('textbox', { name: 'CPF' }), '11144477735')
+    await user.type(screen.getByRole('textbox', { name: 'Telefone' }), '(11) 98888-7777')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.getByText(/CPF já está cadastrado para outro nome/)).toBeInTheDocument()
+    expect(screen.queryByText(/Já existe uma pessoa com este/)).toBeNull()
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+    await user.click(screen.getByRole('button', { name: /vincular ao cpf existente/i }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2))
+    expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({
+      force_create: true,
+      full_name: 'Maria de Souza',
+      cpf: '11144477735'
+    }))
+  })
+
   it('não aciona o fluxo de força para erros comuns', async () => {
     const user = userEvent.setup()
     const mutateAsync = vi.fn().mockRejectedValue({ message: 'algum erro qualquer' })

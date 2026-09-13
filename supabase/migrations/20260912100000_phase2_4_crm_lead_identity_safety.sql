@@ -8,29 +8,36 @@
 --   anterior, leads eram vinculados à identidade errada.
 --
 -- Nova política (a partir desta correção):
---   1. CPF exato  -> chave forte de identidade: reutiliza People automaticamente.
+--   1. CPF exato  -> chave forte de identidade: reutiliza People automaticamente
+--      quando o nome informado é compatível com o cadastro existente.
 --   2. Telefone/WhatsApp/e-mail -> NUNCA reutilizam automaticamente.
 --      Indicadores de possível duplicidade => erro de negócio POSSIBLE_DUPLICATE
 --      (sem PII) para revisão manual explícita.
---   3. Nome -> NUNCA deduplica.
+--   3. Nome -> NUNCA é chave de resolução de identidade. É usado apenas como
+--      sinal contextual: CPF exato com nome divergente dispara erro específico
+--      LEAD_NAME_MISMATCH (nunca POSSIBLE_DUPLICATE) para confirmação humana.
 --   4. CPF inexistente + contato conflitante => erro de negócio; somente cria
 --      nova People mediante confirmação explícita (p_force_create = true).
 --
 -- Metadata de auditoria (seguro, sem PII) inclui identity_resolution:
 --   'new_person'                    CPF ausente sem conflito, ou CPF sem match
 --   'cpf_exact'                     reutilizou People por CPF exato (nome ok)
---   'cpf_exact_forced'              reutilizou People por CPF após conflito de
---                                   nome confirmado (p_force_create)
+--   'cpf_exact_forced'              reutilizou People por CPF após confirmação
+--                                   de divergência de nome (p_force_create)
 --   'contact_conflict_forced'       criou nova People apesar de conflito de
 --                                   contato confirmado (p_force_create)
---   'cpf_exact_name_mismatch'       conflito (erro POSSIBLE_DUPLICATE)
+--   'cpf_exact_name_mismatch'       divergência de nome (erro LEAD_NAME_MISMATCH)
 --   'contact_conflict'              conflito (erro POSSIBLE_DUPLICATE)
 -- ---------------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------------
--- 1. Helper interno — sobreposição de tokens de nome (para ponto 4 abaixo)
+-- 1. Helper interno — equivalência de nome (sinal contextual de revisão)
+--    Nome NUNCA resolve identidade. Serve apenas para detectar divergência
+--    quando o CPF já existe e sugerir revisão humana.
+--    Compatível: igualdade após normalizar (minúsc./espaços) e ignorar
+--    conectivos ('de', 'da', 'do', 'dos', 'das', 'e').
 -- ---------------------------------------------------------------------------
-create or replace function public._crm_name_overlap(p_name_a text, p_name_b text)
+create or replace function public._crm_name_matches(p_name_a text, p_name_b text)
 returns boolean
 language plpgsql
 immutable
@@ -39,8 +46,11 @@ set search_path = pg_catalog, public
 set row_security = off
 as $$
 declare
+  v_stopwords text[] := array['de', 'da', 'do', 'dos', 'das', 'e'];
   v_tokens_a text[];
   v_tokens_b text[];
+  v_clean_a text[] := '{}'::text[];
+  v_clean_b text[] := '{}'::text[];
   v_t text;
 begin
   if p_name_a is null or p_name_b is null then
@@ -49,15 +59,20 @@ begin
   v_tokens_a := regexp_split_to_array(lower(trim(regexp_replace(p_name_a, '\s+', ' ', 'g'))), ' ');
   v_tokens_b := regexp_split_to_array(lower(trim(regexp_replace(p_name_b, '\s+', ' ', 'g'))), ' ');
   foreach v_t in array v_tokens_a loop
-    if v_t <> '' and v_t = any(v_tokens_b) then
-      return true;
+    if v_t <> '' and not (v_t = any(v_stopwords)) then
+      v_clean_a := array_append(v_clean_a, v_t);
     end if;
   end loop;
-  return false;
+  foreach v_t in array v_tokens_b loop
+    if v_t <> '' and not (v_t = any(v_stopwords)) then
+      v_clean_b := array_append(v_clean_b, v_t);
+    end if;
+  end loop;
+  return v_clean_a = v_clean_b;
 end;
 $$;
 
-revoke all on function public._crm_name_overlap(text, text) from public, anon;
+revoke all on function public._crm_name_matches(text, text) from public, anon;
 
 -- ---------------------------------------------------------------------------
 -- 2. Assinaturas anteriores são removidas (nenhuma lógica antiga permanece)
@@ -177,15 +192,24 @@ begin
     limit 1;
 
     if v_person_id is not null then
-      -- Passo 3: encontrou -> reutiliza (nome não é critério de dedup, mas
-      -- um nome muito diferente indica provável pessoa errada => revisão).
+      -- Passo 3: encontrou -> reutiliza. Nome não resolve identidade: apenas
+      -- sinal contextual. Qualquer divergência de nome exige revisão humana
+      -- (erro específico — nunca POSSIBLE_DUPLICATE:name).
       v_identity_resolution := 'cpf_exact';
-      if not public._crm_name_overlap(p_full_name, v_existing_full_name) then
+      if not public._crm_name_matches(p_full_name, v_existing_full_name) then
         v_identity_resolution := 'cpf_exact_name_mismatch';
         if p_force_create then
           v_identity_resolution := 'cpf_exact_forced';
         else
-          v_conflict_fields := array['name', 'cpf'];
+          perform public.write_audit_log(
+            'crm.lead_identity_conflict', 'crm_lead', null,
+            jsonb_build_object(
+              'identity_resolution', v_identity_resolution,
+              'identity_conflict', 'cpf_name_mismatch'
+            )
+          );
+          raise exception 'LEAD_NAME_MISMATCH'
+            using errcode = 'P0001';
         end if;
       end if;
     end if;
@@ -217,7 +241,9 @@ begin
   end if;
 
   -- Passo 5: conflito controlado (retorna erro de negócio sem PII)
-  if v_identity_resolution in ('contact_conflict', 'cpf_exact_name_mismatch') then
+  -- Apenas contatos (phone/whatsapp/email) entram aqui. CPF nunca é
+  -- POSSIBLE_DUPLICATE e nome nunca é campo de deduplicação.
+  if v_identity_resolution = 'contact_conflict' then
     perform public.write_audit_log(
       'crm.lead_identity_conflict', 'crm_lead', null,
       jsonb_build_object(

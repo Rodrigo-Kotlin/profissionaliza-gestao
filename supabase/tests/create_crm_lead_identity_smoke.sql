@@ -8,18 +8,21 @@
 -- CPFs validos usados (digitos verificadores corretos):
 --   Maria Souza  -> 111.444.777-35
 --   Beto         -> 987.654.321-00
+--   Maria Silva  -> 222.000.333-70
 --
 -- Cenarios:
 --   PRE  cria Maria Souza (cpf, tel, whatsapp, email)
 --   A    sem CPF, contatos novos           -> new_person
 --   B    CPF novo + telefone da Maria      -> CPF prevalece, pessoa nova, SEM conflito
 --   C    CPF da Maria + nome Maria         -> reutiliza Maria (cpf_exact)
---   D    CPF da Maria + nome sem overlap   -> POSSIBLE_DUPLICATE:name,cpf (P0001)
+--   D    CPF da Maria + nome sem overlap   -> LEAD_NAME_MISMATCH (P0001)
 --   E    igual a D + force                 -> reutiliza Maria (cpf_exact_forced)
 --   F    sem CPF + telefone da Maria       -> POSSIBLE_DUPLICATE:phone (P0001)
 --   G    igual a F + force                 -> pessoa nova (contact_conflict_forced)
 --   H    sem CPF, contatos novos           -> new_person
 --   I    sem CPF + telefone e whatsapp     -> POSSIBLE_DUPLICATE:phone,whatsapp (P0001)
+--   J    CPF da Silva + nome "Maria de Souza" (overlap parcial) -> LEAD_NAME_MISMATCH
+--   K    igual a J + force                 -> reutiliza Silva (cpf_exact_forced)
 -- ---------------------------------------------------------------------------
 
 begin;
@@ -167,21 +170,21 @@ begin
       p_full_name => 'Fulano Beltrano',
       p_cpf => '111.444.777-35',
       p_source_code => 'OUTRO');
-    return 'FAIL D: esperava POSSIBLE_DUPLICATE, criou lead ' || v_lead_id;
+    return 'FAIL D: esperava LEAD_NAME_MISMATCH, criou lead ' || v_lead_id;
   exception when others then
     get stacked diagnostics v_state = returned_sqlstate;
     v_fields := sqlerrm;
-    if v_state = 'P0001' and v_fields = 'POSSIBLE_DUPLICATE:name,cpf' then
+    if v_state = 'P0001' and v_fields = 'LEAD_NAME_MISMATCH' then
       v_hit := 1;
     end if;
   end;
   if v_hit <> 1 then
-    return 'FAIL D: P0001 name,cpf nao veio (state=' || coalesce(v_state, '<null>') || ', msg=' || coalesce(v_fields, '<null>') || ')';
+    return 'FAIL D: P0001 LEAD_NAME_MISMATCH nao veio (state=' || coalesce(v_state, '<null>') || ', msg=' || coalesce(v_fields, '<null>') || ')';
   end if;
   if (select count(*) from public.crm_leads) <> v_leads_apos then
     return 'FAIL D: lead foi criado indevidamente';
   end if;
-  return 'OK D: bloqueio P0001 name,cpf, nenhum lead criado (auditoria de conflito e transacional e revertida com o raise da chamada)';
+  return 'OK D: bloqueio LEAD_NAME_MISMATCH, nenhum lead criado (nome nunca e campo de deduplicacao; CPF nunca e POSSIBLE_DUPLICATE)';
 exception when others then
   return 'FAIL D: ' || sqlerrm;
 end $$;
@@ -346,6 +349,103 @@ exception when others then
   return 'FAIL I: ' || sqlerrm;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- J/K — BLOCKER §3: CPF exato + nome parcialmente diferente (Maria Silva x
+-- Maria de Souza) => LEAD_NAME_MISMATCH. Force => reutiliza (cpf_exact_forced),
+-- sem criar segunda People e sem sobrescrever o nome.
+-- ---------------------------------------------------------------------------
+create or replace function public._smoke_silva() returns uuid language plpgsql as $$
+declare
+  v_person_id uuid;
+  v_lead_id uuid;
+begin
+  select id into v_person_id from public.people where cpf = '22200033370';
+  if v_person_id is not null then
+    return v_person_id;
+  end if;
+  v_lead_id := public.create_crm_lead(
+    p_full_name => 'Maria Silva',
+    p_cpf => '222.000.333-70',
+    p_source_code => 'OUTRO');
+  select id into v_person_id from public.people where cpf = '22200033370';
+  return v_person_id;
+end $$;
+
+create or replace function public._smoke_j() returns text language plpgsql as $$
+declare
+  v_lead_id uuid;
+  v_silva uuid;
+  v_state text;
+  v_fields text;
+  v_hit int := 0;
+  v_leads_apos int;
+begin
+  perform public._smoke_claim();
+  v_silva := public._smoke_silva();
+  select count(*) into v_leads_apos from public.crm_leads;
+  begin
+    v_lead_id := public.create_crm_lead(
+      p_full_name => 'Maria de Souza',
+      p_cpf => '222.000.333-70',
+      p_source_code => 'OUTRO');
+    return 'FAIL J: esperava LEAD_NAME_MISMATCH, criou lead ' || v_lead_id;
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate;
+    v_fields := sqlerrm;
+    if v_state = 'P0001' and v_fields = 'LEAD_NAME_MISMATCH' then
+      v_hit := 1;
+    end if;
+  end;
+  if v_hit <> 1 then
+    return 'FAIL J: LEAD_NAME_MISMATCH nao veio (state=' || coalesce(v_state, '<null>') || ', msg=' || coalesce(v_fields, '<null>') || ')';
+  end if;
+  if (select count(*) from public.crm_leads) <> v_leads_apos then
+    return 'FAIL J: lead foi criado indevidamente';
+  end if;
+  if (select count(*) from public.people where cpf = '22200033370') <> 1 then
+    return 'FAIL J: segunda People criada silenciosamente';
+  end if;
+  if (select full_name from public.people where id = v_silva) <> 'Maria Silva' then
+    return 'FAIL J: nome existente foi sobrescrito';
+  end if;
+  return 'OK J: CPF exato + nome divergente -> LEAD_NAME_MISMATCH, sem 2a People';
+exception when others then
+  return 'FAIL J: ' || sqlerrm;
+end $$;
+
+create or replace function public._smoke_k() returns text language plpgsql as $$
+declare
+  v_lead_id uuid;
+  v_person_id uuid;
+  v_silva uuid;
+  v_res text;
+begin
+  perform public._smoke_claim();
+  v_silva := public._smoke_silva();
+  v_lead_id := public.create_crm_lead(
+    p_full_name => 'Maria de Souza',
+    p_cpf => '222.000.333-70',
+    p_source_code => 'OUTRO',
+    p_force_create => true);
+  select person_id into v_person_id from public.crm_leads where id = v_lead_id;
+  if v_person_id <> v_silva then
+    return 'FAIL K: force deveria reutilizar Silva (person ' || v_silva || '), veio ' || v_person_id;
+  end if;
+  select m.identity_resolution into v_res
+    from public.audit_logs a,
+         jsonb_to_record(a.metadata) as m(identity_resolution text)
+   where a.entity_id = v_lead_id::text and a.action = 'crm.lead_created';
+  if v_res is distinct from 'cpf_exact_forced' then
+    return 'FAIL K: resolution=' || coalesce(v_res, '<null>') || ' (esperava cpf_exact_forced)';
+  end if;
+  if (select full_name from public.people where id = v_silva) <> 'Maria Silva' then
+    return 'FAIL K: nome existente foi sobrescrito no force';
+  end if;
+  return 'OK K: force reutilizou Silva por CPF (person ' || v_person_id || ', ' || v_res || ')';
+exception when others then
+  return 'FAIL K: ' || sqlerrm;
+end $$;
+
 select public._smoke_pre() as cenario_pre;
 
 select
@@ -357,6 +457,8 @@ select
   public._smoke_f() as f,
   public._smoke_g() as g,
   public._smoke_h() as h,
-  public._smoke_i() as i;
+  public._smoke_i() as i,
+  public._smoke_j() as j,
+  public._smoke_k() as k;
 
 rollback;

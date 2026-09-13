@@ -9,7 +9,10 @@ import {
   isOverdue,
   formatRelativeDate,
   formatDueAt,
-  stageMoveErrorMessage
+  stageMoveErrorMessage,
+  parsePossibleDuplicateError,
+  possibleDuplicateMessage,
+  isLeadNameMismatchError
 } from './crm-utils'
 
 describe('parseCrmLeadListParams', () => {
@@ -166,5 +169,46 @@ describe('stageMoveErrorMessage', () => {
   it('returns null for unknown/unrelated errors', () => {
     expect(stageMoveErrorMessage({ code: 'P0002', message: 'Lead not found' })).toBeNull()
     expect(stageMoveErrorMessage(null)).toBeNull()
+  })
+})
+
+describe('parsePossibleDuplicateError', () => {
+  it('parses contact fields from POSSIBLE_DUPLICATE', () => {
+    expect(parsePossibleDuplicateError({ message: 'POSSIBLE_DUPLICATE:phone,whatsapp' })).toEqual({ fields: ['phone', 'whatsapp'] })
+  })
+
+  it('parses a single field', () => {
+    expect(parsePossibleDuplicateError({ message: 'POSSIBLE_DUPLICATE:phone' })).toEqual({ fields: ['phone'] })
+  })
+
+  it('returns null for messages without the marker', () => {
+    expect(parsePossibleDuplicateError({ message: 'algum erro' })).toBeNull()
+    expect(parsePossibleDuplicateError(null)).toBeNull()
+  })
+
+  it('nunca expõe nome nem CPF como campo de duplicidade (política de identidade)', () => {
+    const parsed = parsePossibleDuplicateError({ message: 'POSSIBLE_DUPLICATE:name,cpf,phone' })
+    expect(parsed).toEqual({ fields: ['phone'] })
+    expect(parsePossibleDuplicateError({ message: 'POSSIBLE_DUPLICATE:name,cpf' })).toBeNull()
+  })
+})
+
+describe('possibleDuplicateMessage', () => {
+  it('usa rótulos de contato (não possui chave nome/cpf)', () => {
+    expect(possibleDuplicateMessage(['phone'])).toBe('Já existe uma pessoa com este telefone. Revise os dados antes de continuar.')
+    expect(possibleDuplicateMessage(['phone', 'email'])).toBe('Já existe uma pessoa com este telefone / e-mail. Revise os dados antes de continuar.')
+  })
+})
+
+describe('isLeadNameMismatchError', () => {
+  it('detecta o erro específico de divergência de nome', () => {
+    expect(isLeadNameMismatchError({ message: 'LEAD_NAME_MISMATCH' })).toBe(true)
+    expect(isLeadNameMismatchError({ message: 'algo LEAD_NAME_MISMATCH algo' })).toBe(true)
+  })
+
+  it('não confunde com POSSIBLE_DUPLICATE nem erros comuns', () => {
+    expect(isLeadNameMismatchError({ message: 'POSSIBLE_DUPLICATE:phone' })).toBe(false)
+    expect(isLeadNameMismatchError({ message: 'algum erro' })).toBe(false)
+    expect(isLeadNameMismatchError(null)).toBe(false)
   })
 })

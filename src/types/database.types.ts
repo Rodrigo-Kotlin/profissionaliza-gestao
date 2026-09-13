@@ -1120,7 +1120,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      _crm_name_overlap: {
+      _crm_name_matches: {
         Args: { p_name_a: string; p_name_b: string }
         Returns: boolean
       }

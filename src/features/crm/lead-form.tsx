@@ -7,7 +7,7 @@ import { Button, Input, Radio, Select, Textarea } from '@/components/ui/core'
 import { useCreateLead, useCrmCourses, useCrmPipelineStages } from './crm-hooks'
 import { leadFormSchema, type LeadFormInput } from './crm-schemas'
 import { CRM_LEAD_SOURCES, CRM_SOURCE_LABELS, CRM_ACTIVITY_TYPES, CRM_ACTIVITY_TYPE_LABELS, CRM_TEMPERATURE_LABELS } from './crm-constants'
-import { normalizePhone, normalizeEmail, parsePossibleDuplicateError, possibleDuplicateMessage } from './crm-utils'
+import { normalizePhone, normalizeEmail, parsePossibleDuplicateError, possibleDuplicateMessage, isLeadNameMismatchError } from './crm-utils'
 import { formatCpfInput, normalizeCpf } from '../students/students-utils'
 import { saveLeadDraft, loadLeadDraft, clearLeadDraft } from './lead-draft'
 import { can, PERMISSIONS } from '@/lib/rbac'
@@ -27,6 +27,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
   const canMoveStage = can(permissions, PERMISSIONS.CRM_MOVE_STAGE)
   const [defaults] = useState(() => ({ ...DEFAULT_LEAD_DEFAULTS, ...loadLeadDraft() }))
   const [identityConflict, setIdentityConflict] = useState<string[] | null>(null)
+  const [nameMismatch, setNameMismatch] = useState(false)
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: defaults
@@ -38,6 +39,8 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
   }, [watch])
 
   const runSubmit = async (values: LeadFormInput, force: boolean) => {
+    setIdentityConflict(null)
+    setNameMismatch(false)
     try {
       const id = await createLead.mutateAsync({
         full_name: values.full_name,
@@ -59,12 +62,15 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
       clearLeadDraft()
       onCreated(id)
     } catch (err) {
+      if (isLeadNameMismatchError(err)) {
+        setNameMismatch(true)
+        return
+      }
       const conflict = parsePossibleDuplicateError(err)
       if (conflict) {
         setIdentityConflict(conflict.fields)
         return
       }
-      setIdentityConflict(null)
       toast.error(err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : 'Não foi possível criar o lead.')
     }
   }
@@ -166,6 +172,29 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
       <Textarea rows={3} {...register('commercial_notes')} placeholder="Notas sobre o lead..." />
 
       <div className="flex justify-end gap-3 pt-2">
+        {nameMismatch && (
+          <div className="mb-3 flex w-full flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex gap-2 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span role="alert">
+                Este CPF já está cadastrado para outro nome. Revise os dados antes de continuar.
+              </span>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setNameMismatch(false)}>
+                Revisar dados
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  void handleSubmit(onSubmitForced)()
+                }}
+              >
+                Vincular ao CPF existente
+              </Button>
+            </div>
+          </div>
+        )}
         {identityConflict && (
           <div className="mb-3 flex w-full flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <div className="flex gap-2 text-sm text-amber-800">
