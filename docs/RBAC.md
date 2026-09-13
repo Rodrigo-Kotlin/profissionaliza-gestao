@@ -108,6 +108,46 @@ telefone, whatsapp, e-mail e endereço **mascarados** no back end. Apenas
 `students.view_sensitive` recebe valores completos. O menu "Alunos" fica visível
 apenas para quem possui `students.view`.
 
+## Fase 2.4 — Permissões de Contracts
+
+Novas permissões introduzidas nesta fase:
+
+| Código | Descrição |
+| --- | --- |
+| `contracts.view` | Ver contratos (list/detail/timeline) de contratos próprios |
+| `contracts.view_all` | Ver contratos de todas as vendas/vendedores |
+| `contracts.view_sensitive` | Ver snapshots de dados sensíveis do contratante |
+| `contracts.create` | Gerar contrato a partir de sale CONFIRMED |
+| `contracts.edit_draft` | Editar rascunho (DRAFT) |
+| `contracts.issue` | Emitir (DRAFT → PENDING_SIGNATURE) |
+| `contracts.mark_signed` | Registrar assinatura (→ SIGNED) |
+| `contracts.cancel` | Cancelar (com motivo) |
+
+### Matriz por papel
+
+| Permissão | ADMIN | DIRECAO | GERENTE_COMERCIAL | RECEPCAO | VENDEDOR | FINANCEIRO | PEDAGOGICO | PROFESSOR |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| `contracts.view` | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| `contracts.view_all` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| `contracts.view_sensitive` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| `contracts.create` | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| `contracts.edit_draft` | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| `contracts.issue` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| `contracts.mark_signed` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| `contracts.cancel` | ✅ | ✅ | ✅ | — | — | — | — | — |
+
+**Regras de acesso:**
+
+- `VENDEDOR` opera apenas contratos de vendas **próprias** (ownership via
+  `seller_user_id`); `contracts.create`/`edit_draft` sem `view_all` ainda exigem
+  ser o vendedor dono da venda.
+- `RECEPCAO` cadastra contratantes via `people.create` (pode cria DRAFT e emitir,
+  mas **não** cancela).
+- `FINANCEIRO`, `PEDAGOGICO` e `PROFESSOR` não recebem permissões de contracts.
+- `contracts.view_sensitive` controla CPF/telefone/e-mail completos do
+  contratante no detalhe; sem ela o frontend exibe o valor mascarado retornado
+  pelo back end.
+
 ## LGPD
 
 Nunca versionar dados pessoais reais. Seeds devem usar exclusivamente nomes claramente fictícios, sem CPF, telefone, e-mail real de aluno ou dados financeiros.

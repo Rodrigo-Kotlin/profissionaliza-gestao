@@ -46,6 +46,14 @@ export const formatCpf = (value: string | null | undefined): string => {
   return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`
 }
 
+export const formatCpfInput = (value: string): string => {
+  const digits = normalizeCpf(value).slice(0, 11)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+}
+
 export function parseStudentListParams(
   url: URLSearchParams,
   defaults: { pageSize?: number; sort?: string; sortDir?: string } = {}

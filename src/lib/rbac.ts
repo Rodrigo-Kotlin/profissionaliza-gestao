@@ -44,7 +44,15 @@ export const PERMISSIONS = {
   SALES_VIEW_ALL: 'sales.view_all',
   SALES_CREATE: 'sales.create',
   SALES_APPROVE: 'sales.approve',
-  SALES_CANCEL: 'sales.cancel'
+  SALES_CANCEL: 'sales.cancel',
+  CONTRACTS_VIEW: 'contracts.view',
+  CONTRACTS_VIEW_ALL: 'contracts.view_all',
+  CONTRACTS_VIEW_SENSITIVE: 'contracts.view_sensitive',
+  CONTRACTS_CREATE: 'contracts.create',
+  CONTRACTS_EDIT_DRAFT: 'contracts.edit_draft',
+  CONTRACTS_ISSUE: 'contracts.issue',
+  CONTRACTS_MARK_SIGNED: 'contracts.mark_signed',
+  CONTRACTS_CANCEL: 'contracts.cancel'
 } as const satisfies Record<string, PermissionCode>
 
 export const can = (permissions: readonly string[], permission: PermissionCode) =>

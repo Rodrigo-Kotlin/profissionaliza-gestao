@@ -1,14 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Save } from 'lucide-react'
+import { AlertTriangle, Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button, Input, Radio, Select, Textarea } from '@/components/ui/core'
 import { useCreateLead, useCrmCourses, useCrmPipelineStages } from './crm-hooks'
 import { leadFormSchema, type LeadFormInput } from './crm-schemas'
 import { CRM_LEAD_SOURCES, CRM_SOURCE_LABELS, CRM_ACTIVITY_TYPES, CRM_ACTIVITY_TYPE_LABELS, CRM_TEMPERATURE_LABELS } from './crm-constants'
-import { normalizePhone, normalizeEmail } from './crm-utils'
+import { normalizePhone, normalizeEmail, parsePossibleDuplicateError, possibleDuplicateMessage, isLeadNameMismatchError } from './crm-utils'
+import { formatCpfInput, normalizeCpf } from '../students/students-utils'
+import { saveLeadDraft, loadLeadDraft, clearLeadDraft } from './lead-draft'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
+
+const DEFAULT_LEAD_DEFAULTS = {
+  temperature: 'WARM' as const,
+  source_code: '',
+  stage_id: ''
+}
 
 export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel: () => void }) {
   const createLead = useCreateLead()
@@ -16,19 +25,26 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
   const stagesQuery = useCrmPipelineStages()
   const { permissions } = useAuth()
   const canMoveStage = can(permissions, PERMISSIONS.CRM_MOVE_STAGE)
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
+  const [defaults] = useState(() => ({ ...DEFAULT_LEAD_DEFAULTS, ...loadLeadDraft() }))
+  const [identityConflict, setIdentityConflict] = useState<string[] | null>(null)
+  const [nameMismatch, setNameMismatch] = useState(false)
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<LeadFormInput>({
     resolver: zodResolver(leadFormSchema),
-    defaultValues: {
-      temperature: 'WARM',
-      source_code: '',
-      stage_id: ''
-    }
+    defaultValues: defaults
   })
 
-  const onSubmit = async (values: LeadFormInput) => {
+  useEffect(() => {
+    const subscription = watch((values) => saveLeadDraft(values as Partial<LeadFormInput>))
+    return () => subscription.unsubscribe()
+  }, [watch])
+
+  const runSubmit = async (values: LeadFormInput, force: boolean) => {
+    setIdentityConflict(null)
+    setNameMismatch(false)
     try {
       const id = await createLead.mutateAsync({
         full_name: values.full_name,
+        cpf: values.cpf ? normalizeCpf(values.cpf) : undefined,
         phone: values.phone ? normalizePhone(values.phone) : undefined,
         whatsapp: values.whatsapp ? normalizePhone(values.whatsapp) : undefined,
         email: values.email ? normalizeEmail(values.email) : undefined,
@@ -39,14 +55,28 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
         commercial_notes: values.commercial_notes,
         first_activity_title: values.first_activity_title,
         first_activity_type: values.first_activity_type,
-        first_activity_due_at: values.first_activity_due_at
+        first_activity_due_at: values.first_activity_due_at,
+        force_create: force
       })
       toast.success('Lead criado com sucesso.')
+      clearLeadDraft()
       onCreated(id)
     } catch (err) {
+      if (isLeadNameMismatchError(err)) {
+        setNameMismatch(true)
+        return
+      }
+      const conflict = parsePossibleDuplicateError(err)
+      if (conflict) {
+        setIdentityConflict(conflict.fields)
+        return
+      }
       toast.error(err && typeof err === 'object' && 'message' in err ? String((err as { message: unknown }).message) : 'Não foi possível criar o lead.')
     }
   }
+
+  const onSubmit = (values: LeadFormInput) => runSubmit(values, false)
+  const onSubmitForced = (values: LeadFormInput) => runSubmit(values, true)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -54,11 +84,22 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
         <Input label="Nome completo *" error={errors.full_name?.message} {...register('full_name')} placeholder="Nome do lead" />
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="CPF"
+            inputMode="numeric"
+            placeholder="000.000.000-00"
+            maxLength={14}
+            error={errors.cpf?.message}
+            {...register('cpf')}
+            onChange={(event) => {
+              const masked = formatCpfInput(event.target.value)
+              setValue('cpf', masked, { shouldValidate: false, shouldDirty: true })
+            }}
+          />
           <Input label="Telefone" inputMode="tel" placeholder="(00) 00000-0000" error={errors.phone?.message} {...register('phone')} />
           <Input label="WhatsApp" inputMode="tel" placeholder="(00) 00000-0000" error={errors.whatsapp?.message} {...register('whatsapp')} />
+          <Input label="E-mail" type="email" error={errors.email?.message} {...register('email')} />
         </div>
-
-        <Input label="E-mail" type="email" error={errors.email?.message} {...register('email')} />
       </div>
 
       <div className="space-y-4">
@@ -121,6 +162,7 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
                 <option key={type} value={type}>{CRM_ACTIVITY_TYPE_LABELS[type]}</option>
               ))}
             </Select>
+            {errors.first_activity_type && <p className="mt-1 text-xs text-red-600">{errors.first_activity_type.message}</p>}
           </div>
           <Input label="Data e hora" type="datetime-local" error={errors.first_activity_due_at?.message} {...register('first_activity_due_at')} />
         </div>
@@ -130,6 +172,50 @@ export function LeadForm({ onCreated, onCancel }: { onCreated: (id: string) => v
       <Textarea rows={3} {...register('commercial_notes')} placeholder="Notas sobre o lead..." />
 
       <div className="flex justify-end gap-3 pt-2">
+        {nameMismatch && (
+          <div className="mb-3 flex w-full flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex gap-2 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span role="alert">
+                Este CPF já está cadastrado para outro nome. Revise os dados antes de continuar.
+              </span>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setNameMismatch(false)}>
+                Revisar dados
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  void handleSubmit(onSubmitForced)()
+                }}
+              >
+                Vincular ao CPF existente
+              </Button>
+            </div>
+          </div>
+        )}
+        {identityConflict && (
+          <div className="mb-3 flex w-full flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex gap-2 text-sm text-amber-800">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span role="alert">{possibleDuplicateMessage(identityConflict)}</span>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setIdentityConflict(null)}>
+                Revisar dados
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  void handleSubmit(onSubmitForced)()
+                }}
+              >
+                Criar lead mesmo assim
+              </Button>
+            </div>
+          </div>
+        )}
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
           <Save className="size-4" /> Criar lead

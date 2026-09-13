@@ -74,6 +74,20 @@ A segurança é aplicada **no banco**, nunca apenas na UI. No front-end, `src/ro
 - Nomeações consistentes: `<dominio>-page.tsx`, `<dominio>-service.ts`, etc.
 - Dependência unidirecional: UI consome serviços, serviços consomem o client.
 
+### Feature contracts (Fase 2.4)
+
+Segue o mesmo padrão de `sales`: `contracts-types`, `contracts-constants`,
+`contracts-schemas`, `contracts-utils` (helpers puros testáveis),
+`contracts-service` (wrapper tipado do client), `contracts-hooks` (React Query) e
+páginas/componentes (`contracts-list-page`, `contract-detail-page`,
+`contract-create-wizard`, `contractor-search`, `create-person-modal`,
+`edit/issue/sign/cancel-contract-dialog`).
+
+Fluxo: a venda CONFIRMED no `sale-detail-page` abre o wizard; o serviço chama
+RPCs `SECURITY DEFINER` (`create_contract_from_sale`, `issue_contract`, …) que
+aplicam ownership, transições de estado e masking — o frontend nunca grava em
+`public.contracts` diretamente.
+
 ## Fluxo de dependências
 
 ```text

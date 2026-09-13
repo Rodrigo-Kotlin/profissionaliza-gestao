@@ -41,6 +41,18 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - 202 testes Vitest (16 arquivos), E2E smoke specs
 - 2 correções de BLOCKER (ADMIN RBAC, VENDEDOR/RECEPCAO courses.view)
 
+## Fase 2.4 — Contracts
+**Status: implementada — aguardando homologação (branch `feature/contracts-phase-2-4`, PR #14)**
+
+- `contracts` nasce de Sale CONFIRMED (`sale_id NOT NULL UNIQUE`); estados DRAFT → PENDING_SIGNATURE → SIGNED
+- Ciclo de vida e auditoria 100% no back end (RPCs SECURITY DEFINER, RLS por permissão, ownership do vendedor)
+- RBAC: 8 permissões `contracts.*` (+ `people.create` p/ Recepção cadastrar contratante)
+- `create_person` (reuso por CPF exato), `search_contractor_people` com PII mascarada no PostgreSQL
+- Frontend: `/contratos`, `/contratos/:id`, wizard 3 passos, dialogs (editar rascunho/emitir/assinar/cancelar)
+- Integração Sales: card de contrato + "Gerar contrato" no detail da venda
+- 2 migrations aplicadas no Supabase DEV (Local = Remote); tipos regenerados
+- Quality gates: 257 testes Vitest, typecheck, lint, build
+
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento
 
@@ -58,9 +70,9 @@ Branch: `feature/master-data`
 
 CRM, leads, funil, vendas e atendimento.
 
-## Fase 4 — Contratos e Financeiro
+## Fase 4 — Financeiro
 
-Contratos, comissões, contas a receber, cobranças e recebimentos.
+Comissões, contas a receber, cobranças e recebimentos (Contratos em Fase 2.4).
 
 ## Fase 5 — Operação Pedagógica
 

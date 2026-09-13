@@ -161,6 +161,65 @@ supabase/migrations/20260902100000_phase2_1_student_update.sql
 
 Ambas já aplicadas ao remoto DEV (linked ref `epjshcgsjvrydwuyqixi`).
 
+## Fase 2.4 — Contracts
+
+### Modelo
+
+`public.contracts` nasce obrigatoriamente de uma `sales` **CONFIRMED**
+(`sale_id NOT NULL UNIQUE`, 1:0..1). Configurações comerciais e acadêmicas são
+snapshots (`course_name_snapshot`, `course_workload_snapshot`, etc.) e o
+contratante vem de `public.people` via `contractor_person_id`.
+
+Ciclo de vida:
+
+```text
+DRAFT ──emitir──▶ PENDING_SIGNATURE ──assinar──▶ SIGNED
+  │                    │
+  └─────cancelar───────┴──────▶ CANCELED
+```
+
+- `DRAFT` / `PENDING_SIGNATURE` são canceláveis; `SIGNED` e `CANCELED` são terminais.
+- Código `CTR-YYYY-NNNNNN` via sequence `contract_code_seq` global e
+  concorrente-segura; o ano compõe apenas o prefixo e a sequence não é
+  reiniciada anualmente.
+- `status` é `text` com CHECK constraint (não ENUM do PostgreSQL).
+- Auditoria e transições são **100% server-side** via RPCs; o frontend nunca grava
+  em `contracts` diretamente.
+
+### RPCs de domínio
+
+| Função | Permissão exigida | Finalidade |
+| --- | --- | --- |
+| `create_contract_from_sale` | `contracts.create` | Cria DRAFT a partir da venda (owner ou view_all) |
+| `update_contract_draft` | `contracts.edit_draft` | Edita rascunho (reusabilidade do contractor + `person_id` reset) |
+| `issue_contract` | `contracts.issue` | Emite (DRAFT → PENDING_SIGNATURE) |
+| `mark_contract_signed` | `contracts.mark_signed` | Registra assinatura (PENDING_SIGNATURE → SIGNED) |
+| `cancel_contract` | `contracts.cancel` | Cancela com motivo obrigatório |
+| `list_contracts` | `contracts.view` | Lista filtrada/paginada + masking |
+| `get_contract_detail` | `contracts.view` | Detalhe com snapshots e dados sensíveis conforme permissão |
+| `get_contract_timeline` | `contracts.view` | Timeline de `audit_logs` do contrato |
+| `search_contractor_people` | `contracts.view` | Busca de pessoas como contratantes (CPF/telefone sempre mascarados) |
+| `create_person` | `people.create` | Cadastro de pessoa com reuso por CPF exato (`{ person_id, reused }`) |
+| `get_sale_detail` | `sales.view` | Estendida: `contract_id`, `contract_code`, `contract_status` |
+
+Regras de acesso:
+
+- Ownership do vendedor: contrato criado por quem tem `contracts.create` **e** é
+  `seller_user_id` da venda, **ou** quem tem `contracts.view_all` (`GERENTE_COMERCIAL`+).
+- Todo fluxo valida estado na origem: emitir exige DRAFT, assinar exige
+  PENDING_SIGNATURE, cancelar exige DRAFT/PENDING_SIGNATURE.
+- Auditoria de pessoas sem PII; timeline do contrato reflete apenas eventos
+  `contracts.*` (`created`, `updated_draft`, `issued`, `signed`, `canceled`).
+
+### Migrations desta fase
+
+```text
+supabase/migrations/20260910210000_phase2_4_contracts_core.sql
+supabase/migrations/20260910210001_phase2_4_contracts_rpcs.sql
+```
+
+Ambas aplicadas ao remoto DEV (linked ref `epjshcgsjvrydwuyqixi`), Local = Remote.
+
 ## Cuidado com db reset remoto
 
 **NÃO** executar `npx supabase db reset --linked` sem autorização explícita. Esse comando é destrutivo. Mesmo em DEV, pedir confirmação antes.

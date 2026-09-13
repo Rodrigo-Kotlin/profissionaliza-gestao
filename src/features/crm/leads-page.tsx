@@ -1,5 +1,5 @@
 import { GraduationCap, Plus, Search, SlidersHorizontal } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -11,6 +11,7 @@ import { parseCrmLeadListParams, updateSearchParams } from './crm-utils'
 import { CRM_STATUS_LABELS, CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES, CRM_PIPELINE_STAGE_LABELS } from './crm-constants'
 import type { CrmLeadListItem } from './crm-types'
 import { LeadForm } from './lead-form'
+import { clearLeadDraft } from './lead-draft'
 
 const PAGE_SIZES = [20, 50, 100]
 
@@ -21,8 +22,15 @@ export function LeadsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const routedCreation = location.pathname.endsWith('/novo')
-  const [drawerOpen, setDrawerOpen] = useState(routedCreation)
+  const [drawerOpen, setDrawerOpen] = useState(() => {
+    if (routedCreation) clearLeadDraft()
+    return routedCreation
+  })
   const [mobileFilters, setMobileFilters] = useState(false)
+
+  useEffect(() => {
+    if (routedCreation) clearLeadDraft()
+  }, [routedCreation])
 
   const parsed = useMemo(() => parseCrmLeadListParams(params), [params])
   const { data, isLoading, isError } = useCrmLeads(parsed)
@@ -35,7 +43,7 @@ export function LeadsPage() {
     <div className="space-y-6 md:space-y-8">
       <PageHeader title="Leads" description="Lista completa de leads do funil comercial.">
         {canCreate && (
-          <Button onClick={() => setDrawerOpen(true)}>
+          <Button onClick={() => { clearLeadDraft(); setDrawerOpen(true) }}>
             <Plus className="size-4" /> Novo Lead
           </Button>
         )}

@@ -1,7 +1,12 @@
 import { z } from 'zod'
+import { isValidCpf } from '../students/students-utils'
 
 export const leadFormSchema = z.object({
   full_name: z.string().min(1, 'Nome é obrigatório').max(240),
+  cpf: z
+    .string()
+    .optional()
+    .refine((v) => !v || isValidCpf(v), { message: 'CPF inválido.' }),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
@@ -13,7 +18,7 @@ export const leadFormSchema = z.object({
   entry_type: z.enum(['PROSPECTING', 'LEAD_RECEIVED']).optional(),
   commercial_notes: z.string().max(2000).optional(),
   first_activity_title: z.string().max(200).optional(),
-  first_activity_type: z.enum(['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'FOLLOW_UP', 'OTHER']).optional(),
+  first_activity_type: z.enum(['CALL', 'WHATSAPP', 'EMAIL', 'MEETING', 'FOLLOW_UP', 'OTHER']).optional().or(z.literal('')),
   first_activity_due_at: z.string().optional()
 })
 

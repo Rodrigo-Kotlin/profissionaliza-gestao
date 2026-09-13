@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -71,6 +71,133 @@ export type Database = {
           metadata?: Json
         }
         Relationships: []
+      }
+      contracts: {
+        Row: {
+          canceled_at: string | null
+          canceled_by: string | null
+          cancellation_reason: string | null
+          commercial_notes_snapshot: string | null
+          contract_code: string
+          contract_notes: string | null
+          contractor_address_snapshot: Json | null
+          contractor_cpf_snapshot: string | null
+          contractor_email_snapshot: string | null
+          contractor_name_snapshot: string
+          contractor_person_id: string
+          contractor_phone_snapshot: string | null
+          course_modality_snapshot: string
+          course_name_snapshot: string
+          course_workload_snapshot: number | null
+          created_at: string
+          created_by: string | null
+          discount_value_snapshot: number
+          gross_value_snapshot: number
+          id: string
+          installments_snapshot: number
+          issued_at: string | null
+          net_value_snapshot: number
+          payment_method_snapshot: string
+          sale_id: string
+          signature_confirmed_by: string | null
+          signed_at: string | null
+          status: string
+          student_id: string
+          student_name_snapshot: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
+          commercial_notes_snapshot?: string | null
+          contract_code: string
+          contract_notes?: string | null
+          contractor_address_snapshot?: Json | null
+          contractor_cpf_snapshot?: string | null
+          contractor_email_snapshot?: string | null
+          contractor_name_snapshot: string
+          contractor_person_id: string
+          contractor_phone_snapshot?: string | null
+          course_modality_snapshot: string
+          course_name_snapshot: string
+          course_workload_snapshot?: number | null
+          created_at?: string
+          created_by?: string | null
+          discount_value_snapshot?: number
+          gross_value_snapshot: number
+          id?: string
+          installments_snapshot?: number
+          issued_at?: string | null
+          net_value_snapshot: number
+          payment_method_snapshot: string
+          sale_id: string
+          signature_confirmed_by?: string | null
+          signed_at?: string | null
+          status?: string
+          student_id: string
+          student_name_snapshot: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
+          commercial_notes_snapshot?: string | null
+          contract_code?: string
+          contract_notes?: string | null
+          contractor_address_snapshot?: Json | null
+          contractor_cpf_snapshot?: string | null
+          contractor_email_snapshot?: string | null
+          contractor_name_snapshot?: string
+          contractor_person_id?: string
+          contractor_phone_snapshot?: string | null
+          course_modality_snapshot?: string
+          course_name_snapshot?: string
+          course_workload_snapshot?: number | null
+          created_at?: string
+          created_by?: string | null
+          discount_value_snapshot?: number
+          gross_value_snapshot?: number
+          id?: string
+          installments_snapshot?: number
+          issued_at?: string | null
+          net_value_snapshot?: number
+          payment_method_snapshot?: string
+          sale_id?: string
+          signature_confirmed_by?: string | null
+          signed_at?: string | null
+          status?: string
+          student_id?: string
+          student_name_snapshot?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_contractor_person_id_fkey"
+            columns: ["contractor_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: true
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       courses: {
         Row: {
@@ -993,6 +1120,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _crm_name_matches: {
+        Args: { p_name_a: string; p_name_b: string }
+        Returns: boolean
+      }
       _crm_validate_stage_move: {
         Args: { p_course_interest_id?: string; p_stage_id: string }
         Returns: string
@@ -1000,6 +1131,10 @@ export type Database = {
       assign_crm_lead: {
         Args: { p_lead_id: string; p_new_owner_id: string }
         Returns: undefined
+      }
+      cancel_contract: {
+        Args: { p_contract_id: string; p_reason: string }
+        Returns: Json
       }
       cancel_sale: {
         Args: { p_cancellation_reason: string; p_sale_id: string }
@@ -1020,6 +1155,14 @@ export type Database = {
       complete_crm_activity: {
         Args: { p_activity_id: string; p_outcome?: string }
         Returns: undefined
+      }
+      create_contract_from_sale: {
+        Args: {
+          p_contract_notes?: string
+          p_contractor_person_id: string
+          p_sale_id: string
+        }
+        Returns: Json
       }
       create_course: {
         Args: {
@@ -1051,10 +1194,12 @@ export type Database = {
         Args: {
           p_commercial_notes?: string
           p_course_interest_id?: string
+          p_cpf?: string
           p_email?: string
           p_first_activity_due_at?: string
           p_first_activity_title?: string
           p_first_activity_type?: string
+          p_force_create?: boolean
           p_full_name: string
           p_owner_user_id?: string
           p_phone?: string
@@ -1064,6 +1209,29 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: string
+      }
+      create_person: {
+        Args: {
+          p_birth_date?: string
+          p_city?: string
+          p_complement?: string
+          p_cpf?: string
+          p_district?: string
+          p_email?: string
+          p_emergency_contact_name?: string
+          p_emergency_contact_phone?: string
+          p_full_name: string
+          p_notes?: string
+          p_number?: string
+          p_phone?: string
+          p_postal_code?: string
+          p_preferred_name?: string
+          p_rg?: string
+          p_state?: string
+          p_street?: string
+          p_whatsapp?: string
+        }
+        Returns: Json
       }
       create_sale_from_lead: {
         Args: {
@@ -1110,6 +1278,9 @@ export type Database = {
         Returns: Json
       }
       crm_dashboard_kpis: { Args: never; Returns: Json }
+      get_contract_detail: { Args: { p_contract_id: string }; Returns: Json }
+      get_contract_timeline: { Args: { p_contract_id: string }; Returns: Json }
+      get_contractor_detail: { Args: { p_person_id: string }; Returns: Json }
       get_crm_lead_detail: { Args: { p_lead_id: string }; Returns: Json }
       get_crm_lead_timeline: {
         Args: { p_lead_id: string; p_page?: number; p_page_size?: number }
@@ -1126,6 +1297,7 @@ export type Database = {
       }
       has_role: { Args: { requested_role: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      issue_contract: { Args: { p_contract_id: string }; Returns: Json }
       link_guardian: {
         Args: {
           p_cpf?: string
@@ -1141,6 +1313,19 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: string
+      }
+      list_contracts: {
+        Args: {
+          p_course_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+          p_seller_user_id?: string
+          p_status?: string
+        }
+        Returns: Json
       }
       list_courses: { Args: { p_status?: string }; Returns: Json }
       list_crm_lead_activities: {
@@ -1171,6 +1356,7 @@ export type Database = {
         }
         Returns: Json
       }
+      mark_contract_signed: { Args: { p_contract_id: string }; Returns: Json }
       mask_cpf: { Args: { p_value: string }; Returns: string }
       mask_email: { Args: { p_value: string }; Returns: string }
       mask_phone: { Args: { p_value: string }; Returns: string }
@@ -1181,6 +1367,10 @@ export type Database = {
       reschedule_crm_activity: {
         Args: { p_activity_id: string; p_new_due_at: string }
         Returns: undefined
+      }
+      search_contractor_people: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: Json
       }
       search_crm_leads: {
         Args: {
@@ -1214,6 +1404,14 @@ export type Database = {
       }
       student_kpis: { Args: never; Returns: Json }
       unlink_guardian: { Args: { p_guardian_id: string }; Returns: undefined }
+      update_contract_draft: {
+        Args: {
+          p_contract_id: string
+          p_contract_notes: string
+          p_contractor_person_id: string
+        }
+        Returns: Json
+      }
       update_course: {
         Args: {
           p_category?: string
@@ -1248,6 +1446,28 @@ export type Database = {
           p_temperature?: string
         }
         Returns: undefined
+      }
+      update_person: {
+        Args: {
+          p_birth_date?: string
+          p_city?: string
+          p_complement?: string
+          p_district?: string
+          p_email?: string
+          p_emergency_contact_name?: string
+          p_emergency_contact_phone?: string
+          p_full_name?: string
+          p_notes?: string
+          p_number?: string
+          p_person_id: string
+          p_phone?: string
+          p_postal_code?: string
+          p_preferred_name?: string
+          p_state?: string
+          p_street?: string
+          p_whatsapp?: string
+        }
+        Returns: Json
       }
       update_student: {
         Args: {
