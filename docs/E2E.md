@@ -39,6 +39,8 @@ npm run test:e2e
 | E2E-03 Kanban | `kanban.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Pipeline renderiza colunas; arrasto otimista move lead de etapa |
 | E2E-04 Lead | `lead-details.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Abre lead pelo kanban, navega pelas abas; lead inexistente não quebra a UI |
 | E2E-05 Guarda anônima | `unauth-guard.spec.ts` | Apenas `E2E_BASE_URL` | Rota protegida sem sessão redireciona para `/login` |
+| 12B homologação autenticada | `homologation-auth.spec.ts`, `homologation-triage.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Rotas, responsividade, PWA, navegação e guards |
+| 12C.5 transacional | `transactional-flow.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Lead → Venda → Contrato → Aluno até `SIGNED` |
 
 ## Decisões
 
@@ -58,3 +60,9 @@ npm run test:e2e
 
 A suíte E2E **não** roda no CI do PR (requer deploy e credenciais). É executada
 manualmente contra o deploy candidato à release.
+
+## Último checkpoint
+
+- Playwright autenticado: validado contra o DEV com conta QA ADMIN.
+- Playwright transacional: 1 fluxo completo aprovado; cleanup por marcador exclusivo executado.
+- Artefatos de falha (`test-results/`, traces, screenshots e vídeos) são ignorados pelo Git.

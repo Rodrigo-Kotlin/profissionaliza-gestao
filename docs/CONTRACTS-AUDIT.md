@@ -3,7 +3,7 @@
 - **Branch**: `feature/contracts-phase-2-4` (PR #14)
 - **Escopo**: fluxo `Venda fechada → Wizard → Contrato (DRAFT → Emitido → Assinado)`, reuso de dados de People, CEP automático com fallback manual, LGPD/RBAC.
 - **Data**: 2026-09-11 (auditoria) · 2026-09-13 (correção final pós-E2E)
-- **Status**: `PR #14 — E2E VALIDADO E CORREÇÕES PÓS-HOMOLOGAÇÃO APLICADAS — AGUARDANDO HOMOLOGAÇÃO FINAL`
+- **Status**: `PR #14 — RELEASE READINESS VALIDADO — AGUARDANDO REVISÃO FINAL E HOMOLOGAÇÃO FÍSICA`
 
 ---
 
@@ -304,3 +304,40 @@ foi contornado temporariamente com um script manual de sincronização (`sync-pr
 - `revalidate-cep-rpc-e2e.sql` — novo; reexecutável, transacional (ROLLBACK), sem residuo.
 - `sync-pr14-identity-functions.sql` — **DEPRECATED** (não necessário; mantido apenas como
   registro histórico do catch-up temporário). NUNCA executar após a 20260913100000.
+
+## 32. Consolidação de Release Readiness (Fase 12C.6)
+
+### 32.1 Banco e identidade
+
+- A migration corretiva `20260913100000_phase2_4_identity_cep_corrections.sql` está versionada e aplicada.
+- `npx supabase migration list` confirma 21 migrations em `Local = Remote`.
+- O CEP `01001-000` preserva o zero à esquerda (`01001000`) em People, Student e snapshot do contrato.
+- O drift de identidade CRM foi reconciliado; `sync-pr14-identity-functions.sql` permanece apenas como registro histórico deprecated.
+
+### 32.2 Fluxos e UI
+
+- A suíte Playwright autenticada valida as rotas, responsividade, navegação e contexto de retorno.
+- O fluxo transacional Playwright foi validado pela UI: Lead → Venda → Contrato DRAFT → PENDING_SIGNATURE → SIGNED → Aluno.
+- O bug de `ContractActions` foi corrigido: ações válidas de DRAFT (`Editar`, `Emitir`, `Cancelar`) são independentes conforme permissões.
+- O hardening de responsive UI, touch targets, safe-area, tabs/keyboard, breadcrumbs e paginação está concluído.
+- O tratamento offline bloqueia mutações sem conexão; o app mantém somente o shell offline.
+
+### 32.3 Auditoria e cleanup E2E
+
+- Eventos de domínio são autoritativos no backend/RPC; o frontend não duplica auditoria após sucesso.
+- Execuções transacionais usam `RUN_ID`/marcadores exclusivos.
+- O último fluxo usou o marcador `E2E-12C5-1790804427703` e foi removido de forma controlada, sem reset de sequences.
+- Verificação pós-cleanup: zero leads, pessoas, vendas e contratos remanescentes do marcador.
+
+### 32.4 Qualidade atual
+
+| Gate | Resultado |
+| --- | --- |
+| `npm run typecheck` | OK |
+| `npm run lint` | OK, 0 warnings |
+| `npm run test` | 564 passed / 0 failed |
+| `npm run build` | OK; warnings não bloqueadores de chunk e comentários de dependência |
+| Playwright transacional | 1 passed |
+
+Homologação física continua pendente: PWA standalone real, iOS notch/Dynamic Island,
+teclado virtual, tablet touch/drag e Wi-Fi conectado sem internet.

@@ -42,7 +42,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - 2 correções de BLOCKER (ADMIN RBAC, VENDEDOR/RECEPCAO courses.view)
 
 ## Fase 2.4 — Contracts
-**Status: implementada — aguardando homologação (branch `feature/contracts-phase-2-4`, PR #14)**
+**Status: concluída tecnicamente — aguardando homologação física (branch `feature/contracts-phase-2-4`, PR #14)**
 
 - `contracts` nasce de Sale CONFIRMED (`sale_id NOT NULL UNIQUE`); estados DRAFT → PENDING_SIGNATURE → SIGNED
 - Ciclo de vida e auditoria 100% no back end (RPCs SECURITY DEFINER, RLS por permissão, ownership do vendedor)
@@ -50,8 +50,14 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - `create_person` (reuso por CPF exato), `search_contractor_people` com PII mascarada no PostgreSQL
 - Frontend: `/contratos`, `/contratos/:id`, wizard 3 passos, dialogs (editar rascunho/emitir/assinar/cancelar)
 - Integração Sales: card de contrato + "Gerar contrato" no detail da venda
-- 2 migrations aplicadas no Supabase DEV (Local = Remote); tipos regenerados
-- Quality gates: 257 testes Vitest, typecheck, lint, build
+- Backend: concluído; frontend: concluído.
+- Identity safety: validado; CEP: corrigido e validado, incluindo zero à esquerda.
+- E2E navegacional autenticado: validado.
+- E2E transacional Lead → Venda → Contrato → Aluno: validado até `SIGNED`.
+- UI/UX responsive hardening, PWA/offline safe mutations e accessibility hardening: concluídos.
+- 21 migrations aplicadas no Supabase DEV (`Local = Remote`); `database.types.ts` sincronizado.
+- Quality gates atuais: 564 testes Vitest, typecheck, lint e build aprovados.
+- Homologação física: pendente. Merge do PR #14: pendente.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento

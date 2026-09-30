@@ -67,6 +67,23 @@ A segurança é aplicada **no banco**, nunca apenas na UI. No front-end, `src/ro
 
 - Manifest e service worker gerados no build.
 - Service worker armazena somente assets estáticos do app shell. Sem runtime cache de APIs, sessões ou dados pessoais.
+- O PWA é app-shell offline, não offline-first: mutações são bloqueadas sem conexão.
+- Não existe cache genérico de PII ou dados do Supabase.
+
+## Navegação e contexto
+
+- Listas usam `URLSearchParams` como fonte de verdade para busca, filtros, paginação e contexto de retorno relevante.
+- Breadcrumbs e ações de retorno preservam o contexto da lista quando aplicável.
+
+## Auditoria
+
+Business-domain audit events are authoritative on the backend. RPCs
+`SECURITY DEFINER` register these actions with the business operation, so
+frontend audit logging must not duplicate RPC-side audit events after success.
+
+The frontend audit service (`src/services/audit-service.ts`) remains available
+for authentication events (`auth.login`/`auth.logout`) and client-only events
+without an equivalent backend audit.
 
 ## Organização por features
 
