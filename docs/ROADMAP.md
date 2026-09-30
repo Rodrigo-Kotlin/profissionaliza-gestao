@@ -42,7 +42,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - 2 correções de BLOCKER (ADMIN RBAC, VENDEDOR/RECEPCAO courses.view)
 
 ## Fase 2.4 — Contracts
-**Status: concluída tecnicamente — aguardando homologação física (branch `feature/contracts-phase-2-4`, PR #14)**
+**Status: concluída e homologada (branch `feature/contracts-phase-2-4`, PR #14)**
 
 - `contracts` nasce de Sale CONFIRMED (`sale_id NOT NULL UNIQUE`); estados DRAFT → PENDING_SIGNATURE → SIGNED
 - Ciclo de vida e auditoria 100% no back end (RPCs SECURITY DEFINER, RLS por permissão, ownership do vendedor)
@@ -57,7 +57,8 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - UI/UX responsive hardening, PWA/offline safe mutations e accessibility hardening: concluídos.
 - 21 migrations aplicadas no Supabase DEV (`Local = Remote`); `database.types.ts` sincronizado.
 - Quality gates atuais: 564 testes Vitest, typecheck, lint e build aprovados.
-- Homologação física: pendente. Merge do PR #14: pendente.
+- Homologação física: concluída pelo usuário.
+- Merge do PR #14: aguardando autorização final.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento

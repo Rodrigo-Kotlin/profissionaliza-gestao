@@ -184,7 +184,7 @@ RPCs `SECURITY DEFINER` com `search_path` fixo, `row_security = off` apenas dent
 5. `CompleteContractorForm` — só campos faltantes + CEP.
 6. CEP lookup no cadastro de pessoa e na completude.
 7. Fix de normalização de CEP com zero à esquerda.
-8. `database.types.ts` atualizado (regeneração via `supabase gen types` pendente).
+8. `database.types.ts` atualizado e sincronizado com o schema remoto.
 
 ## 22. Arquivos Alterados
 
@@ -339,5 +339,6 @@ foi contornado temporariamente com um script manual de sincronização (`sync-pr
 | `npm run build` | OK; warnings não bloqueadores de chunk e comentários de dependência |
 | Playwright transacional | 1 passed |
 
-Homologação física continua pendente: PWA standalone real, iOS notch/Dynamic Island,
-teclado virtual, tablet touch/drag e Wi-Fi conectado sem internet.
+Homologação física: concluída pelo usuário, abrangendo PWA standalone, smartphone,
+tablet, desktop, safe-area/notch, teclado virtual, touch, Kanban, orientação,
+OfflineBanner, reconexão e rede real conforme os testes realizados pelo usuário.
