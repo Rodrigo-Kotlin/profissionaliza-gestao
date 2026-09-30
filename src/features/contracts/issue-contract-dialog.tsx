@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 import { Button } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useIssueContract } from './contracts-hooks'
@@ -23,8 +24,8 @@ export function IssueContractDialog({ contract, open, onOpenChange, onIssued }: 
       toast.success(`Contrato ${result.contract_code} emitido.`)
       onOpenChange(false)
       onIssued?.()
-    } catch {
-      setError('Não foi possível emitir o contrato.')
+    } catch (err) {
+      setError(offlineAwareMessage(err, 'Não foi possível emitir o contrato.'))
     }
   }
 

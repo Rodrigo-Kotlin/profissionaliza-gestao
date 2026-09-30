@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 import { Button } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useSignContract } from './contracts-hooks'
@@ -23,8 +24,8 @@ export function SignContractDialog({ contract, open, onOpenChange, onSigned }: P
       toast.success(`Contrato ${result.contract_code} assinado.`)
       onOpenChange(false)
       onSigned?.()
-    } catch {
-      setError('Não foi possível registrar a assinatura.')
+    } catch (err) {
+      setError(offlineAwareMessage(err, 'Não foi possível registrar a assinatura.'))
     }
   }
 

@@ -73,7 +73,7 @@ export function ContractorSearch({
               )}
               <p className="mt-1 text-xs text-muted">{selected.reused ? 'Pessoa já cadastrada — dados reutilizados.' : ''}</p>
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setSwitching(true)}>Trocar</Button>
+            <Button type="button" variant="ghost" className="px-3" onClick={() => setSwitching(true)}>Trocar</Button>
           </div>
 
           {detail && canEditPeople && (
@@ -118,7 +118,7 @@ export function ContractorSearch({
                 type="button"
                 aria-label="Limpar busca"
                 onClick={() => setQuery('')}
-                className="absolute right-3 top-2.5 text-muted hover:text-ink"
+                className="absolute right-1 top-1 grid size-11 place-items-center rounded-lg px-0 text-muted hover:text-ink"
               >
                 <X className="size-4" />
               </button>
@@ -194,7 +194,7 @@ export function ContractorSearch({
           )}
 
           {selected && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setSwitching(false)}>
+            <Button type="button" variant="ghost" className="px-3" onClick={() => setSwitching(false)}>
               <X className="size-4" /> Cancelar troca
             </Button>
           )}

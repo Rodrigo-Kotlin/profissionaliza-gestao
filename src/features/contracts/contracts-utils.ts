@@ -3,9 +3,34 @@ import {
   CONTRACT_CANCELABLE_STATUSES,
   CONTRACT_EDITABLE_STATUSES,
   CONTRACT_ISSUABLE_STATUSES,
-  CONTRACT_SIGNABLE_STATUSES
+  CONTRACT_SIGNABLE_STATUSES,
+  CONTRACT_STATUS_LABELS
 } from './contracts-constants'
 import type { ContractorAddressSnapshot, ContractStatus } from './contracts-types'
+
+export type ContractListUrlParams = {
+  q?: string
+  status?: string
+  seller?: string
+  course?: string
+  date_from?: string
+  date_to?: string
+  page: number
+}
+
+export function parseContractListParams(url: URLSearchParams): ContractListUrlParams {
+  const rawStatus = url.get('status')?.trim() || ''
+  const status = rawStatus && (CONTRACT_STATUS_LABELS as Record<string, string>)[rawStatus] ? rawStatus : undefined
+  return {
+    q: url.get('q')?.trim() || undefined,
+    status,
+    seller: url.get('seller')?.trim() || undefined,
+    course: url.get('course')?.trim() || undefined,
+    date_from: url.get('date_from')?.trim() || undefined,
+    date_to: url.get('date_to')?.trim() || undefined,
+    page: Math.max(1, Number(url.get('page')) || 1)
+  }
+}
 
 export function generateContractCode(year: number, sequence: number): string {
   const seq = String(sequence).padStart(6, '0')

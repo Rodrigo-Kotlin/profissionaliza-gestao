@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 import { Button, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useCancelContract } from './contracts-hooks'
@@ -28,8 +29,8 @@ export function CancelContractDialog({ contractId, contractCode, open, onOpenCha
       onOpenChange(false)
       reset()
       onCanceled?.()
-    } catch {
-      toast.error('Não foi possível cancelar o contrato.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível cancelar o contrato.'))
     }
   }
 

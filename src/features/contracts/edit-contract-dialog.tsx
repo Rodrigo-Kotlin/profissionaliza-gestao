@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 import { Button, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useUpdateContractDraft, useContractorDetail } from './contracts-hooks'
@@ -47,8 +48,8 @@ export function EditContractDialog({ contract, open, onOpenChange, onSaved }: Pr
       toast.success(`Contrato ${contract.contract_code} atualizado.`)
       onOpenChange(false)
       onSaved?.()
-    } catch {
-      toast.error('Não foi possível atualizar o rascunho.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível atualizar o rascunho.'))
     }
   }
 

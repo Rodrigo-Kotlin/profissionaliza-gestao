@@ -268,3 +268,33 @@ describe('contractsService.updatePerson', () => {
     await expect(contractsService.updatePerson({ person_id: 'person-1', full_name: 'Novo' })).rejects.toThrow()
   })
 })
+
+describe('contractsService — proteção offline em mutations', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it.each([
+    ['createFromSale', () => contractsService.createFromSale({ sale_id: 's1', contractor_person_id: 'p1' })],
+    ['updateDraft', () => contractsService.updateDraft({ contract_id: 'c1', contractor_person_id: 'p1', contract_notes: '' })],
+    ['issue', () => contractsService.issue('c1')],
+    ['sign', () => contractsService.sign('c1')],
+    ['cancel', () => contractsService.cancel({ contract_id: 'c1', cancellation_reason: 'Motivo' })],
+    ['createPerson', () => contractsService.createPerson({ full_name: 'Teste' })],
+    ['updatePerson', () => contractsService.updatePerson({ person_id: 'p1', full_name: 'Teste' })],
+  ])('%s lança OfflineConnectionError quando offline', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    await expect(fn()).rejects.toThrow('Sem conexão')
+    expect(rpcMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['list', () => contractsService.list({})],
+    ['detail', () => contractsService.detail('c1')],
+  ])('%s não lança offline quando navigator.onLine é false', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    rpcMock.mockResolvedValue({ data: null, error: null })
+    await expect(fn()).resolves.not.toThrow()
+    expect(rpcMock).toHaveBeenCalled()
+  })
+})

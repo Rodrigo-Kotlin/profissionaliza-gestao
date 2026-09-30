@@ -8,7 +8,7 @@ import { useCreateContractFromSale, useContractorDetail } from './contracts-hook
 import { ContractorSearch, type SelectedContractor } from './contractor-search'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
-import { formatCurrency, formatDateOnly } from '@/lib/utils'
+import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
 import { SALE_PAYMENT_METHOD_LABELS } from '../sales/sales-constants'
 import type { SaleDetail } from '../sales/sales-types'
 import type { CreateContractResult } from './contracts-types'
@@ -93,8 +93,30 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
 
   return (
     <Modal open={open} onOpenChange={(next) => { if (!next) close() }} title="Gerar contrato">
-      {/* Steps indicator */}
-      <ol className="mb-5 flex items-center gap-1 text-xs" aria-label="Etapas">
+      {/* Steps indicator — mobile compact */}
+      <div className="mb-5 flex items-center gap-2 sm:hidden" aria-label="Etapas">
+        <ol className="flex items-center gap-1">
+          {STEPS.map((label, index) => {
+            const current = index + 1
+            const done = current < step
+            const active = current === step
+            return (
+              <li key={label}>
+                <span
+                  className={`grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
+                    done ? 'bg-emerald-600 text-white' : active ? 'bg-navy text-white' : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {done ? <CheckCircle2 className="size-3.5" /> : current}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+        {step > 0 && <span className="text-xs font-semibold text-muted">Etapa {step} de {STEPS.length}</span>}
+      </div>
+      {/* Steps indicator — desktop/tablet */}
+      <ol className="mb-5 hidden items-center gap-1 text-xs sm:flex" aria-label="Etapas">
         {STEPS.map((label, index) => {
           const current = index + 1
           const active = current === step
@@ -221,9 +243,9 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
 
 function ReviewRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-muted">{label}</span>
-      <span className={highlight ? 'text-lg font-bold text-emerald-700' : 'font-medium'}>{value}</span>
+    <div className="flex w-full flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className={cn('min-w-0 text-right break-words', highlight ? 'text-lg font-bold text-emerald-700' : 'font-medium')}>{value}</span>
     </div>
   )
 }

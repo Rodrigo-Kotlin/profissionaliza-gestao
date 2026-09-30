@@ -1,6 +1,6 @@
 import { CalendarDays, FileSignature, Search, X } from 'lucide-react'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
 import { supabase } from '@/lib/supabase'
@@ -10,6 +10,9 @@ import { can, PERMISSIONS } from '@/lib/rbac'
 import { useContractList } from './contracts-hooks'
 import { useCrmCourses } from '../crm/crm-hooks'
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_TONES, CONTRACT_PAGE_SIZE } from './contracts-constants'
+import { parseContractListParams } from './contracts-utils'
+import { updateSearchParams } from '@/lib/url-params'
+import { computeTotalPages, useNormalizedPage } from '@/lib/pagination'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
 import type { ContractListItem } from './contracts-types'
 
@@ -17,14 +20,12 @@ export function ContractsPage() {
   const navigate = useNavigate()
   const { permissions } = useAuth()
   const hasViewAll = can(permissions, PERMISSIONS.CONTRACTS_VIEW_ALL)
+  const [params, setParams] = useSearchParams()
 
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [sellerFilter, setSellerFilter] = useState('')
-  const [courseFilter, setCourseFilter] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [page, setPage] = useState(1)
+  const parsed = useMemo(() => parseContractListParams(params), [params])
+
+  const updateParams = (next: Record<string, string | number | undefined | null>) =>
+    setParams(updateSearchParams(params, next), { replace: true })
 
   const courses = useCrmCourses('ACTIVE')
 
@@ -42,21 +43,20 @@ export function ContractsPage() {
   })
 
   const query = useContractList({
-    search: search || undefined,
-    status: statusFilter || undefined,
-    seller_user_id: sellerFilter || undefined,
-    course_id: courseFilter || undefined,
-    date_from: dateFrom || undefined,
-    date_to: dateTo || undefined,
-    page,
+    search: parsed.q,
+    status: parsed.status,
+    seller_user_id: parsed.seller,
+    course_id: parsed.course,
+    date_from: parsed.date_from,
+    date_to: parsed.date_to,
+    page: parsed.page,
     page_size: CONTRACT_PAGE_SIZE
   })
 
   const contracts = query.data?.data ?? []
   const total = query.data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / CONTRACT_PAGE_SIZE))
-
-  const resetPage = () => setPage(1)
+  const totalPages = computeTotalPages(total, CONTRACT_PAGE_SIZE)
+  useNormalizedPage(total, parsed.page, totalPages, (page) => updateParams({ page }))
 
   return (
     <div className="space-y-6">
@@ -69,16 +69,19 @@ export function ContractsPage() {
           <Input
             placeholder="Buscar por código, aluno ou contratante..."
             className="pl-9"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); resetPage() }}
+            value={parsed.q ?? ''}
+            onChange={(e) => updateParams({ q: e.target.value || undefined })}
           />
-          {search && (
-            <button
-              onClick={() => { setSearch(''); resetPage() }}
-              className="absolute right-3 top-2.5 text-muted hover:text-ink"
+          {parsed.q && (
+            <Button
+              type="button"
+              aria-label="Limpar busca"
+              variant="ghost"
+              onClick={() => updateParams({ q: undefined })}
+              className="absolute right-1 top-1 grid size-11 place-items-center rounded-lg px-0 text-muted hover:text-ink"
             >
               <X className="size-4" />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -87,9 +90,9 @@ export function ContractsPage() {
             <Button
               key={key}
               type="button"
-              size="sm"
-              variant={statusFilter === key ? 'primary' : 'ghost'}
-              onClick={() => { setStatusFilter(key); resetPage() }}
+              className="px-3"
+              variant={parsed.status === key ? 'primary' : 'ghost'}
+              onClick={() => updateParams({ status: key || undefined })}
             >
               {label}
             </Button>
@@ -100,7 +103,7 @@ export function ContractsPage() {
       {/* Filters row 2: Seller (view_all only) + Course + Period */}
       <div className="flex flex-wrap items-center gap-3">
         {hasViewAll && (
-          <Select value={sellerFilter} onChange={(e) => { setSellerFilter(e.target.value); resetPage() }}>
+          <Select value={parsed.seller ?? ''} onChange={(e) => updateParams({ seller: e.target.value || undefined })}>
             <option value="">Todos os vendedores</option>
             {sellersQuery.data?.map((s) => (
               <option key={s.id} value={s.id}>{s.full_name}</option>
@@ -108,30 +111,34 @@ export function ContractsPage() {
           </Select>
         )}
 
-        <Select value={courseFilter} onChange={(e) => { setCourseFilter(e.target.value); resetPage() }}>
+        <Select value={parsed.course ?? ''} onChange={(e) => updateParams({ course: e.target.value || undefined })}>
           <option value="">Todos os cursos</option>
           {courses.data?.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </Select>
 
-        <div className="flex items-center gap-2">
-          <CalendarDays className="size-4 text-muted" />
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => { setDateFrom(e.target.value); resetPage() }}
-            className="w-[150px]"
-            placeholder="De"
-          />
-          <span className="text-muted">até</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => { setDateTo(e.target.value); resetPage() }}
-            className="w-[150px]"
-            placeholder="Até"
-          />
+        <div className="w-full sm:w-auto">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:items-center sm:gap-2">
+            <CalendarDays className="size-4 text-muted" />
+            <Input
+              type="date"
+              aria-label="Data inicial"
+              value={parsed.date_from ?? ''}
+              onChange={(e) => updateParams({ date_from: e.target.value || undefined })}
+              className="min-w-0 w-full sm:w-[150px]"
+              placeholder="De"
+            />
+            <span className="text-muted">até</span>
+            <Input
+              type="date"
+              aria-label="Data final"
+              value={parsed.date_to ?? ''}
+              onChange={(e) => updateParams({ date_to: e.target.value || undefined })}
+              className="min-w-0 w-full sm:w-[150px]"
+              placeholder="Até"
+            />
+          </div>
         </div>
       </div>
 
@@ -146,7 +153,7 @@ export function ContractsPage() {
           <EmptyState
             icon={FileSignature}
             title="Nenhum contrato encontrado"
-            description={search ? 'Tente outro termo de busca.' : 'Contratos são gerados a partir de vendas confirmadas.'}
+            description={parsed.q ? 'Tente outro termo de busca.' : 'Contratos são gerados a partir de vendas confirmadas.'}
           />
         ) : (
           <>
@@ -190,7 +197,7 @@ export function ContractsPage() {
                   key: 'actions',
                   header: '',
                   cell: (row) => (
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/contratos/${row.contract_id}`)}>
+                    <Button variant="ghost" className="px-3" onClick={() => navigate(`/contratos/${row.contract_id}`)}>
                       Ver contrato
                     </Button>
                   )
@@ -199,15 +206,15 @@ export function ContractsPage() {
             />
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-2 pb-2 pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2 pb-2 pt-4">
                 <span className="text-xs text-muted">
-                  {total} contrato{total !== 1 ? 's' : ''} · Página {page} de {totalPages}
+                  {total} contrato{total !== 1 ? 's' : ''} · Página {parsed.page} de {totalPages}
                 </span>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                  <Button variant="ghost" className="px-3" disabled={parsed.page <= 1} onClick={() => updateParams({ page: parsed.page - 1 })}>
                     Anterior
                   </Button>
-                  <Button size="sm" variant="ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                  <Button variant="ghost" className="px-3" disabled={parsed.page >= totalPages} onClick={() => updateParams({ page: parsed.page + 1 })}>
                     Próxima
                   </Button>
                 </div>
@@ -235,10 +242,10 @@ function ContractMobileRow({ row }: { row: ContractListItem }) {
         <Badge variant={CONTRACT_STATUS_TONES[row.status]}>{CONTRACT_STATUS_LABELS[row.status]}</Badge>
       </div>
       <p className="text-sm font-medium">{formatCurrency(row.net_value_snapshot)}</p>
-      <p className="text-xs text-muted">{row.course_name}</p>
-      <button className="text-sm font-semibold text-navy hover:underline" onClick={() => navigate(`/contratos/${row.contract_id}`)}>
+      <p className="truncate text-xs text-muted">{row.course_name}</p>
+      <Button variant="ghost" className="h-11 px-2" onClick={() => navigate(`/contratos/${row.contract_id}`)}>
         Ver contrato
-      </button>
+      </Button>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { assertOnline } from '@/lib/offline'
 import type { Database } from '@/types/database.types'
 import type {
   ContractListParams,
@@ -60,6 +61,7 @@ export const contractsService = {
     contractor_person_id: string
     contract_notes?: string
   }): Promise<CreateContractResult> {
+    assertOnline()
     const { data, error } = await rpc('create_contract_from_sale', {
       p_sale_id: input.sale_id,
       p_contractor_person_id: input.contractor_person_id,
@@ -70,6 +72,7 @@ export const contractsService = {
   },
 
   async updateDraft(input: EditDraftInput & { contract_id: string }): Promise<CreateContractResult> {
+    assertOnline()
     const { data, error } = await rpc('update_contract_draft', {
       p_contract_id: input.contract_id,
       p_contractor_person_id: input.contractor_person_id,
@@ -80,18 +83,21 @@ export const contractsService = {
   },
 
   async issue(contractId: string): Promise<CreateContractResult> {
+    assertOnline()
     const { data, error } = await rpc('issue_contract', { p_contract_id: contractId })
     if (error) throw error
     return data as CreateContractResult
   },
 
   async sign(contractId: string): Promise<CreateContractResult> {
+    assertOnline()
     const { data, error } = await rpc('mark_contract_signed', { p_contract_id: contractId })
     if (error) throw error
     return data as CreateContractResult
   },
 
   async cancel(input: CancelContractInput & { contract_id: string }): Promise<CreateContractResult> {
+    assertOnline()
     const { data, error } = await rpc('cancel_contract', {
       p_contract_id: input.contract_id,
       p_reason: input.cancellation_reason
@@ -137,6 +143,7 @@ export const contractsService = {
   },
 
   async createPerson(input: PersonFormPayload): Promise<CreatePersonResult> {
+    assertOnline()
     const { data, error } = await rpc('create_person', {
       p_full_name: input.full_name,
       p_preferred_name: FH(input.preferred_name),
@@ -168,6 +175,7 @@ export const contractsService = {
   },
 
   async updatePerson(input: UpdatePersonPayload): Promise<{ person_id: string; updated: boolean }> {
+    assertOnline()
     const { data, error } = await rpc('update_person', {
       p_person_id: input.person_id,
       p_full_name: input.full_name,

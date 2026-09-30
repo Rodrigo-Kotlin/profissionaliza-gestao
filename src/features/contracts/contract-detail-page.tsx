@@ -4,7 +4,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
@@ -47,8 +47,9 @@ export function ContractDetailPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Contratos', href: '/contratos' }, { label: contract.contract_code }]} />
       <PageHeader title="Contrato">
-        <Button variant="secondary" onClick={() => navigate('/contratos')}>
+        <Button variant="secondary" onClick={() => navigate(-1)}>
           <ArrowLeft className="size-4" /> Voltar
         </Button>
         <ContractActions contract={contract} permissions={permissions}
@@ -88,7 +89,7 @@ export function ContractDetailPage() {
             <Row label="Vendedor" value={contract.seller_name} />
             <Row label="Status da venda" value={contract.sale_status} />
           </dl>
-          <Button size="sm" variant="ghost" className="mt-3" onClick={() => navigate(`/vendas/${contract.sale_id}`)}>
+          <Button variant="ghost" className="mt-3" onClick={() => navigate(`/vendas/${contract.sale_id}`)}>
             Ver venda
           </Button>
         </Card>
@@ -122,6 +123,15 @@ export function ContractDetailPage() {
             <Row label="Nome" value={contract.student_name} />
             <Row label="Código" value={contract.student_code} />
           </dl>
+          {contract.student_id && (
+            <Button
+              variant={contract.status === 'SIGNED' ? 'primary' : 'ghost'}
+              className="mt-3"
+              onClick={() => navigate(`/alunos/${contract.student_id}`)}
+            >
+              Ver aluno
+            </Button>
+          )}
         </Card>
 
         {/* Curso */}
@@ -232,35 +242,35 @@ function ContractActions({
   onSign: () => void
   onCancel: () => void
 }) {
-  if (isEditDraftAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_EDIT_DRAFT)) {
-    return (
-      <Button variant="secondary" onClick={onEdit}>
-        <PencilLine className="size-4" /> Editar rascunho
-      </Button>
-    )
-  }
-  if (isIssueAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_ISSUE)) {
-    return (
-      <Button variant="secondary" onClick={onIssue}>
-        <Send className="size-4" /> Emitir contrato
-      </Button>
-    )
-  }
-  if (isSignAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_MARK_SIGNED)) {
-    return (
-      <Button onClick={onSign}>
-        <CheckCircle2 className="size-4" /> Registrar assinatura
-      </Button>
-    )
-  }
-  if (isCancelAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_CANCEL)) {
-    return (
-      <Button variant="danger" onClick={onCancel}>
-        <Ban className="size-4" /> Cancelar contrato
-      </Button>
-    )
-  }
-  return null
+  const canEdit = isEditDraftAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_EDIT_DRAFT)
+  const canIssue = isIssueAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_ISSUE)
+  const canSign = isSignAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_MARK_SIGNED)
+  const canCancel = isCancelAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_CANCEL)
+
+  return (
+    <>
+      {canIssue && (
+        <Button onClick={onIssue}>
+          <Send className="size-4" /> Emitir contrato
+        </Button>
+      )}
+      {canSign && (
+        <Button onClick={onSign}>
+          <CheckCircle2 className="size-4" /> Registrar assinatura
+        </Button>
+      )}
+      {canEdit && (
+        <Button variant="secondary" onClick={onEdit}>
+          <PencilLine className="size-4" /> Editar rascunho
+        </Button>
+      )}
+      {canCancel && (
+        <Button variant="danger" onClick={onCancel}>
+          <Ban className="size-4" /> Cancelar contrato
+        </Button>
+      )}
+    </>
+  )
 }
 
 function ContractTimelineRow({ event }: { event: ContractTimelineEvent }) {
