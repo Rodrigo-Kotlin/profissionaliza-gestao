@@ -1,0 +1,83 @@
+import { expect, test } from '@playwright/test'
+import { e2eEnv, hasAdminCredentials, login } from './helpers'
+
+test.describe('12C5 — Lead → Venda → Contrato → Aluno (ADMIN)', () => {
+  test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
+
+  test('cria e conclui o fluxo transacional pela UI', async ({ page }) => {
+    test.setTimeout(90_000)
+    const runId = `E2E-12C5-${Date.now()}`
+    const leadName = `QA ${runId}`
+    const email = `qa+${runId.toLowerCase()}@profissionaliza.test`
+    const phone = `119${runId.replace(/\D/g, '').slice(-8)}`
+
+    await login(page, e2eEnv.email, e2eEnv.password)
+    await page.goto('/crm/leads')
+    await page.getByRole('button', { name: 'Novo Lead' }).click()
+
+    const leadDrawer = page.getByRole('dialog', { name: 'Novo Lead' })
+    await leadDrawer.getByLabel('Nome completo *').fill(leadName)
+    await leadDrawer.getByLabel('Telefone').fill(phone)
+    await leadDrawer.getByLabel('WhatsApp').fill(phone)
+    await leadDrawer.getByLabel('E-mail').fill(email)
+    const leadSelects = leadDrawer.locator('select')
+    await leadSelects.nth(0).selectOption('SITE')
+    await leadSelects.nth(1).selectOption({ index: 1 })
+    await leadSelects.nth(2).selectOption({ label: 'Negociação' })
+    await leadDrawer.locator('textarea').last().fill(runId)
+    await leadDrawer.getByRole('button', { name: 'Criar lead', exact: true }).click()
+
+    await expect(page).toHaveURL(/\/crm\/leads\/[^/]+$/)
+    await expect(page.getByRole('heading', { name: leadName })).toBeVisible()
+    const leadCode = await page.getByText(/^LEAD-\d{4}-\d{6}$/).first().textContent()
+    expect(leadCode).toMatch(/^LEAD-\d{4}-\d{6}$/)
+    await expect(page.getByText('Negociação', { exact: true }).first()).toBeVisible()
+    await page.getByRole('button', { name: 'Fechar venda' }).click()
+
+    const saleDialog = page.getByRole('dialog', { name: 'Fechar venda' })
+    await expect(saleDialog).toBeVisible()
+    await saleDialog.locator('select').nth(0).selectOption({ index: 1 })
+    await saleDialog.getByLabel('Valor bruto *').fill('1390')
+    await saleDialog.getByLabel('Desconto').fill('0')
+    await saleDialog.getByLabel('Parcelas *').fill('1')
+    await saleDialog.locator('textarea').fill(runId)
+    await saleDialog.getByRole('button', { name: 'Revisar venda' }).click()
+    await expect(saleDialog.getByText('Esta ação registrará a venda e encerrará o Lead como ganho.')).toBeVisible()
+    await saleDialog.getByRole('button', { name: 'Confirmar venda' }).click()
+
+    await expect(page).toHaveURL(/\/vendas\/[^/]+$/)
+    const saleCode = await page.getByText(/^VND-\d{4}-\d{6}$/).first().textContent()
+    expect(saleCode).toMatch(/^VND-\d{4}-\d{6}$/)
+    const studentCode = await page.getByText(/^ALU-\d{4}-\d{6}$/).first().textContent()
+    expect(studentCode).toMatch(/^ALU-\d{4}-\d{6}$/)
+    await expect(page.getByText('Confirmada', { exact: true })).toBeVisible()
+    await expect(page.getByText(leadCode ?? '', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Gerar contrato' })).toBeVisible()
+    await page.getByRole('button', { name: 'Gerar contrato' }).click()
+
+    const contractDialog = page.getByRole('dialog', { name: 'Gerar contrato' })
+    await expect(contractDialog).toBeVisible()
+    await contractDialog.getByRole('button', { name: 'Revisar contrato' }).click()
+    await expect(contractDialog.getByText(studentCode ?? '', { exact: true })).toBeVisible()
+    await contractDialog.getByRole('button', { name: 'Criar contrato em rascunho' }).click()
+    await expect(contractDialog.getByText('Contrato criado')).toBeVisible()
+    const contractCode = await page.getByText(/^CTR-\d{4}-\d{6}$/).first().textContent()
+    expect(contractCode).toMatch(/^CTR-\d{4}-\d{6}$/)
+    await contractDialog.getByRole('button', { name: 'Fechar' }).click()
+    await page.getByRole('button', { name: 'Ver contrato' }).first().click()
+
+    await expect(page).toHaveURL(/\/contratos\/[^/]+$/)
+    await expect(page.getByText(contractCode ?? '', { exact: true })).toBeVisible()
+    await expect(page.getByText('Rascunho', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Emitir contrato' }).click()
+    const issueDialog = page.getByRole('dialog', { name: new RegExp(`Emitir ${contractCode}`) })
+    await issueDialog.getByRole('button', { name: 'Confirmar emissão' }).click()
+    await expect(page.getByText('Aguardando assinatura', { exact: true })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Registrar assinatura' }).click()
+    const signDialog = page.getByRole('dialog', { name: new RegExp(`Assinar ${contractCode}`) })
+    await signDialog.getByRole('button', { name: 'Confirmar assinatura' }).click()
+    await expect(page.getByText('Assinado', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Ver aluno' })).toBeVisible()
+  })
+})

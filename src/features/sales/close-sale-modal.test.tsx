@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { toast } from 'sonner'
 import { CloseSaleModal } from './close-sale-modal'
+import { OFFLINE_MESSAGE } from '@/lib/offline'
 import type { CrmLeadDetail } from '../crm/crm-types'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
@@ -122,5 +124,57 @@ describe('CloseSaleModal', () => {
     })
     expect(screen.getByText('Maria Silva')).toBeInTheDocument()
     expect(screen.getByText('João')).toBeInTheDocument()
+  })
+
+  it('ReviewRow usa classes anti-overflow e não depende de truncate (Fase 11.2)', async () => {
+    const user = userEvent.setup()
+    render(<CloseSaleModal lead={baseLead} open={true} onOpenChange={vi.fn()} />, { wrapper })
+    await user.click(screen.getByText('Revisar venda'))
+    await waitFor(() => {
+      expect(screen.getByText('Confirmar venda')).toBeInTheDocument()
+    })
+
+    const clienteRow = screen.getByText('Cliente').parentElement as HTMLElement
+    expect(clienteRow.className).toContain('flex-col')
+    expect(clienteRow.className).toContain('sm:flex-row')
+    expect(clienteRow.className).toContain('sm:justify-between')
+
+    const value = screen.getByText('Maria Silva')
+    expect(value.className).toContain('min-w-0')
+    expect(value.className).toContain('break-words')
+    expect(value.className).not.toContain('truncate')
+  })
+
+  describe('CreateSaleFromLead — network failure com onLine=true (Fase 9.1)', () => {
+    beforeEach(() => {
+      Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => true })
+    })
+
+    async function renderToConfirm() {
+      const user = userEvent.setup()
+      render(<CloseSaleModal lead={baseLead} open={true} onOpenChange={vi.fn()} />, { wrapper })
+      await user.click(screen.getByText('Revisar venda'))
+      await waitFor(() => expect(screen.getByText('Confirmar venda')).toBeInTheDocument())
+      await user.click(screen.getByText('Confirmar venda'))
+      return user
+    }
+
+    it('apresenta mensagem offline e a mutation falha quando a rede falha', async () => {
+      const errorSpy = vi.spyOn(toast, 'error')
+      rpcMock.mockRejectedValue(new TypeError('Failed to fetch'))
+      await renderToConfirm()
+      await waitFor(() => expect(errorSpy).toHaveBeenCalledWith(OFFLINE_MESSAGE))
+      expect(rpcMock).toHaveBeenCalledWith('create_sale_from_lead', expect.anything())
+    })
+
+    it('não mascara erro de validação/RBAC como offline', async () => {
+      const errorSpy = vi.spyOn(toast, 'error')
+      const pg = new Error('rpc permission denied: create_sale_from_lead') as Error & { code?: string }
+      pg.code = '42501'
+      rpcMock.mockRejectedValue(pg)
+      await renderToConfirm()
+      await waitFor(() => expect(errorSpy).toHaveBeenCalledWith('Não foi possível criar a venda.'))
+      expect(errorSpy).not.toHaveBeenCalledWith(OFFLINE_MESSAGE)
+    })
   })
 })

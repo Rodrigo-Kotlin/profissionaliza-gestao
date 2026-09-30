@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { crmService } from './crm-service'
-import { writeAuditLog } from '@/services/audit-service'
 import type { CrmLeadListParams } from './crm-types'
 
 export const crmKeys = {
@@ -113,7 +112,6 @@ export function useCreateCourse() {
   return useMutation({
     mutationFn: (input: CourseCreateInput) => crmService.createCourse(input),
     onSuccess: () => {
-      void writeAuditLog('crm.course_created', 'course', undefined, {})
       qc.invalidateQueries({ queryKey: ['crm', 'courses'] })
     }
   })
@@ -124,8 +122,7 @@ export function useUpdateCourse() {
   return useMutation({
     mutationFn: ({ courseId, input }: { courseId: string; input: CourseUpdateInput }) =>
       crmService.updateCourse(courseId, input),
-    onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.course_updated', 'course', variables.courseId, {})
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['crm', 'courses'] })
     }
   })
@@ -136,7 +133,6 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: crmService.createLead,
     onSuccess: () => {
-      void writeAuditLog('crm.lead_created', 'crm_lead', undefined, {})
       qc.invalidateQueries({ queryKey: crmKeys.pipeline() })
       qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
       qc.invalidateQueries({ queryKey: crmKeys.kpis })
@@ -151,7 +147,6 @@ export function useUpdateLead() {
     mutationFn: ({ leadId, input }: { leadId: string; input: Record<string, unknown> }) =>
       crmService.updateLead(leadId, input),
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.lead_updated', 'crm_lead', variables.leadId, {})
       qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
       qc.invalidateQueries({ queryKey: crmKeys.leadTimeline(variables.leadId) })
       qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
@@ -167,7 +162,6 @@ export function useMoveStage() {
     mutationFn: ({ leadId, stageId, reason }: { leadId: string; stageId: string; reason?: string }) =>
       crmService.moveStage(leadId, stageId, reason),
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.stage_changed', 'crm_lead', variables.leadId, {})
       qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
       qc.invalidateQueries({ queryKey: crmKeys.leadTimeline(variables.leadId) })
       qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
@@ -183,7 +177,6 @@ export function useAssignLead() {
     mutationFn: ({ leadId, ownerId }: { leadId: string; ownerId: string }) =>
       crmService.assignLead(leadId, ownerId),
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.lead_assigned', 'crm_lead', variables.leadId, {})
       qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
       qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
       qc.invalidateQueries({ queryKey: crmKeys.pipeline() })
@@ -197,7 +190,6 @@ export function useCloseLost() {
     mutationFn: ({ leadId, reasonId, notes }: { leadId: string; reasonId: string; notes?: string }) =>
       crmService.closeLost(leadId, reasonId, notes),
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.lead_lost', 'crm_lead', variables.leadId, {})
       qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })
       qc.invalidateQueries({ queryKey: crmKeys.leadTimeline(variables.leadId) })
       qc.invalidateQueries({ queryKey: crmKeys.leadActivities(variables.leadId) })
@@ -214,7 +206,6 @@ export function useCreateActivity() {
   return useMutation({
     mutationFn: crmService.createActivity,
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.activity_created', 'crm_activity', undefined, { lead_id: variables.lead_id })
       qc.invalidateQueries({ queryKey: ['crm', 'agenda'] })
       qc.invalidateQueries({ queryKey: crmKeys.lead(variables.lead_id) })
       qc.invalidateQueries({ queryKey: crmKeys.leadTimeline(variables.lead_id) })
@@ -230,7 +221,6 @@ export function useCompleteActivity() {
     mutationFn: ({ activityId, outcome }: { activityId: string; outcome?: string; leadId?: string }) =>
       crmService.completeActivity(activityId, outcome),
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.activity_completed', 'crm_activity', undefined, {})
       qc.invalidateQueries({ queryKey: ['crm', 'agenda'] })
       qc.invalidateQueries({ queryKey: crmKeys.kpis })
       if ('leadId' in variables && variables.leadId) {
@@ -248,7 +238,6 @@ export function useRescheduleActivity() {
     mutationFn: ({ activityId, newDueAt }: { activityId: string; newDueAt: string; leadId?: string }) =>
       crmService.rescheduleActivity(activityId, newDueAt),
     onSuccess: (_data, variables) => {
-      void writeAuditLog('crm.activity_rescheduled', 'crm_activity', undefined, {})
       qc.invalidateQueries({ queryKey: ['crm', 'agenda'] })
       if ('leadId' in variables && variables.leadId) {
         qc.invalidateQueries({ queryKey: crmKeys.lead(variables.leadId) })

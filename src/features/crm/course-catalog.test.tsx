@@ -210,4 +210,14 @@ describe('CourseCatalog', () => {
     const payload = mockState.createCourse.mock.calls[0]![0]!
     expect(payload.code).toBe('ADM-TESTE')
   })
+
+  it('Editar (desktop e mobile) mantém alvo mínimo de 44px', async () => {
+    mockState.permissions = ['courses.manage']
+    render(<CourseCatalog />)
+    const editar = await screen.findAllByRole('button', { name: /editar/i })
+    expect(editar.length).toBeGreaterThan(0)
+    for (const button of editar) {
+      expect(button.className).toContain('min-h-11')
+    }
+  })
 })

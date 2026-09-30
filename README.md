@@ -58,6 +58,8 @@ Sem as variáveis do Supabase, a aplicação inicia e informa que o ambiente de 
 | `npm run dev` | Servidor de desenvolvimento local |
 | `npm run lint` | Lint com ESLint |
 | `npm run typecheck` | Verificação de tipos TypeScript |
+| `npm run test` | Suíte Vitest |
+| `npm run test:e2e` | Suíte Playwright opcional, condicionada às variáveis E2E |
 | `npm run build` | Build de produção |
 | `npm run preview` | Pré-visualização do build |
 | `npm run format` | Formatação com Prettier |

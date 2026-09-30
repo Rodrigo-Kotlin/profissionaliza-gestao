@@ -7,6 +7,7 @@ import { can, PERMISSIONS, STUDENT_ORIGINS, STUDENT_ORIGIN_LABELS, STUDENT_STATU
 import { useAuth } from '@/features/auth/auth-context'
 import { useStudents } from './students-hooks'
 import { parseStudentListParams, STATUS_TONE } from './students-utils'
+import { computeTotalPages, useNormalizedPage } from '@/lib/pagination'
 import type { StudentListItem, StudentSort, SortDirection } from './students-types'
 
 const PAGE_SIZES = [20, 50, 100]
@@ -14,7 +15,6 @@ const PAGE_SIZES = [20, 50, 100]
 export function StudentsPage() {
   const { permissions } = useAuth()
   const canCreate = can(permissions, PERMISSIONS.STUDENTS_CREATE)
-  const canEdit = can(permissions, PERMISSIONS.STUDENTS_EDIT)
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
 
@@ -48,6 +48,10 @@ export function StudentsPage() {
     })
     setParams(copy, { replace: true })
   }
+
+  const total = data?.total ?? 0
+  const totalPages = computeTotalPages(total, parsed.pageSize)
+  useNormalizedPage(total, parsed.page, totalPages, (page) => updateParams({ page: String(page) }))
 
   const [mobileFilters, setMobileFilters] = useState(false)
 
@@ -131,7 +135,7 @@ export function StudentsPage() {
           <DataTable
             data={data.data}
             getKey={(row) => row.student_id}
-            mobileCard={(row) => <StudentMobileRow row={row} canEdit={canEdit} />}
+            mobileCard={(row) => <StudentMobileRow row={row} />}
             columns={[
               { key: 'code', header: 'Código', priority: 'medium', cell: (row) => <span className="font-mono text-xs text-muted">{row.student_code}</span> },
               {
@@ -159,7 +163,7 @@ export function StudentsPage() {
                 header: '',
                 priority: 'high',
                 cell: (row) => (
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/alunos/${row.student_id}`)}>
+                  <Button variant="ghost" className="px-3" onClick={() => navigate(`/alunos/${row.student_id}`)}>
                     Ver aluno
                   </Button>
                 )
@@ -173,7 +177,7 @@ export function StudentsPage() {
         <span className="text-sm text-muted">
           {data?.total ?? 0} aluno{(data?.total ?? 0) === 1 ? '' : 's'} encontrado{(data?.total ?? 0) === 1 ? '' : 's'}
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
           <Select
             aria-label="Itens por página"
             value={String(parsed.pageSize)}
@@ -184,13 +188,13 @@ export function StudentsPage() {
             ))}
           </Select>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" disabled={parsed.page <= 1} onClick={() => updateParams({ page: String(parsed.page - 1) })}>
+            <Button variant="ghost" className="px-3" disabled={parsed.page <= 1} onClick={() => updateParams({ page: String(parsed.page - 1) })}>
               Anterior
             </Button>
             <span className="min-w-10 text-center text-sm font-semibold">{parsed.page}</span>
             <Button
               variant="ghost"
-              size="sm"
+              className="px-3"
               disabled={(data?.total ?? 0) <= parsed.page * parsed.pageSize}
               onClick={() => updateParams({ page: String(parsed.page + 1) })}
             >
@@ -203,7 +207,7 @@ export function StudentsPage() {
   )
 }
 
-function StudentMobileRow({ row, canEdit }: { row: StudentListItem; canEdit: boolean }) {
+function StudentMobileRow({ row }: { row: StudentListItem }) {
   const navigate = useNavigate()
   return (
     <div className="space-y-1.5" role="listitem">
@@ -216,11 +220,9 @@ function StudentMobileRow({ row, canEdit }: { row: StudentListItem; canEdit: boo
         </div>
         <Badge variant={STATUS_TONE[row.status]}>{STUDENT_STATUS_LABELS[row.status]}</Badge>
       </div>
-      {canEdit && (
-        <button className="text-sm font-semibold text-navy hover:underline" onClick={() => navigate(`/alunos/${row.student_id}`)}>
-          Ver aluno
-        </button>
-      )}
+      <Button variant="ghost" className="h-11 px-2" onClick={() => navigate(`/alunos/${row.student_id}`)}>
+        Ver aluno
+      </Button>
     </div>
   )
 }

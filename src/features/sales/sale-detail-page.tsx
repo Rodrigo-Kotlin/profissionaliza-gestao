@@ -1,7 +1,7 @@
-import { ArrowLeft, Ban, CalendarDays, Eye, ShoppingBag, User, CreditCard, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Ban, CalendarDays, Eye, FileSignature, ShoppingBag, User, CreditCard, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
@@ -9,12 +9,15 @@ import { useSaleDetail, useSaleTimeline } from './sales-hooks'
 import { CancelSaleDialog } from './cancel-sale-dialog'
 import { SALE_STATUS_LABELS, SALE_STATUS_TONES, SALE_PAYMENT_METHOD_LABELS } from './sales-constants'
 import type { SaleTimelineEvent } from './sales-types'
+import { ContractCreateWizard } from '../contracts/contract-create-wizard'
+import { canCreateContractFromSale } from '../contracts/contracts-utils'
 
 export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { permissions } = useAuth()
+  const { permissions, user } = useAuth()
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [contractOpen, setContractOpen] = useState(false)
   const saleId = id ?? ''
 
   const detail = useSaleDetail(saleId)
@@ -34,13 +37,20 @@ export function SaleDetailPage() {
   const sale = detail.data
   const showCancel = canCancel && sale.status === 'CONFIRMED'
   const events = timeline.data?.data ?? []
+  const canCreateContract = canCreateContractFromSale(sale, permissions, user?.id ?? '')
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Vendas', href: '/vendas' }, { label: sale.sale_code }]} />
       <PageHeader title="Venda">
-        <Button variant="secondary" onClick={() => navigate('/vendas')}>
+        <Button variant="secondary" onClick={() => navigate(-1)}>
           <ArrowLeft className="size-4" /> Voltar
         </Button>
+        {canCreateContract && (
+          <Button onClick={() => setContractOpen(true)}>
+            <FileSignature className="size-4" /> Gerar contrato
+          </Button>
+        )}
         {showCancel && (
           <Button variant="danger" onClick={() => setCancelOpen(true)}>
             <Ban className="size-4" /> Cancelar venda
@@ -76,8 +86,13 @@ export function SaleDetailPage() {
           <SectionHeader icon={User} title="Cliente" />
           <dl className="space-y-2 text-sm">
             <Row label="Nome" value={sale.full_name} />
-            <Row label="Aluno" value={sale.student_code} />
+            <Row label="Aluno" value={sale.student_code ?? '—'} />
           </dl>
+          {sale.student_id && (
+            <Button variant="ghost" className="mt-2" onClick={() => navigate(`/alunos/${sale.student_id}`)}>
+              Ver aluno
+            </Button>
+          )}
         </Card>
 
         {/* Curso */}
@@ -117,7 +132,6 @@ export function SaleDetailPage() {
             <Row label="Lead" value={sale.lead_code ?? '—'} />
           </dl>
           <Button
-            size="sm"
             variant="ghost"
             className="mt-2"
             onClick={() => navigate(`/crm/leads/${sale.lead_id}`)}
@@ -126,6 +140,30 @@ export function SaleDetailPage() {
           </Button>
         </Card>
       )}
+
+      {/* Contrato */}
+      <Card className="p-5">
+        <SectionHeader icon={FileSignature} title="Contrato" />
+        {sale.contract_id ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <dl className="space-y-2 text-sm">
+              <Row label="Contrato" value={sale.contract_code ?? '—'} />
+              <Row label="Status" value={contractStatusText(sale.contract_status)} />
+            </dl>
+            <Button variant="ghost" onClick={() => navigate(`/contratos/${sale.contract_id}`)}>
+              Ver contrato
+            </Button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-muted">
+              {sale.status === 'CONFIRMED'
+                ? 'Esta venda ainda não possui contrato.'
+                : 'Nenhum contrato foi gerado para esta venda.'}
+            </p>
+          </div>
+        )}
+      </Card>
 
       {/* Observações */}
       {sale.commercial_notes && (
@@ -172,8 +210,24 @@ export function SaleDetailPage() {
         onOpenChange={setCancelOpen}
         onCancelled={() => navigate('/vendas')}
       />
+
+      <ContractCreateWizard
+        sale={sale}
+        open={contractOpen}
+        onOpenChange={setContractOpen}
+      />
     </div>
   )
+}
+
+function contractStatusText(status: string | null | undefined): string {
+  const labels: Record<string, string> = {
+    DRAFT: 'Rascunho',
+    PENDING_SIGNATURE: 'Aguardando assinatura',
+    SIGNED: 'Assinado',
+    CANCELED: 'Cancelado'
+  }
+  return status ? (labels[status] ?? status) : '—'
 }
 
 function SaleTimelineRow({ event }: { event: SaleTimelineEvent }) {

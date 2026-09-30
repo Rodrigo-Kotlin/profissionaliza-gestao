@@ -67,12 +67,43 @@ A segurança é aplicada **no banco**, nunca apenas na UI. No front-end, `src/ro
 
 - Manifest e service worker gerados no build.
 - Service worker armazena somente assets estáticos do app shell. Sem runtime cache de APIs, sessões ou dados pessoais.
+- O PWA é app-shell offline, não offline-first: mutações são bloqueadas sem conexão.
+- Não existe cache genérico de PII ou dados do Supabase.
+
+## Navegação e contexto
+
+- Listas usam `URLSearchParams` como fonte de verdade para busca, filtros, paginação e contexto de retorno relevante.
+- Breadcrumbs e ações de retorno preservam o contexto da lista quando aplicável.
+
+## Auditoria
+
+Business-domain audit events are authoritative on the backend. RPCs
+`SECURITY DEFINER` register these actions with the business operation, so
+frontend audit logging must not duplicate RPC-side audit events after success.
+
+The frontend audit service (`src/services/audit-service.ts`) remains available
+for authentication events (`auth.login`/`auth.logout`) and client-only events
+without an equivalent backend audit.
 
 ## Organização por features
 
 - Cada domínio vive em `src/features/<dominio>/`.
 - Nomeações consistentes: `<dominio>-page.tsx`, `<dominio>-service.ts`, etc.
 - Dependência unidirecional: UI consome serviços, serviços consomem o client.
+
+### Feature contracts (Fase 2.4)
+
+Segue o mesmo padrão de `sales`: `contracts-types`, `contracts-constants`,
+`contracts-schemas`, `contracts-utils` (helpers puros testáveis),
+`contracts-service` (wrapper tipado do client), `contracts-hooks` (React Query) e
+páginas/componentes (`contracts-list-page`, `contract-detail-page`,
+`contract-create-wizard`, `contractor-search`, `create-person-modal`,
+`edit/issue/sign/cancel-contract-dialog`).
+
+Fluxo: a venda CONFIRMED no `sale-detail-page` abre o wizard; o serviço chama
+RPCs `SECURITY DEFINER` (`create_contract_from_sale`, `issue_contract`, …) que
+aplicam ownership, transições de estado e masking — o frontend nunca grava em
+`public.contracts` diretamente.
 
 ## Fluxo de dependências
 

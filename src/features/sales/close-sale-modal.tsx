@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 import { Button, Input, Select, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useCreateSaleFromLead } from './sales-hooks'
@@ -79,8 +80,8 @@ export function CloseSaleModal({ lead, open, onOpenChange }: Props) {
       toast.success(`Venda ${result.sale_code} criada com sucesso.`)
       onOpenChange(false)
       navigate(`/vendas/${result.sale_id}`)
-    } catch {
-      toast.error('Não foi possível criar a venda.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível criar a venda.'))
     }
   }
 
@@ -187,9 +188,9 @@ export function CloseSaleModal({ lead, open, onOpenChange }: Props) {
 
 function ReviewRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-muted">{label}</span>
-      <span className={highlight ? 'text-lg font-bold text-emerald-700' : 'font-medium'}>{value}</span>
+    <div className="flex w-full flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className={`min-w-0 text-right break-words ${highlight ? 'text-lg font-bold text-emerald-700' : 'font-medium'}`}>{value}</span>
     </div>
   )
 }

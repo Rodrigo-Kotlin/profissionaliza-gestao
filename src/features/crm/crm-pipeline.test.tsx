@@ -78,6 +78,19 @@ function renderPipeline() {
   )
 }
 
+function installMatchMedia(matcher: (query: string) => boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches: matcher(query),
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia
+}
+
 const baseLead = {
   lead_code: 'CRM-0001',
   course_name: 'Auxiliar Administrativo',
@@ -129,6 +142,7 @@ describe('CrmPipeline', () => {
     mockState.isLoading = false
     mockState.isError = false
     mockState.data = twoColumnData
+    installMatchMedia((q) => q.includes('min-width: 1024px'))
   })
 
   it('renders skeleton when loading', () => {
@@ -239,6 +253,7 @@ describe('CrmPipeline — separação card click × drag handle', () => {
     mockState.isLoading = false
     mockState.isError = false
     mockState.data = twoColumnData
+    installMatchMedia((q) => q.includes('min-width: 1024px'))
   })
 
   it('abre o Lead ao clicar no card (desktop)', () => {
@@ -350,6 +365,7 @@ describe('CrmPipeline — fallback mobile', () => {
     mockState.isLoading = false
     mockState.isError = false
     mockState.data = twoColumnData
+    installMatchMedia((q) => q.includes('min-width: 1024px'))
   })
 
   it('mover via Select mobile chama moveStage uma vez', () => {
@@ -384,8 +400,148 @@ describe('CrmPipeline — fallback mobile', () => {
     fireEvent.click(getMobileCard('João Silva'))
     expect(navigateMock).toHaveBeenCalledWith('/crm/leads/lead-1')
   })
+
+  it('drag handle mantém alvo de 44x44 e aria-label descritivo', () => {
+    renderPipeline()
+    const handle = screen.getByRole('button', { name: /arrastar joão silva para outra etapa/i })
+    expect(handle.className).toContain('size-11')
+    expect(handle).toHaveAttribute('aria-label')
+  })
 })
 
 function navigationReset() {
   navigateMock.mockReset()
 }
+
+describe('CrmPipeline — estrutura responsiva (mobile/tablet/desktop)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.moveStage.mockReset()
+    navigationReset()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage']
+    mockState.isLoading = false
+    mockState.isError = false
+    mockState.data = twoColumnData
+  })
+
+  describe('modo mobile (<600px)', () => {
+    beforeEach(() => {
+      installMatchMedia((q) => q.includes('max-width: 599px'))
+    })
+
+    it('mantém o modo mobile atual: Select de etapa + cards, sem boards desktop/tablet', () => {
+      renderPipeline()
+      const mobileSelect = screen.getByTestId('kanban-mobile-select')
+      expect(mobileSelect.className).toContain('min-[600px]:hidden')
+      expect(within(mobileSelect).getByRole('combobox')).toBeInTheDocument()
+      const mobileCards = screen.getByTestId('kanban-mobile-cards')
+      expect(mobileCards.className).toContain('min-[600px]:hidden')
+      expect(within(mobileCards).getByText('João Silva')).toBeInTheDocument()
+      expect(screen.queryByTestId('kanban-board-desktop')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('kanban-board-tablet')).not.toBeInTheDocument()
+    })
+
+    it('sem drag handle no modo mobile (não força drag-and-drop em smartphone)', () => {
+      renderPipeline()
+      expect(screen.queryByRole('button', { name: /arrastar/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('modo tablet (600–1023px)', () => {
+    beforeEach(() => {
+      installMatchMedia(() => false)
+    })
+
+    it('renderiza a board tablet com colunas de largura estável', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      expect(board.className).toContain('min-[600px]:flex')
+      expect(board.className).toContain('lg:hidden')
+      expect(board.className).toContain('overflow-x-auto')
+      const columns = board.querySelectorAll('[data-testid^="kanban-column-"]')
+      expect(columns.length).toBe(2)
+      for (const col of columns) {
+        expect(col.className).toContain('min-w-[280px]')
+        expect(col.className).toContain('shrink-0')
+      }
+      expect(within(board).getAllByText('Prospecção').length).toBeGreaterThanOrEqual(1)
+      expect(within(board).getAllByText('Novo Lead').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('não renderiza a board desktop no tablet (evita ids duplicados de DnD)', () => {
+      renderPipeline()
+      expect(screen.queryByTestId('kanban-board-desktop')).not.toBeInTheDocument()
+    })
+
+    it('preserva drag handle acessível 44x44 no tablet', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      const handle = within(board).getByRole('button', { name: /arrastar joão silva para outra etapa/i })
+      expect(handle.className).toContain('size-11')
+      expect(handle).toHaveAttribute('aria-label')
+      expect(handle).toHaveAttribute('tabindex', '0')
+    })
+
+    it('mantém o fallback "mover para" disponível nos cards do tablet', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      const move = within(board).getByTestId('kanban-card-lead-1-move')
+      expect(within(move).getByRole('combobox', { name: /mover joão silva para outra etapa/i })).toBeInTheDocument()
+      expect(within(move).queryAllByRole('option').length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('mover via fallback do tablet chama moveStage com o payload correto', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      const select = within(board).getByRole('combobox', { name: /mover joão silva para outra etapa/i })
+      fireEvent.change(select, { target: { value: 'stage-2' } })
+      expect(mockState.moveStage).toHaveBeenCalledTimes(1)
+      expect(mockState.moveStage).toHaveBeenCalledWith({ leadId: 'lead-1', stageId: 'stage-2', reason: 'Movido pelo Kanban' })
+    })
+
+    it('mesma etapa no fallback do tablet → não chama moveStage', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      const select = within(board).getByRole('combobox', { name: /mover joão silva para outra etapa/i })
+      fireEvent.change(select, { target: { value: 'stage-1' } })
+      expect(mockState.moveStage).not.toHaveBeenCalled()
+    })
+
+    it('card do tablet abre o Lead, e o fallback não dispara navegação', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      fireEvent.change(within(board).getByRole('combobox', { name: /mover joão silva para outra etapa/i }), { target: { value: 'stage-2' } })
+      expect(navigateMock).not.toHaveBeenCalled()
+      fireEvent.click(within(board).getByRole('link', { name: /abrir joão silva/i }))
+      expect(navigateMock).toHaveBeenCalledWith('/crm/leads/lead-1')
+    })
+
+    it('sem crm.move_stage o fallback e o drag handle somem no tablet', () => {
+      mockState.permissions = ['crm.view', 'crm.edit']
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-tablet')
+      expect(within(board).queryByRole('button', { name: /arrastar/i })).not.toBeInTheDocument()
+      expect(within(board).queryByTestId('kanban-card-lead-1-move')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('modo desktop (>=1024px)', () => {
+    beforeEach(() => {
+      installMatchMedia((q) => q.includes('min-width: 1024px'))
+    })
+
+    it('board desktop separada em lg+ sem fallback mover para', () => {
+      renderPipeline()
+      const board = screen.getByTestId('kanban-board-desktop')
+      expect(board.className).toContain('lg:flex')
+      expect(board.className).toContain('overflow-x-auto')
+      expect(within(board).getByRole('button', { name: /arrastar joão silva para outra etapa/i })).toBeInTheDocument()
+      expect(within(board).queryByTestId('kanban-card-lead-1-move')).not.toBeInTheDocument()
+    })
+
+    it('não renderiza a board tablet no desktop', () => {
+      renderPipeline()
+      expect(screen.queryByTestId('kanban-board-tablet')).not.toBeInTheDocument()
+    })
+  })
+})

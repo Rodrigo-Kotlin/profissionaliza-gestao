@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 import { Button, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useCancelSale } from './sales-hooks'
@@ -28,8 +29,8 @@ export function CancelSaleDialog({ saleId, saleCode, open, onOpenChange, onCance
       onOpenChange(false)
       reset()
       onCancelled?.()
-    } catch {
-      toast.error('Não foi possível cancelar a venda.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível cancelar a venda.'))
     }
   }
 

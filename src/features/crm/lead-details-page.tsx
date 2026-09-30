@@ -2,7 +2,8 @@ import { ArrowRightLeft, CalendarDays, CheckCircle2, Clock, Eye, Pencil, Trash2,
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Tabs, Textarea } from '@/components/ui/core'
+import { offlineAwareMessage } from '@/lib/offline'
+import { Badge, Button, Card, Breadcrumb, EmptyState, Input, PageHeader, Select, Skeleton, Tabs, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
@@ -82,8 +83,13 @@ export function LeadDetailsPage() {
 
   return (
     <div className="space-y-6 md:space-y-8">
+      <Breadcrumb items={[
+        { label: 'CRM', href: '/crm' },
+        { label: 'Leads', href: '/crm/leads' },
+        { label: lead.lead_code ?? 'Lead' }
+      ]} />
       <PageHeader title="Lead">
-        <Button variant="secondary" onClick={() => navigate('/crm/leads')}>Voltar</Button>
+        <Button variant="secondary" onClick={() => navigate(-1)}>Voltar</Button>
         {canEdit && lead.status === 'OPEN' && (
           <Button variant="secondary" onClick={() => setEditOpen(true)}>
             <Pencil className="size-4" /> Editar
@@ -134,7 +140,6 @@ export function LeadDetailsPage() {
                 <Row label="Status" value={lead.sale_status === 'CONFIRMED' ? 'Confirmada' : lead.sale_status === 'CANCELED' ? 'Cancelada' : lead.sale_status ?? '—'} />
               </dl>
               <Button
-                size="sm"
                 className="mt-3 w-full"
                 onClick={() => navigate(`/vendas/${lead.sale_id}`)}
               >
@@ -273,8 +278,8 @@ function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }
       toast.success('Atividade concluída.')
       setOutcomeActivityId(null)
       setOutcome('')
-    } catch {
-      toast.error('Não foi possível concluir a atividade.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível concluir a atividade.'))
     }
   }
 
@@ -285,19 +290,19 @@ function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }
       toast.success('Atividade reagendada.')
       setRescheduleId(null)
       setNewDate('')
-    } catch {
-      toast.error('Não foi possível reagendar.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível reagendar.'))
     }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {([['all', 'Todas'], ['PENDING', 'Pendentes'], ['COMPLETED', 'Concluídas'], ['CANCELED', 'Canceladas']] as const).map(([key, label]) => (
           <Button
             key={key}
             type="button"
-            size="sm"
+            className="px-3 text-xs"
             variant={filter === key ? 'primary' : 'ghost'}
             onClick={() => setFilter(key)}
           >
@@ -349,10 +354,10 @@ function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }
                 </div>
                 {canAct && (
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setOutcomeActivityId(act.id)}>
+                    <Button type="button" variant="ghost" className="px-3" onClick={() => setOutcomeActivityId(act.id)}>
                       <CheckCircle2 className="size-4" /> Concluir
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setRescheduleId(act.id)}>
+                    <Button type="button" variant="ghost" className="px-3" onClick={() => setRescheduleId(act.id)}>
                       <Clock className="size-4" /> Reagendar
                     </Button>
                   </div>
@@ -362,16 +367,16 @@ function AtividadesTab({ leadId, lead }: { leadId: string; lead: CrmLeadDetail }
               {outcomeActivityId === act.id && (
                 <div className="mt-3 flex gap-2">
                   <Input placeholder="Resultado (opcional)" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
-                  <Button type="button" size="sm" onClick={() => handleComplete(act.id)} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => { setOutcomeActivityId(null); setOutcome('') }}>Cancelar</Button>
+                  <Button type="button" className="px-3" onClick={() => handleComplete(act.id)} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
+                  <Button type="button" variant="ghost" className="px-3" onClick={() => { setOutcomeActivityId(null); setOutcome('') }}>Cancelar</Button>
                 </div>
               )}
 
               {rescheduleId === act.id && (
                 <div className="mt-3 flex gap-2">
                   <Input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-                  <Button type="button" size="sm" onClick={() => handleReschedule(act.id)} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => { setRescheduleId(null); setNewDate('') }}>Cancelar</Button>
+                  <Button type="button" className="px-3" onClick={() => handleReschedule(act.id)} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
+                  <Button type="button" variant="ghost" className="px-3" onClick={() => { setRescheduleId(null); setNewDate('') }}>Cancelar</Button>
                 </div>
               )}
             </Card>
@@ -486,8 +491,8 @@ function QualificacaoTab({ leadId, lead, canEdit }: { leadId: string; lead: CrmL
     try {
       await updateLead.mutateAsync({ leadId, input: values as Record<string, unknown> })
       toast.success('Qualificação atualizada.')
-    } catch {
-      toast.error('Não foi possível salvar.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível salvar.'))
     }
   }
 
@@ -537,8 +542,8 @@ function NextActivityCard({ activity, leadId }: { activity: CrmLeadDetail['next_
     try {
       await completeActivity.mutateAsync({ activityId: activity.id, leadId })
       toast.success('Atividade concluída.')
-    } catch {
-      toast.error('Não foi possível concluir a atividade.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível concluir a atividade.'))
     }
   }
 
@@ -553,7 +558,6 @@ function NextActivityCard({ activity, leadId }: { activity: CrmLeadDetail['next_
         </p>
         <Button
           type="button"
-          size="sm"
           className="mt-2 w-full"
           onClick={handleComplete}
           loading={completeActivity.isPending}
@@ -586,8 +590,8 @@ function EditLeadForm({ lead, onDone, canMoveStage }: { lead: CrmLeadDetail; onD
       await updateLead.mutateAsync({ leadId: lead.id, input: values as Record<string, unknown> })
       toast.success('Lead atualizado.')
       onDone()
-    } catch {
-      toast.error('Não foi possível salvar.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível salvar.'))
     }
   }
 
@@ -660,8 +664,8 @@ function MoveStageForm({ lead, onDone }: { lead: CrmLeadDetail; onDone: () => vo
       await moveStage.mutateAsync({ leadId: lead.id, stageId, reason: reason || undefined })
       toast.success('Etapa atualizada.')
       onDone()
-    } catch {
-      toast.error('Não foi possível mover o lead.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível mover o lead.'))
     }
   }
 
@@ -698,8 +702,8 @@ function LostLeadForm({ leadId, onDone }: { leadId: string; onDone: () => void }
       await closeLost.mutateAsync({ leadId, reasonId: values.lost_reason_id, notes: values.lost_notes })
       toast.success('Lead marcado como perdido.')
       onDone()
-    } catch {
-      toast.error('Não foi possível registrar.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível registrar.'))
     }
   }
 
@@ -745,8 +749,8 @@ function NewActivityForm({ leadId, onDone }: { leadId: string; onDone: () => voi
       })
       toast.success('Atividade criada.')
       onDone()
-    } catch {
-      toast.error('Não foi possível criar a atividade.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível criar a atividade.'))
     }
   }
 

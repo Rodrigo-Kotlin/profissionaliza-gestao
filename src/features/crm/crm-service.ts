@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { assertOnline } from '@/lib/offline'
 import type { Database } from '@/types/database.types'
 import type { CrmLeadListParams, CrmLeadDetail, CrmLeadListResponse, CrmPipelineResponse, CrmActivityAgendaResponse, CrmDashboardKpis, Course, CrmPipelineStage, CrmTimelineResponse, CrmLeadActivitiesResponse } from './crm-types'
 
@@ -60,6 +61,7 @@ export const crmService = {
 
   async createLead(input: {
     full_name: string
+    cpf?: string
     phone?: string
     whatsapp?: string
     email?: string
@@ -72,9 +74,12 @@ export const crmService = {
     first_activity_title?: string
     first_activity_type?: string
     first_activity_due_at?: string
+    force_create?: boolean
   }): Promise<string> {
+    assertOnline()
     const { data, error } = await rpc('create_crm_lead', {
       p_full_name: input.full_name,
+      p_cpf: emptyToUndefined(input.cpf),
       p_phone: emptyToUndefined(input.phone),
       p_whatsapp: emptyToUndefined(input.whatsapp),
       p_email: emptyToUndefined(input.email),
@@ -86,13 +91,15 @@ export const crmService = {
       p_commercial_notes: emptyToUndefined(input.commercial_notes),
       p_first_activity_title: emptyToUndefined(input.first_activity_title),
       p_first_activity_type: emptyToUndefined(input.first_activity_type),
-      p_first_activity_due_at: emptyToUndefined(input.first_activity_due_at)
+      p_first_activity_due_at: emptyToUndefined(input.first_activity_due_at),
+      p_force_create: input.force_create ?? false
     })
     if (error) throw error
     return data as string
   },
 
   async updateLead(leadId: string, input: Record<string, unknown>): Promise<void> {
+    assertOnline()
     const { error } = await rpc('update_crm_lead', {
       p_lead_id: leadId,
       p_source_id: emptyToUndefined(input.source_id as string),
@@ -113,6 +120,7 @@ export const crmService = {
   },
 
   async moveStage(leadId: string, newStageId: string, reason?: string): Promise<void> {
+    assertOnline()
     const { error } = await rpc('move_crm_lead_stage', {
       p_lead_id: leadId,
       p_new_stage_id: newStageId,
@@ -122,6 +130,7 @@ export const crmService = {
   },
 
   async assignLead(leadId: string, newOwnerId: string): Promise<void> {
+    assertOnline()
     const { error } = await rpc('assign_crm_lead', {
       p_lead_id: leadId,
       p_new_owner_id: newOwnerId
@@ -130,6 +139,7 @@ export const crmService = {
   },
 
   async closeLost(leadId: string, lostReasonId: string, lostNotes?: string): Promise<void> {
+    assertOnline()
     const { error } = await rpc('close_crm_lead_lost', {
       p_lead_id: leadId,
       p_lost_reason_id: lostReasonId,
@@ -146,6 +156,7 @@ export const crmService = {
     due_at: string
     owner_user_id?: string
   }): Promise<string> {
+    assertOnline()
     const { data, error } = await rpc('create_crm_activity', {
       p_lead_id: input.lead_id,
       p_type: input.type,
@@ -159,6 +170,7 @@ export const crmService = {
   },
 
   async completeActivity(activityId: string, outcome?: string): Promise<void> {
+    assertOnline()
     const { error } = await rpc('complete_crm_activity', {
       p_activity_id: activityId,
       p_outcome: emptyToUndefined(outcome)
@@ -167,6 +179,7 @@ export const crmService = {
   },
 
   async rescheduleActivity(activityId: string, newDueAt: string): Promise<void> {
+    assertOnline()
     const { error } = await rpc('reschedule_crm_activity', {
       p_activity_id: activityId,
       p_new_due_at: newDueAt
@@ -212,6 +225,7 @@ export const crmService = {
     default_price?: number
     description?: string
   }): Promise<string> {
+    assertOnline()
     const { data, error } = await rpc('create_course', {
       p_code: input.code,
       p_name: input.name,
@@ -243,6 +257,7 @@ export const crmService = {
       status?: string
     }
   ): Promise<void> {
+    assertOnline()
     const { error } = await rpc('update_course', {
       p_course_id: courseId,
       p_name: emptyToUndefined(input.name),

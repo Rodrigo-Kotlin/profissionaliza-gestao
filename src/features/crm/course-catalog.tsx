@@ -110,7 +110,7 @@ export function CourseCatalog() {
                 priority: 'high',
                 cell: (row) =>
                   canManage ? (
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                    <Button variant="ghost" className="px-3" onClick={() => handleEdit(row)}>
                       <Pencil className="size-3.5" /> Editar
                     </Button>
                   ) : null
@@ -146,7 +146,7 @@ function CourseMobileRow({ row, onEdit, canManage }: { row: Course; onEdit: () =
         {row.default_price && <span>· {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.default_price)}</span>}
       </div>
       {canManage && (
-        <Button variant="ghost" size="sm" onClick={onEdit}>
+        <Button variant="ghost" className="px-3" onClick={onEdit}>
           <Pencil className="size-3.5" /> Editar
         </Button>
       )}

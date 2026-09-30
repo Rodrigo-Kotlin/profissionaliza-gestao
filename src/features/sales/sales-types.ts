@@ -50,6 +50,9 @@ export type SaleDetail = {
   created_by_name: string | null
   created_at: string
   updated_at: string
+  contract_id?: string | null
+  contract_code?: string | null
+  contract_status?: string | null
 }
 
 export type SaleListParams = {

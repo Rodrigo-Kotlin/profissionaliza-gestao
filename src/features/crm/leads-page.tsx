@@ -1,5 +1,5 @@
 import { GraduationCap, Plus, Search, SlidersHorizontal } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -8,9 +8,11 @@ import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useCrmLeads } from './crm-hooks'
 import { parseCrmLeadListParams, updateSearchParams } from './crm-utils'
+import { computeTotalPages, useNormalizedPage } from '@/lib/pagination'
 import { CRM_STATUS_LABELS, CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES, CRM_PIPELINE_STAGE_LABELS } from './crm-constants'
 import type { CrmLeadListItem } from './crm-types'
 import { LeadForm } from './lead-form'
+import { clearLeadDraft } from './lead-draft'
 
 const PAGE_SIZES = [20, 50, 100]
 
@@ -21,8 +23,15 @@ export function LeadsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const routedCreation = location.pathname.endsWith('/novo')
-  const [drawerOpen, setDrawerOpen] = useState(routedCreation)
+  const [drawerOpen, setDrawerOpen] = useState(() => {
+    if (routedCreation) clearLeadDraft()
+    return routedCreation
+  })
   const [mobileFilters, setMobileFilters] = useState(false)
+
+  useEffect(() => {
+    if (routedCreation) clearLeadDraft()
+  }, [routedCreation])
 
   const parsed = useMemo(() => parseCrmLeadListParams(params), [params])
   const { data, isLoading, isError } = useCrmLeads(parsed)
@@ -31,11 +40,15 @@ export function LeadsPage() {
     setParams(updateSearchParams(params, next), { replace: true })
   }
 
+  const total = data?.total ?? 0
+  const totalPages = computeTotalPages(total, parsed.page_size ?? 25)
+  useNormalizedPage(total, parsed.page ?? 1, totalPages, (page) => setParam({ page: String(page) }))
+
   return (
     <div className="space-y-6 md:space-y-8">
       <PageHeader title="Leads" description="Lista completa de leads do funil comercial.">
         {canCreate && (
-          <Button onClick={() => setDrawerOpen(true)}>
+          <Button onClick={() => { clearLeadDraft(); setDrawerOpen(true) }}>
             <Plus className="size-4" /> Novo Lead
           </Button>
         )}
@@ -157,7 +170,7 @@ export function LeadsPage() {
                 header: '',
                 priority: 'high',
                 cell: (row) => (
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/crm/leads/${row.id}`)}>
+                  <Button variant="ghost" className="px-3" onClick={() => navigate(`/crm/leads/${row.id}`)}>
                     Ver lead
                   </Button>
                 )
@@ -171,7 +184,7 @@ export function LeadsPage() {
         <span className="text-sm text-muted">
           {data?.total ?? 0} lead{(data?.total ?? 0) === 1 ? '' : 's'} encontrado{(data?.total ?? 0) === 1 ? '' : 's'}
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
           <Select
             aria-label="Itens por página"
             value={String(parsed.page_size)}
@@ -182,13 +195,13 @@ export function LeadsPage() {
             ))}
           </Select>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" disabled={(parsed.page ?? 1) <= 1} onClick={() => setParam({ page: String((parsed.page ?? 1) - 1) })}>
+            <Button variant="ghost" className="px-3" disabled={(parsed.page ?? 1) <= 1} onClick={() => setParam({ page: String((parsed.page ?? 1) - 1) })}>
               Anterior
             </Button>
             <span className="min-w-10 text-center text-sm font-semibold">{parsed.page ?? 1}</span>
             <Button
               variant="ghost"
-              size="sm"
+              className="px-3"
               disabled={(data?.total ?? 0) <= (parsed.page ?? 1) * (parsed.page_size ?? 25)}
               onClick={() => setParam({ page: String((parsed.page ?? 1) + 1) })}
             >
@@ -230,9 +243,9 @@ function LeadMobileRow({ row }: { row: CrmLeadListItem }) {
         </div>
       </div>
       {row.course_name && <p className="text-xs text-muted">{row.course_name}</p>}
-      <button className="text-sm font-semibold text-navy hover:underline" onClick={() => navigate(`/crm/leads/${row.id}`)}>
+      <Button variant="ghost" className="h-11 px-2" onClick={() => navigate(`/crm/leads/${row.id}`)}>
         Ver lead
-      </button>
+      </Button>
     </div>
   )
 }

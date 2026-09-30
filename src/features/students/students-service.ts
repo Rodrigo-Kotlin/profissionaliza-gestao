@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { assertOnline } from '@/lib/offline'
 import { normalizeCep, normalizeCpf, normalizeEmail, normalizePhone } from './students-utils'
 import type {
   Guardian,
@@ -34,6 +35,7 @@ export const studentsService = {
   },
 
   async create(input: StudentFormPayload): Promise<string> {
+    assertOnline()
     const { data, error } = await supabase.rpc('create_student', {
       p_full_name: input.full_name,
       p_preferred_name: FH(input.preferred_name),
@@ -60,6 +62,7 @@ export const studentsService = {
   },
 
   async update(studentId: string, input: StudentUpdatePayload): Promise<void> {
+    assertOnline()
     const { error } = await supabase.rpc('update_student', {
       p_student_id: studentId,
       p_full_name: input.full_name,
@@ -84,6 +87,7 @@ export const studentsService = {
   },
 
   async changeStatus(studentId: string, newStatus: string, reason?: string) {
+    assertOnline()
     const { error } = await supabase.rpc('change_student_status', {
       p_student_id: studentId,
       p_new_status: newStatus,
@@ -99,6 +103,7 @@ export const studentsService = {
   },
 
   async linkGuardian(studentId: string, input: GuardianInput): Promise<string> {
+    assertOnline()
     const { data, error } = await supabase.rpc('link_guardian', {
       p_student_id: studentId,
       p_full_name: input.full_name,
@@ -117,6 +122,7 @@ export const studentsService = {
   },
 
   async unlinkGuardian(guardianId: string) {
+    assertOnline()
     const { error } = await supabase.rpc('unlink_guardian', { p_guardian_id: guardianId })
     if (error) throw error
   },

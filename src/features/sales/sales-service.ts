@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { assertOnline } from '@/lib/offline'
 import type { Database } from '@/types/database.types'
 import type { SaleListParams, SaleListResponse, SaleDetail, SaleTimelineResponse } from './sales-types'
 
@@ -36,6 +37,7 @@ export const salesService = {
     installments: number
     commercial_notes?: string
   }): Promise<{ sale_id: string; sale_code: string }> {
+    assertOnline()
     const { data, error } = await rpc('create_sale_from_lead', {
       p_lead_id: input.lead_id,
       p_course_id: input.course_id,
@@ -71,6 +73,7 @@ export const salesService = {
   },
 
   async cancelSale(saleId: string, cancellationReason: string): Promise<void> {
+    assertOnline()
     const { error } = await rpc('cancel_sale', {
       p_sale_id: saleId,
       p_cancellation_reason: cancellationReason
