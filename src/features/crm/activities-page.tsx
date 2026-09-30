@@ -7,6 +7,7 @@ import { CRM_ACTIVITY_TYPE_LABELS, CRM_ACTIVITY_TYPES } from './crm-constants'
 import { formatDueAt } from './crm-utils'
 import type { CrmActivity, CrmActivityType } from './crm-types'
 import { toast } from 'sonner'
+import { offlineAwareMessage } from '@/lib/offline'
 
 const ACTIVITY_ICONS: Record<CrmActivityType, typeof Phone> = {
   CALL: Phone,
@@ -130,8 +131,8 @@ function ActivityCard({ activity, showComplete = true }: { activity: CrmActivity
       toast.success('Atividade concluída.')
       setShowOutcome(false)
       setOutcome('')
-    } catch {
-      toast.error('Não foi possível concluir.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível concluir.'))
     }
   }
 
@@ -142,8 +143,8 @@ function ActivityCard({ activity, showComplete = true }: { activity: CrmActivity
       toast.success('Atividade reagendada.')
       setShowReschedule(false)
       setNewDate('')
-    } catch {
-      toast.error('Não foi possível reagendar.')
+    } catch (err) {
+      toast.error(offlineAwareMessage(err, 'Não foi possível reagendar.'))
     }
   }
 
@@ -173,13 +174,13 @@ function ActivityCard({ activity, showComplete = true }: { activity: CrmActivity
 
           {showComplete && activity.status === 'PENDING' && (
             <div className="mt-2 flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="ghost" onClick={() => setShowOutcome(true)}>
+              <Button type="button" variant="ghost" className="px-3" onClick={() => setShowOutcome(true)}>
                 <CheckCircle2 className="size-3.5" /> Concluir
               </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setShowReschedule(true)}>
+              <Button type="button" variant="ghost" className="px-3" onClick={() => setShowReschedule(true)}>
                 <Clock className="size-3.5" /> Reagendar
               </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => navigate(`/crm/leads/${activity.lead_id}`)}>
+              <Button type="button" variant="ghost" className="px-3" onClick={() => navigate(`/crm/leads/${activity.lead_id}`)}>
                 Ver lead
               </Button>
             </div>
@@ -188,16 +189,16 @@ function ActivityCard({ activity, showComplete = true }: { activity: CrmActivity
           {showOutcome && (
             <div className="mt-3 flex gap-2">
               <Input placeholder="Resultado (opcional)" value={outcome} onChange={(e) => setOutcome(e.target.value)} className="max-w-xs" />
-              <Button type="button" size="sm" onClick={handleComplete} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => { setShowOutcome(false); setOutcome('') }}>Cancelar</Button>
+              <Button type="button" className="px-3" onClick={handleComplete} loading={completeActivity.isPending} disabled={completeActivity.isPending}>OK</Button>
+              <Button type="button" variant="ghost" className="px-3" onClick={() => { setShowOutcome(false); setOutcome('') }}>Cancelar</Button>
             </div>
           )}
 
           {showReschedule && (
             <div className="mt-3 flex gap-2">
               <Input type="datetime-local" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="max-w-xs" />
-              <Button type="button" size="sm" onClick={handleReschedule} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => { setShowReschedule(false); setNewDate('') }}>Cancelar</Button>
+              <Button type="button" className="px-3" onClick={handleReschedule} loading={rescheduleActivity.isPending} disabled={rescheduleActivity.isPending}>Reagendar</Button>
+              <Button type="button" variant="ghost" className="px-3" onClick={() => { setShowReschedule(false); setNewDate('') }}>Cancelar</Button>
             </div>
           )}
         </div>

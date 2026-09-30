@@ -152,3 +152,58 @@ describe('crmService.createLead', () => {
     expect(rpcMock).toHaveBeenCalledWith('create_crm_lead', expect.objectContaining({ p_force_create: true }))
   })
 })
+
+describe('crmService — proteção offline em mutations', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it.each([
+    ['createLead', () => crmService.createLead({ full_name: 'Teste' })],
+    ['updateLead', () => crmService.updateLead('lead-1', {})],
+    ['moveStage', () => crmService.moveStage('lead-1', 'stage-2')],
+    ['assignLead', () => crmService.assignLead('lead-1', 'user-2')],
+    ['closeLost', () => crmService.closeLost('lead-1', 'reason-1')],
+    ['createActivity', () => crmService.createActivity({ lead_id: 'lead-1', type: 'CALL', title: 'Teste', due_at: '2026-01-01T10:00:00Z' })],
+    ['completeActivity', () => crmService.completeActivity('act-1')],
+    ['rescheduleActivity', () => crmService.rescheduleActivity('act-1', '2026-01-02T10:00:00Z')],
+    ['createCourse', () => crmService.createCourse({ code: 'T', name: 'Teste', modality: 'PRESENCIAL' })],
+    ['updateCourse', () => crmService.updateCourse('c-1', { name: 'Teste' })],
+  ])('%s lança OfflineConnectionError quando offline', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    await expect(fn()).rejects.toThrow('Sem conexão')
+    expect(rpcMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['listCourses', () => crmService.listCourses('ACTIVE')],
+    ['getLeadDetail', () => crmService.getLeadDetail('lead-1')],
+  ])('%s não lança offline quando navigator.onLine é false', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    rpcMock.mockResolvedValue({ data: null, error: null })
+    await expect(fn()).resolves.not.toThrow()
+    expect(rpcMock).toHaveBeenCalled()
+  })
+})
+
+describe('crmService — network failure com onLine=true (Fase 9.1)', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => true })
+  })
+
+  it('createLead falha com TypeError Failed to fetch e propaga o erro real (não mascarado)', async () => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => true })
+    rpcMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await expect(crmService.createLead({ full_name: 'Teste' })).rejects.toThrow('Failed to fetch')
+    expect(rpcMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('createLead propaga erro PostgreSQL sem mascaramento', async () => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => true })
+    const pg = new Error('rpc permission denied: create_student') as Error & { code?: string }
+    pg.code = '42501'
+    rpcMock.mockRejectedValue(pg)
+    await expect(crmService.createLead({ full_name: 'Teste' })).rejects.toThrow('permission denied')
+  })
+})

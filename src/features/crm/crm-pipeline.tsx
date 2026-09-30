@@ -1,5 +1,5 @@
 import { Clock, AlertTriangle, GripVertical } from 'lucide-react'
-import { useCallback, useMemo, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -24,7 +24,41 @@ import { toast } from 'sonner'
 import { crmKeys, useCrmPipeline, useMoveStage } from './crm-hooks'
 import { CRM_TEMPERATURE_LABELS, CRM_TEMPERATURE_TONES } from './crm-constants'
 import { stageMoveErrorMessage } from './crm-utils'
+import { offlineAwareMessage } from '@/lib/offline'
 import type { CrmLeadCard, CrmPipelineColumn, CrmPipelineResponse } from './crm-types'
+
+type ResponsiveMode = 'mobile' | 'tablet' | 'desktop'
+
+const DESKTOP_QUERY = '(min-width: 1024px)'
+const MOBILE_QUERY = '(max-width: 599px)'
+
+function getResponsiveMode(): ResponsiveMode {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'desktop'
+  if (window.matchMedia(DESKTOP_QUERY).matches) return 'desktop'
+  if (window.matchMedia(MOBILE_QUERY).matches) return 'mobile'
+  return 'tablet'
+}
+
+function useResponsiveMode(): ResponsiveMode {
+  const [mode, setMode] = useState<ResponsiveMode>(getResponsiveMode)
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const update = () => setMode(getResponsiveMode())
+    const queries = [window.matchMedia(DESKTOP_QUERY), window.matchMedia(MOBILE_QUERY)]
+    update()
+    for (const q of queries) {
+      if (typeof q.addEventListener === 'function') q.addEventListener('change', update)
+    }
+    return () => {
+      for (const q of queries) {
+        if (typeof q.removeEventListener === 'function') q.removeEventListener('change', update)
+      }
+    }
+  }, [])
+
+  return mode
+}
 
 export function CrmPipeline() {
   const { data, isLoading, isError } = useCrmPipeline()
@@ -39,6 +73,8 @@ export function CrmPipeline() {
   const canMoveStage = can(permissions, PERMISSIONS.CRM_MOVE_STAGE)
 
   const columns = useMemo(() => data?.columns ?? [], [data?.columns])
+
+  const mode = useResponsiveMode()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -118,7 +154,7 @@ export function CrmPipeline() {
         await moveStage.mutateAsync({ leadId, stageId: targetStageId, reason: 'Movido pelo Kanban' })
       } catch (err: unknown) {
         queryClient.setQueryData<CrmPipelineResponse>(crmKeys.pipeline(), snapshot)
-        toast.error(stageMoveErrorMessage(err) ?? 'Não foi possível mover o lead.')
+        toast.error(offlineAwareMessage(err, stageMoveErrorMessage(err) ?? 'Não foi possível mover o lead.'))
       } finally {
         setMovingLeadId(null)
       }
@@ -158,7 +194,7 @@ export function CrmPipeline() {
         await moveStage.mutateAsync({ leadId, stageId: targetStageId, reason: 'Movido pelo Kanban' })
       } catch (err: unknown) {
         queryClient.setQueryData<CrmPipelineResponse>(crmKeys.pipeline(), snapshot)
-        toast.error(stageMoveErrorMessage(err) ?? 'Não foi possível mover o lead.')
+        toast.error(offlineAwareMessage(err, stageMoveErrorMessage(err) ?? 'Não foi possível mover o lead.'))
       }
     },
     [findStageForLead, moveStage, queryClient],
@@ -189,11 +225,30 @@ export function CrmPipeline() {
   return (
     <div className="space-y-4">
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="hidden lg:flex gap-4 overflow-x-auto pb-4">
-          {columns.map((col) => (
-            <PipelineColumn key={col.stage_id} column={col} canMoveStage={canMoveStage} movingLeadId={movingLeadId} />
-          ))}
-        </div>
+        {mode === 'desktop' && (
+          <div data-testid="kanban-board-desktop" className="hidden lg:flex gap-4 overflow-x-auto pb-4">
+            {columns.map((col) => (
+              <PipelineColumn key={col.stage_id} column={col} canMoveStage={canMoveStage} movingLeadId={movingLeadId} />
+            ))}
+          </div>
+        )}
+
+        {mode === 'tablet' && (
+          <div data-testid="kanban-board-tablet" className="hidden min-[600px]:flex lg:hidden gap-4 overflow-x-auto pb-4">
+            {columns.map((col) => (
+              <PipelineColumn
+                key={col.stage_id}
+                column={col}
+                canMoveStage={canMoveStage}
+                movingLeadId={movingLeadId}
+                showMoveFallback
+                moveOptions={columns}
+                currentStageId={col.stage_id}
+                onMove={handleMobileStageChange}
+              />
+            ))}
+          </div>
+        )}
 
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
@@ -206,7 +261,7 @@ export function CrmPipeline() {
           ) : null}
         </DragOverlay>
 
-        <div className="lg:hidden">
+        <div data-testid="kanban-mobile-select" className="min-[600px]:hidden">
           <Select value={selectedStage} onChange={(e) => setMobileStage(e.target.value)}>
             {columns.map((col) => (
               <option key={col.stage_id} value={col.stage_id}>
@@ -216,7 +271,7 @@ export function CrmPipeline() {
           </Select>
         </div>
 
-        <div className="lg:hidden">
+        <div data-testid="kanban-mobile-cards" className="min-[600px]:hidden">
           {columns
             .filter((col) => col.stage_id === selectedStage)
             .map((col) => (
@@ -247,10 +302,18 @@ function PipelineColumn({
   column,
   canMoveStage,
   movingLeadId,
+  showMoveFallback,
+  moveOptions,
+  currentStageId,
+  onMove,
 }: {
   column: CrmPipelineColumn
   canMoveStage: boolean
   movingLeadId: string | null
+  showMoveFallback?: boolean
+  moveOptions?: CrmPipelineColumn[]
+  currentStageId?: string
+  onMove?: (leadId: string, stageId: string) => void
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: column.stage_id })
 
@@ -271,6 +334,10 @@ function PipelineColumn({
               stageName={column.stage_name}
               canMoveStage={canMoveStage}
               disabled={movingLeadId === lead.id}
+              showMoveFallback={showMoveFallback}
+              moveOptions={moveOptions}
+              currentStageId={currentStageId ?? column.stage_id}
+              onMove={onMove}
             />
           ))
         )}
@@ -284,11 +351,19 @@ function DraggableLeadCard({
   stageName,
   canMoveStage,
   disabled,
+  showMoveFallback,
+  moveOptions,
+  currentStageId,
+  onMove,
 }: {
   lead: CrmLeadCard
   stageName: string
   canMoveStage: boolean
   disabled: boolean
+  showMoveFallback?: boolean
+  moveOptions?: CrmPipelineColumn[]
+  currentStageId?: string
+  onMove?: (leadId: string, stageId: string) => void
 }) {
   const navigate = useNavigate()
   const isDraggable = canMoveStage && !disabled && (lead.status ?? 'OPEN') === 'OPEN'
@@ -342,7 +417,7 @@ function DraggableLeadCard({
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`Arrastar ${lead.full_name} para outra etapa`}
                   data-testid={`kanban-card-${lead.id}-drag`}
-                  className="cursor-grab rounded-md p-1 text-muted transition hover:bg-navy-50 hover:text-navy active:cursor-grabbing"
+                  className="grid size-11 cursor-grab place-items-center rounded-md text-muted transition hover:bg-navy-50 hover:text-navy active:cursor-grabbing"
                 >
                   <GripVertical className="size-4" />
                 </button>
@@ -365,6 +440,18 @@ function DraggableLeadCard({
             </span>
           )}
         </div>
+        {showMoveFallback && canMoveStage && (lead.status ?? 'OPEN') === 'OPEN' && (
+          <div className="flex items-center gap-2" data-testid={`kanban-card-${lead.id}-move`} onClick={(e) => e.stopPropagation()}>
+            <span className="text-[10px] text-muted">Mover para:</span>
+            <Select value={currentStageId} onChange={(e) => onMove?.(lead.id, e.target.value)} aria-label={`Mover ${lead.full_name} para outra etapa`} className="text-xs">
+              {moveOptions?.map((col) => (
+                <option key={col.stage_id} value={col.stage_id}>
+                  {col.stage_name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
     </div>
   )

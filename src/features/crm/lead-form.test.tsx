@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { toast } from 'sonner'
 import { LeadForm } from './lead-form'
 import { saveLeadDraft } from './lead-draft'
+import { OFFLINE_MESSAGE, OfflineConnectionError } from '@/lib/offline'
 
 const useCrmCoursesMock = vi.hoisted(() => vi.fn())
 const useCrmPipelineStagesMock = vi.hoisted(() => vi.fn())
@@ -223,5 +225,40 @@ describe('LeadForm', () => {
     await user.click(screen.getByRole('button', { name: /criar lead/i }))
     await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
     expect(screen.queryByRole('button', { name: /criar lead mesmo assim/i })).toBeNull()
+  })
+
+  it('mantém o rascunho e mostra a mensagem offline quando a criação falha por falta de conexão', async () => {
+    const user = userEvent.setup()
+    const onCreated = vi.fn()
+    const errorSpy = vi.spyOn(toast, 'error')
+    const mutateAsync = vi.fn().mockRejectedValue(new OfflineConnectionError())
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={onCreated} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Offline')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(errorSpy).toHaveBeenCalledWith(OFFLINE_MESSAGE))
+    expect(onCreated).not.toHaveBeenCalled()
+    const envelope = JSON.parse(sessionStorage.getItem('crm:lead-draft:v2') as string) as { values: { full_name?: string } }
+    expect(envelope.values).toMatchObject({ full_name: 'Carlos Offline' })
+  })
+
+  it('não trata erro de validação (RBAC/RPC) como erro offline', async () => {
+    const user = userEvent.setup()
+    const errorSpy = vi.spyOn(toast, 'error')
+    const mutateAsync = vi.fn().mockRejectedValue(new Error('user_direct_permission_denied'))
+    useCreateLeadMock.mockReturnValue({ mutateAsync, isPending: false })
+    render(<LeadForm onCreated={() => {}} onCancel={() => {}} />)
+    await user.type(screen.getByRole('textbox', { name: /nome completo/i }), 'Carlos Valid')
+    const origemSelect = screen.getAllByRole('combobox').find((el) =>
+      Array.from(el.children).some((o) => o.textContent?.includes('Selecione a origem'))
+    ) as HTMLSelectElement
+    await user.selectOptions(origemSelect, 'OUTRO')
+    await user.click(screen.getByRole('button', { name: /criar lead/i }))
+    await waitFor(() => expect(errorSpy).toHaveBeenCalledWith('user_direct_permission_denied'))
+    expect(errorSpy).not.toHaveBeenCalledWith(OFFLINE_MESSAGE)
   })
 })

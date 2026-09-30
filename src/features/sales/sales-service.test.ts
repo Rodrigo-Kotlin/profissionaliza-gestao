@@ -172,3 +172,28 @@ describe('salesService.getSaleTimeline', () => {
     await expect(salesService.getSaleTimeline('sale-1')).rejects.toThrow()
   })
 })
+
+describe('salesService — proteção offline em mutations', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it.each([
+    ['createFromLead', () => salesService.createFromLead({ lead_id: 'l1', course_id: 'c1', gross_value: 100, discount_value: 0, payment_method: 'PIX', installments: 1 })],
+    ['cancelSale', () => salesService.cancelSale('sale-1', 'Motivo')],
+  ])('%s lança OfflineConnectionError quando offline', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    await expect(fn()).rejects.toThrow('Sem conexão')
+    expect(rpcMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['listSales', () => salesService.listSales({})],
+    ['getSaleDetail', () => salesService.getSaleDetail('sale-1')],
+  ])('%s não lança offline quando navigator.onLine é false', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    rpcMock.mockResolvedValue({ data: null, error: null })
+    await expect(fn()).resolves.not.toThrow()
+    expect(rpcMock).toHaveBeenCalled()
+  })
+})

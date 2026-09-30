@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { LeadDetailsPage } from './lead-details-page'
 
@@ -180,6 +180,8 @@ function renderPage() {
     <MemoryRouter initialEntries={['/crm/leads/lead-1']}>
       <Routes>
         <Route path="/crm/leads/:id" element={<LeadDetailsPage />} />
+        <Route path="/crm" element={<div>CRM page test</div>} />
+        <Route path="/crm/leads" element={<div>Leads list page test</div>} />
       </Routes>
     </MemoryRouter>
   )
@@ -536,5 +538,117 @@ describe('LeadDetailsPage — Sale card when WON', () => {
     mockState.leadData = mockLead('OPEN')
     renderPage()
     expect(screen.queryByText('Venda confirmada')).not.toBeInTheDocument()
+  })
+})
+
+describe('LeadDetailsPage — continuidade E2E (Fase 10)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage', 'crm.close_lost', 'crm.activities.manage']
+    mockState.leadData = mockLead('OPEN')
+  })
+
+  it('breadcrumb mostra contexto (CRM > Leads > código) e navega para a lista de leads', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    const nav = screen.getByRole('navigation', { name: 'Navegação estrutural' })
+    expect(nav).toHaveTextContent('CRM')
+    expect(nav).toHaveTextContent('Leads')
+    expect(nav).toHaveTextContent('CRM-0001')
+    await user.click(screen.getByRole('button', { name: 'Leads' }))
+    expect(await screen.findByText('Leads list page test')).toBeInTheDocument()
+  })
+})
+
+describe('LeadDetailsPage — retorno contextual (Fase 11.1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage', 'crm.close_lost', 'crm.activities.manage']
+    mockState.leadData = mockLead('OPEN')
+  })
+
+  function LeadsListProbe() {
+    const location = useLocation()
+    return <div>Leads list page test{location.search}</div>
+  }
+
+  function renderWithHistory() {
+    return render(
+      <MemoryRouter initialEntries={['/crm/leads?stage=NEGOTIATION&page=2', '/crm/leads/lead-1']}>
+        <Routes>
+          <Route path="/crm/leads" element={<LeadsListProbe />} />
+          <Route path="/crm/leads/:id" element={<LeadDetailsPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+  }
+
+  it('Voltar retorna ao histórico anterior preservando os search params', async () => {
+    const user = userEvent.setup()
+    renderWithHistory()
+
+    await user.click(screen.getByRole('button', { name: /voltar/i }))
+
+    expect(await screen.findByText(/stage=NEGOTIATION&page=2/)).toBeInTheDocument()
+  })
+
+  it('breadcrumb Leads continua indo direto para /crm/leads (sem reter busca)', async () => {
+    const user = userEvent.setup()
+    renderWithHistory()
+
+    await user.click(screen.getByRole('button', { name: 'Leads' }))
+
+    expect(await screen.findByText('Leads list page test')).toBeInTheDocument()
+    expect(screen.queryByText(/stage=NEGOTIATION/)).toBeNull()
+  })
+})
+
+describe('LeadDetailsPage — filtros de atividade responsivos (Fase 11.2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage', 'crm.close_lost', 'crm.activities.manage']
+    mockState.leadData = mockLead('OPEN')
+  })
+
+  it('filtros de atividade permitem wrap em 320px e continuam filtrando', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('tab', { name: 'Atividades' }))
+
+    const todos = screen.getAllByRole('button', { name: 'Todas' })[0] as HTMLElement
+    const row = todos.parentElement as HTMLElement
+    expect(row.className).toContain('flex-wrap')
+    expect(row.className).toContain('gap-2')
+
+    await user.click(screen.getAllByRole('button', { name: 'Concluídas' })[0]!)
+    expect(screen.getByText('Nenhuma atividade')).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: 'Pendentes' })[0]!)
+    expect(screen.queryByText('Nenhuma atividade')).toBeNull()
+  })
+})
+
+describe('LeadDetailsPage — touch targets (Fase 6)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState.permissions = ['crm.view', 'crm.edit', 'crm.move_stage', 'crm.close_lost', 'crm.activities.manage']
+    mockState.leadData = mockLead('OPEN')
+  })
+
+  it('ações de atividade, filtros e NextActivity mantêm alvo de 44px (min-h-11)', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('tab', { name: 'Atividades' }))
+
+    for (const name of [/concluir/i, /reagendar/i]) {
+      const actions = screen.getAllByRole('button', { name })
+      expect(actions.length).toBeGreaterThan(0)
+      for (const button of actions) expect(button.className).toContain('min-h-11')
+    }
+    for (const name of ['Todas', 'Pendentes', 'Concluídas', 'Canceladas']) {
+      const chips = screen.getAllByRole('button', { name })
+      expect(chips.length).toBeGreaterThan(0)
+      for (const chip of chips) expect(chip.className).toContain('min-h-11')
+    }
   })
 })

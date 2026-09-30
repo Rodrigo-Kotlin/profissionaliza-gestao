@@ -1,7 +1,7 @@
 import { BookOpen, Briefcase, CalendarDays, CircleDollarSign, FileText, History, Link2, Pencil, Phone, ShieldCheck, Unlink, UserPlus, ArrowRightLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Badge, Button, Card, EmptyState, PageHeader, Skeleton, Tabs } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton, Tabs } from '@/components/ui/core'
 import { Modal, Tooltip } from '@/components/ui/overlays'
 import { Timeline } from '@/components/ui/data'
 import { can, PERMISSIONS, STUDENT_STATUS_LABELS, type StudentStatus } from '@/lib/rbac'
@@ -51,8 +51,9 @@ export function StudentDetailsPage() {
 
   return (
     <div className="space-y-6 md:space-y-8">
+      <Breadcrumb items={[{ label: 'Alunos', href: '/alunos' }, { label: student.student_code }]} />
       <PageHeader title="Aluno">
-        <Button variant="secondary" onClick={() => navigate('/alunos')}>Voltar</Button>
+        <Button variant="secondary" onClick={() => navigate(-1)}>Voltar</Button>
         {canEdit && (
           <Button variant="secondary" onClick={() => navigate(`/alunos/${studentId}/editar`)}>
             <Pencil className="size-4" /> Editar
@@ -213,7 +214,7 @@ function GuardiansPanel({
                 </div>
                 {canManage && (
                   <Tooltip content="Remover vínculo">
-                    <Button variant="ghost" size="sm" className="px-2 text-red-600" onClick={() => unlink.mutate(guardian.guardian_id)}>
+                    <Button variant="ghost" aria-label={`Remover vínculo com ${guardian.full_name}`} className="grid size-11 place-items-center px-0 text-red-600" onClick={() => unlink.mutate(guardian.guardian_id)}>
                       <Unlink className="size-4" />
                     </Button>
                   </Tooltip>

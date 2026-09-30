@@ -1,16 +1,17 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import * as DropdownPrimitive from '@radix-ui/react-dropdown-menu'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { CloseButton } from './core'
+import { Button } from './core'
 
 export function Modal({ trigger, title, children, open, onOpenChange }: { trigger?: ReactNode; title: string; children: ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) {
-  return <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}><DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-navy/50 backdrop-blur-sm" /><DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-[71] max-h-[92dvh] overflow-y-auto rounded-t-2xl border bg-white p-5 shadow-floating sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:max-h-[85vh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-card sm:p-6"><div className="mb-5 flex items-center justify-between"><DialogPrimitive.Title className="text-xl font-semibold">{title}</DialogPrimitive.Title><DialogPrimitive.Close asChild><CloseButton /></DialogPrimitive.Close></div>{children}</DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
+  return <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}><DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-navy/50 backdrop-blur-sm" /><DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-[71] max-h-[92dvh] overflow-y-auto rounded-t-2xl border bg-white px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-floating sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:max-h-[85vh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-card sm:p-6"><div className="mb-5 flex items-center justify-between"><DialogPrimitive.Title className="text-xl font-semibold">{title}</DialogPrimitive.Title><DialogPrimitive.Close asChild><Button aria-label="Fechar" variant="ghost" className="grid size-11 place-items-center px-0"><X className="size-4" /></Button></DialogPrimitive.Close></div>{children}</DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
 }
 
 export function Drawer({ open, onOpenChange, title, children }: { open: boolean; onOpenChange: (open: boolean) => void; title: string; children: ReactNode }) {
-  return <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-navy/60" /><DialogPrimitive.Content className="fixed inset-y-0 left-0 z-[71] w-[min(90vw,86vw)] max-w-[320px] bg-navy shadow-floating"><DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>{children}</DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
+  return <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}><DialogPrimitive.Portal><DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-navy/60" /><DialogPrimitive.Content className="safe-top safe-bottom safe-left fixed inset-y-0 left-0 z-[71] w-[86vw] max-w-[320px] bg-navy shadow-floating"><DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>{children}</DialogPrimitive.Content></DialogPrimitive.Portal></DialogPrimitive.Root>
 }
 
 export function DropdownMenu({ trigger, children, align = 'end' }: { trigger: ReactNode; children: ReactNode; align?: 'start' | 'center' | 'end' }) {

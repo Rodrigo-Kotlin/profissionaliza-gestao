@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { Search, X } from 'lucide-react'
+import { Search, X, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
@@ -114,7 +115,55 @@ export function Progress({ value, className }: { value: number; className?: stri
 }
 
 export function Tabs({ items, value, onChange }: { items: string[]; value: string; onChange: (value: string) => void }) {
-  return <div role="tablist" className="flex overflow-x-auto rounded-lg border bg-navy-50 p-1">{items.map((item) => <button role="tab" aria-selected={item === value} key={item} onClick={() => onChange(item)} className={cn('min-h-10 whitespace-nowrap rounded-md px-4 text-xs font-semibold text-muted', item === value && 'bg-white text-navy shadow-ambient')}>{item}</button>)}</div>
+  const tablistRef = React.useRef<HTMLDivElement>(null)
+
+  const handleKeyDown = React.useCallback((event: React.KeyboardEvent) => {
+    const tablist = tablistRef.current
+    if (!tablist) return
+    const tabs = Array.from(tablist.querySelectorAll<HTMLElement>('[role="tab"]'))
+    const currentIndex = tabs.findIndex((tab) => tab === document.activeElement)
+    if (currentIndex === -1) return
+
+    let nextIndex: number | null = null
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = (currentIndex + 1) % tabs.length
+        break
+      case 'ArrowLeft':
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+        break
+      case 'Home':
+        nextIndex = 0
+        break
+      case 'End':
+        nextIndex = tabs.length - 1
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    tabs[nextIndex]!.focus()
+    const nextItem = items[nextIndex]
+    if (nextItem !== undefined && nextItem !== value) onChange(nextItem)
+  }, [items, value, onChange])
+
+  return (
+    <div ref={tablistRef} role="tablist" onKeyDown={handleKeyDown} className="flex overflow-x-auto rounded-lg border bg-navy-50 p-1">
+      {items.map((item) => (
+        <button
+          role="tab"
+          aria-selected={item === value}
+          tabIndex={item === value ? 0 : -1}
+          key={item}
+          onClick={() => onChange(item)}
+          className={cn('min-h-11 whitespace-nowrap rounded-md px-4 text-xs font-semibold text-muted', item === value && 'bg-white text-navy shadow-ambient')}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function AlertCard({ title, children, variant = 'info' }: { title: string; children: React.ReactNode; variant?: 'info' | 'warning' | 'danger' }) {
@@ -130,6 +179,33 @@ export function PageHeader({ title, description, children }: { title: string; de
 }
 
 export function FilterBar({ children }: { children: React.ReactNode }) { return <Card className="flex flex-wrap items-center gap-3 p-4">{children}</Card> }
-export function Breadcrumb({ items }: { items: string[] }) { return <nav aria-label="Navegação estrutural" className="flex gap-2 text-xs font-semibold uppercase tracking-wider text-muted">{items.map((item, i) => <React.Fragment key={item}><span>{item}</span>{i < items.length - 1 && <span>/</span>}</React.Fragment>)}</nav> }
-export function Pagination({ page = 1 }: { page?: number }) { return <nav aria-label="Paginação" className="flex items-center gap-1"><Button variant="ghost" size="sm" disabled={page === 1}>Anterior</Button><Button size="sm">{page}</Button><Button variant="ghost" size="sm">Próxima</Button></nav> }
-export function CloseButton({ onClick }: { onClick?: () => void }) { return <Button aria-label="Fechar" variant="ghost" size="sm" onClick={onClick}><X className="size-4" /></Button> }
+export type BreadcrumbItem = string | { label: string; href?: string }
+export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
+  const navigate = useNavigate()
+  return (
+    <nav aria-label="Navegação estrutural" className="flex min-w-0 flex-wrap items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted">
+      {items.map((item, i) => {
+        const label = typeof item === 'string' ? item : item.label
+        const href = typeof item === 'string' ? undefined : item.href
+        return (
+          <React.Fragment key={i}>
+            {i > 0 && <ChevronRight className="size-3 shrink-0 opacity-50" aria-hidden />}
+            {href ? (
+              <button
+                type="button"
+                onClick={() => navigate(href)}
+                className="min-h-8 rounded-md px-1 text-navy transition-colors hover:bg-navy-50"
+              >
+                {label}
+              </button>
+            ) : (
+              <span className="min-w-0 truncate text-ink">{label}</span>
+            )}
+          </React.Fragment>
+        )
+      })}
+    </nav>
+  )
+}
+export function Pagination({ page = 1 }: { page?: number }) { return <nav aria-label="Paginação" className="flex items-center gap-1"><Button variant="ghost" disabled={page === 1}>Anterior</Button><Button>{page}</Button><Button variant="ghost">Próxima</Button></nav> }
+export function CloseButton({ onClick }: { onClick?: () => void }) { return <Button aria-label="Fechar" variant="ghost" className="grid size-11 place-items-center px-0" onClick={onClick}><X className="size-4" /></Button> }
