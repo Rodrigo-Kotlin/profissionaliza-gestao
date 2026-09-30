@@ -6,19 +6,19 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { BrandLogo } from '@/components/brand'
-import { Button, Checkbox, Input } from '@/components/ui/core'
+import { Button, Input } from '@/components/ui/core'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { writeAuditLog } from '@/services/audit-service'
 import { useAuth } from './auth-context'
 
-const loginSchema = z.object({ email: z.email('Informe um e-mail válido.'), password: z.string().min(6, 'A senha deve ter ao menos 6 caracteres.'), remember: z.boolean() })
+const loginSchema = z.object({ email: z.email('Informe um e-mail válido.'), password: z.string().min(6, 'A senha deve ter ao menos 6 caracteres.') })
 type LoginData = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginData>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', remember: true } })
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginData>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
   if (session) return <Navigate to="/" replace />
 
   const onSubmit = async (values: LoginData) => {
@@ -43,8 +43,7 @@ export function LoginPage() {
         {!isSupabaseConfigured && <div role="alert" className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Ambiente não configurado. Defina as variáveis descritas em <code>.env.example</code>.</div>}
         <form className="mt-10 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="relative"><Mail className="absolute left-3 top-[37px] z-10 size-5 text-muted" /><Input label="E-mail corporativo" placeholder="nome@instituicao.com.br" className="pl-10" autoComplete="email" error={errors.email?.message} {...register('email')} /></div>
-          <div><div className="mb-1.5 flex items-center justify-between"><label htmlFor="password" className="text-sm font-medium">Senha</label><Link to="/recuperar-senha" className="text-xs font-semibold text-navy hover:underline">Esqueci minha senha</Link></div><div className="relative"><LockKeyhole className="absolute left-3 top-3 size-5 text-muted" /><Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10 pr-11" autoComplete="current-password" error={errors.password?.message} {...register('password')} /><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} onClick={() => setShowPassword((value) => !value)} className="absolute right-2 top-1.5 grid size-9 place-items-center rounded-md text-muted hover:bg-navy-50">{showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}</button></div></div>
-          <label className="flex items-center gap-2 text-sm text-muted"><Checkbox {...register('remember')} />Lembrar acesso</label>
+           <div><div className="mb-1.5 flex items-center justify-between"><label htmlFor="password" className="text-sm font-medium">Senha</label><Link to="/recuperar-senha" className="text-xs font-semibold text-navy hover:underline">Esqueci minha senha</Link></div><div className="relative"><LockKeyhole className="absolute left-3 top-3 size-5 text-muted" /><Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-10 pr-11" autoComplete="current-password" error={errors.password?.message} {...register('password')} /><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} onClick={() => setShowPassword((value) => !value)} className="absolute right-2 top-1.5 grid size-11 place-items-center rounded-md text-muted hover:bg-navy-50">{showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}</button></div></div>
           <Button variant="gold" size="lg" className="w-full" disabled={isSubmitting}>{isSubmitting ? 'Entrando...' : 'Entrar'}</Button>
         </form>
         <p className="mt-12 text-center text-sm text-muted">Precisa de ajuda? <a href="mailto:suporte@profissionaliza.com.br" className="font-semibold text-navy hover:underline">Fale com o suporte</a></p>
