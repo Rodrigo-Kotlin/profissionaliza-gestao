@@ -1,4 +1,4 @@
-import { BookOpen, Briefcase, CalendarDays, CircleDollarSign, FileText, History, Link2, Pencil, Phone, ShieldCheck, Unlink, UserPlus, ArrowRightLeft } from 'lucide-react'
+import { Briefcase, CalendarDays, CircleDollarSign, FileText, History, Link2, Pencil, Phone, ShieldCheck, Unlink, UserPlus, ArrowRightLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton, Tabs } from '@/components/ui/core'
@@ -11,6 +11,7 @@ import { ChangeStatusForm } from './change-status'
 import { GuardianForm } from './guardian-form'
 import { maskPhone, STATUS_TONE } from './students-utils'
 import type { Guardian } from './students-types'
+import { StudentEnrollmentsPanel } from '../enrollments/enrollment-detail-page'
 
 const TABS = ['Visão Geral', 'Responsáveis', 'Histórico', 'Acadêmico', 'Financeiro', 'Contratos', 'Documentos'] as const
 
@@ -95,7 +96,7 @@ export function StudentDetailsPage() {
         />
       )}
       {tab === 'Histórico' && <HistoryPanel events={history.data} loading={history.isLoading} />}
-      {tab === 'Acadêmico' && <EmptyState icon={BookOpen} title="Nenhuma matrícula registrada." description="As matrículas serão gerenciadas em uma próxima etapa." />}
+      {tab === 'Acadêmico' && <StudentEnrollmentsPanel studentId={studentId} />}
       {tab === 'Financeiro' && <EmptyState icon={CircleDollarSign} title="Disponível em uma próxima etapa." description="O financeiro do aluno será apresentado quando o módulo for implementado." />}
       {tab === 'Contratos' && <EmptyState icon={Briefcase} title="Disponível em uma próxima etapa." description="Os contratos serão gerenciados em uma próxima etapa." />}
       {tab === 'Documentos' && <EmptyState icon={FileText} title="Disponível em uma próxima etapa." description="O repositório de documentos será apresentado futuramente." />}

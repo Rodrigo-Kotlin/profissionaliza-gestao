@@ -165,6 +165,19 @@ export function SaleDetailPage() {
         )}
       </Card>
 
+      {sale.enrollment_id && (
+        <Card className="p-5">
+          <SectionHeader icon={CheckCircle2} title="Matrícula" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <dl className="space-y-2 text-sm">
+              <Row label="Código" value={sale.enrollment_code ?? '—'} />
+              <Row label="Status" value={enrollmentStatusText(sale.enrollment_status)} />
+            </dl>
+            <Button variant="ghost" onClick={() => navigate(`/matriculas/${sale.enrollment_id}`)}>Ver matrícula</Button>
+          </div>
+        </Card>
+      )}
+
       {/* Observações */}
       {sale.commercial_notes && (
         <Card className="p-5">
@@ -228,6 +241,10 @@ function contractStatusText(status: string | null | undefined): string {
     CANCELED: 'Cancelado'
   }
   return status ? (labels[status] ?? status) : '—'
+}
+
+function enrollmentStatusText(status: string | null | undefined): string {
+  return ({ PENDING: 'Pendente', ACTIVE: 'Ativa', PAUSED: 'Pausada', COMPLETED: 'Concluída', CANCELED: 'Cancelada' } as Record<string, string>)[status ?? ''] ?? '—'
 }
 
 function SaleTimelineRow({ event }: { event: SaleTimelineEvent }) {

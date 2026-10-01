@@ -65,6 +65,7 @@ export function useIssueContract() {
       qc.invalidateQueries({ queryKey: contractKeys.detail(data.contract_id) })
       qc.invalidateQueries({ queryKey: contractKeys.timeline(data.contract_id) })
       qc.invalidateQueries({ queryKey: saleKeys.all })
+      qc.invalidateQueries({ queryKey: ['enrollments'] })
     }
   })
 }
@@ -78,6 +79,7 @@ export function useSignContract() {
       qc.invalidateQueries({ queryKey: contractKeys.detail(data.contract_id) })
       qc.invalidateQueries({ queryKey: contractKeys.timeline(data.contract_id) })
       qc.invalidateQueries({ queryKey: saleKeys.all })
+      qc.invalidateQueries({ queryKey: ['enrollments'] })
     }
   })
 }

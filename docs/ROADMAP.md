@@ -60,6 +60,19 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Homologação física: concluída pelo usuário.
 - Merge do PR #14: aguardando autorização final.
 
+## Fase 2.5 — Matrículas
+**Status: backend consolidado e frontend implementado, aguardando revisão**
+
+- `enrollments` é uma entidade acadêmica independente de `students`.
+- Contract `SIGNED` cria Enrollment `PENDING` atomicamente; ativação, pausa,
+  retomada, conclusão e cancelamento são transições manuais via RPC.
+- Backend RPC-only com RLS, ownership de vendedor somente para leitura e
+  auditoria autoritativa no PostgreSQL.
+- Frontend: `/matriculas`, `/matriculas/:id`, filtros persistidos na URL,
+  ações condicionadas por status/permissão e integração com Student, Sale e
+  Contract.
+- Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
+
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento
 

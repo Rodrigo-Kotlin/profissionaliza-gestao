@@ -40,7 +40,8 @@ npm run test:e2e
 | E2E-04 Lead | `lead-details.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Abre lead pelo kanban, navega pelas abas; lead inexistente não quebra a UI |
 | E2E-05 Guarda anônima | `unauth-guard.spec.ts` | Apenas `E2E_BASE_URL` | Rota protegida sem sessão redireciona para `/login` |
 | 12B homologação autenticada | `homologation-auth.spec.ts`, `homologation-triage.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Rotas, responsividade, PWA, navegação e guards |
-| 12C.5 transacional | `transactional-flow.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Lead → Venda → Contrato → Aluno até `SIGNED` |
+| 12C.5 transacional | `transactional-flow.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Lead → Venda → Contrato → Enrollment até `COMPLETED` |
+| 2.5C matrículas | `enrollments.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Listagem responsiva e detalhe de matrícula |
 
 ## Decisões
 
@@ -55,6 +56,10 @@ npm run test:e2e
   existentes para login e 403.
 - **Rastreabilidade**: trace, screenshot e video em falha (`test-results/`),
   ignorados pelo git.
+- **Matrículas**: o fluxo transacional reutiliza o `RUN_ID` nas notas e motivos
+  do cenário. Como o domínio não possui delete de Enrollment, a limpeza de
+  dados persistidos deve ser manual e específica ao marcador, respeitando as
+  FKs e sem `TRUNCATE` ou delete amplo.
 
 ## CI
 
@@ -64,5 +69,5 @@ manualmente contra o deploy candidato à release.
 ## Último checkpoint
 
 - Playwright autenticado: validado contra o DEV com conta QA ADMIN.
-- Playwright transacional: 1 fluxo completo aprovado; cleanup por marcador exclusivo executado.
+- Playwright transacional: fluxo aprovado até `SIGNED`; a extensão para Enrollment aguarda execução autenticada no DEV e limpeza específica por marcador.
 - Artefatos de falha (`test-results/`, traces, screenshots e vídeos) são ignorados pelo Git.

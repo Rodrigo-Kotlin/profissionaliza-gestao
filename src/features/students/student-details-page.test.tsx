@@ -12,6 +12,7 @@ const guardiansMock = vi.hoisted(() => vi.fn())
 const historyMock = vi.hoisted(() => vi.fn())
 const changeStatusMock = vi.hoisted(() => vi.fn())
 const unlinkMock = vi.hoisted(() => vi.fn())
+const enrollmentListMock = vi.hoisted(() => vi.fn(() => ({ data: { data: [] }, isLoading: false, isError: false })))
 
 vi.mock('@/features/auth/auth-context', () => ({
   useAuth: () => useAuthMock()
@@ -23,6 +24,10 @@ vi.mock('./students-hooks', () => ({
   useStudentHistory: () => historyMock(),
   useChangeStudentStatus: () => changeStatusMock(),
   useUnlinkGuardian: () => ({ mutate: unlinkMock, isPending: false })
+}))
+
+vi.mock('../enrollments/enrollments-hooks', () => ({
+  useEnrollmentList: () => enrollmentListMock()
 }))
 
 const student = {

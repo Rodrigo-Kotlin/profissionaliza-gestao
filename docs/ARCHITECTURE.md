@@ -105,6 +105,20 @@ RPCs `SECURITY DEFINER` (`create_contract_from_sale`, `issue_contract`, …) que
 aplicam ownership, transições de estado e masking — o frontend nunca grava em
 `public.contracts` diretamente.
 
+### Feature enrollments (Fase 2.5)
+
+`enrollments` representa a relação acadêmica do aluno com um curso; `students`
+continua sendo o perfil global do aluno. A assinatura de um contrato chama a
+mesma regra transacional que cria uma matrícula `PENDING`. A interface usa
+`enrollments-service` e React Query para chamar exclusivamente as RPCs; não há
+`select` direto da tabela nem auditoria duplicada no cliente.
+
+O módulo expõe `/matriculas` e `/matriculas/:id`, com filtros em
+`URLSearchParams`, leitura por `list_enrollments`/`get_enrollment_detail` e
+ações independentes por status e permissão. Sale e Contract detail retornam o
+vínculo opcional da matrícula, e Student Detail consulta as matrículas por
+`student_id` pela mesma RPC.
+
 ## Fluxo de dependências
 
 ```text

@@ -29,7 +29,7 @@ const navigationSections: NavigationSection[] = [
   },
   {
     label: 'Acadêmico',
-    items: [{ label: 'Alunos', icon: GraduationCap, to: '/alunos', available: true, anyOf: [PERMISSIONS.STUDENTS_VIEW] }, { label: 'Cursos', icon: BookOpen, to: '/crm/cursos', available: true, anyOf: [PERMISSIONS.COURSES_VIEW] }, { label: 'Pedagógico', icon: BookOpen, to: '/pedagogico' }]
+    items: [{ label: 'Alunos', icon: GraduationCap, to: '/alunos', available: true, anyOf: [PERMISSIONS.STUDENTS_VIEW] }, { label: 'Matrículas', icon: GraduationCap, to: '/matriculas', available: true, anyOf: [PERMISSIONS.ENROLLMENTS_VIEW] }, { label: 'Cursos', icon: BookOpen, to: '/crm/cursos', available: true, anyOf: [PERMISSIONS.COURSES_VIEW] }, { label: 'Pedagógico', icon: BookOpen, to: '/pedagogico' }]
   },
   {
     label: 'Gestão',
