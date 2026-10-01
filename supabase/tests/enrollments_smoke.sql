@@ -22,6 +22,7 @@ declare
   v_status text;
   v_res json;
   v_error text;
+  v_audit_count integer;
 begin
   select id into v_user_id from auth.users order by created_at limit 1;
   if v_user_id is null then
@@ -75,6 +76,35 @@ begin
     'ONLINE', 100, 0, 100, 'PIX', 1, now(), v_user_id, v_user_id
   ) returning id into v_contract_id;
 
+  if has_table_privilege('anon', 'public.enrollments', 'select')
+     or has_table_privilege('authenticated', 'public.enrollments', 'select') then
+    raise exception 'enrollments exposes direct SELECT privilege';
+  end if;
+
+  begin
+    perform public.create_enrollment_from_signed_contract(v_contract_id);
+    raise exception 'non-signed contract was accepted';
+  exception when others then
+    get stacked diagnostics v_error = message_text;
+    if v_error <> 'Only signed contracts can create an enrollment' then
+      raise exception 'unexpected non-signed error: %', v_error;
+    end if;
+  end;
+
+  update public.contracts set status = 'SIGNED', signed_at = now(), signature_confirmed_by = v_user_id where id = v_contract_id;
+  update public.sales set status = 'CANCELED', canceled_at = now(), canceled_by = v_user_id, cancellation_reason = 'Smoke invalid sale' where id = v_sale_id;
+  begin
+    perform public.create_enrollment_from_signed_contract(v_contract_id);
+    raise exception 'canceled sale was accepted';
+  exception when others then
+    get stacked diagnostics v_error = message_text;
+    if v_error <> 'Only confirmed sales can create an enrollment' then
+      raise exception 'unexpected canceled sale error: %', v_error;
+    end if;
+  end;
+  update public.sales set status = 'CONFIRMED', canceled_at = null, canceled_by = null, cancellation_reason = null where id = v_sale_id;
+  update public.contracts set status = 'PENDING_SIGNATURE', signed_at = null, signature_confirmed_by = null where id = v_contract_id;
+
   v_res := public.mark_contract_signed(v_contract_id);
   v_enrollment_id := (v_res->'enrollment'->>'enrollment_id')::uuid;
 
@@ -107,6 +137,13 @@ begin
   perform public.complete_enrollment(v_enrollment_id);
   if (select status from public.enrollments where id = v_enrollment_id) <> 'COMPLETED' then
     raise exception 'enrollment did not transition to COMPLETED';
+  end if;
+  if (select status from public.students where id = v_student_id) <> 'ATIVO' then
+    raise exception 'completed enrollment downgraded student status';
+  end if;
+  select count(*) into v_audit_count from public.audit_logs where entity_type = 'enrollment' and entity_id = v_enrollment_id::text and action = 'enrollment.created';
+  if v_audit_count <> 1 then
+    raise exception 'expected exactly one enrollment.created audit, got %', v_audit_count;
   end if;
 
   begin
