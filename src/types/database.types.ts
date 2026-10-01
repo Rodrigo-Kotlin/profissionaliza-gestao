@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -585,6 +585,101 @@ export type Database = {
         }
         Relationships: []
       }
+      enrollments: {
+        Row: {
+          canceled_at: string | null
+          cancellation_reason: string | null
+          completed_at: string | null
+          contract_id: string
+          course_id: string
+          created_at: string
+          created_by: string | null
+          enrollment_code: string
+          enrollment_date: string
+          id: string
+          notes: string | null
+          pause_reason: string | null
+          paused_at: string | null
+          sale_id: string
+          started_at: string | null
+          status: string
+          student_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          completed_at?: string | null
+          contract_id: string
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          enrollment_code: string
+          enrollment_date?: string
+          id?: string
+          notes?: string | null
+          pause_reason?: string | null
+          paused_at?: string | null
+          sale_id: string
+          started_at?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          completed_at?: string | null
+          contract_id?: string
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          enrollment_code?: string
+          enrollment_date?: string
+          id?: string
+          notes?: string | null
+          pause_reason?: string | null
+          paused_at?: string | null
+          sale_id?: string
+          started_at?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: true
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: true
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           birth_date: string | null
@@ -1120,6 +1215,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _create_enrollment_from_signed_contract: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
       _crm_name_matches: {
         Args: { p_name_a: string; p_name_b: string }
         Returns: boolean
@@ -1128,12 +1227,22 @@ export type Database = {
         Args: { p_course_interest_id?: string; p_stage_id: string }
         Returns: string
       }
+      _get_contract_detail_base: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
+      _get_sale_detail_base: { Args: { p_sale_id: string }; Returns: Json }
+      activate_enrollment: { Args: { p_enrollment_id: string }; Returns: Json }
       assign_crm_lead: {
         Args: { p_lead_id: string; p_new_owner_id: string }
         Returns: undefined
       }
       cancel_contract: {
         Args: { p_contract_id: string; p_reason: string }
+        Returns: Json
+      }
+      cancel_enrollment: {
+        Args: { p_enrollment_id: string; p_reason: string }
         Returns: Json
       }
       cancel_sale: {
@@ -1156,6 +1265,7 @@ export type Database = {
         Args: { p_activity_id: string; p_outcome?: string }
         Returns: undefined
       }
+      complete_enrollment: { Args: { p_enrollment_id: string }; Returns: Json }
       create_contract_from_sale: {
         Args: {
           p_contract_notes?: string
@@ -1209,6 +1319,10 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: string
+      }
+      create_enrollment_from_signed_contract: {
+        Args: { p_contract_id: string }
+        Returns: Json
       }
       create_person: {
         Args: {
@@ -1286,6 +1400,10 @@ export type Database = {
         Args: { p_lead_id: string; p_page?: number; p_page_size?: number }
         Returns: Json
       }
+      get_enrollment_detail: {
+        Args: { p_enrollment_id: string }
+        Returns: Json
+      }
       get_my_permissions: { Args: never; Returns: string[] }
       get_sale_detail: { Args: { p_sale_id: string }; Returns: Json }
       get_sale_timeline: { Args: { p_sale_id: string }; Returns: Json }
@@ -1342,6 +1460,19 @@ export type Database = {
         Returns: Json
       }
       list_crm_pipeline_stages: { Args: never; Returns: Json }
+      list_enrollments: {
+        Args: {
+          p_course_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_page?: number
+          p_page_size?: number
+          p_q?: string
+          p_status?: string
+          p_student_id?: string
+        }
+        Returns: Json
+      }
       list_guardians: { Args: { p_student_id: string }; Returns: Json }
       list_sales: {
         Args: {
@@ -1364,10 +1495,15 @@ export type Database = {
         Args: { p_lead_id: string; p_new_stage_id: string; p_reason?: string }
         Returns: undefined
       }
+      pause_enrollment: {
+        Args: { p_enrollment_id: string; p_reason: string }
+        Returns: Json
+      }
       reschedule_crm_activity: {
         Args: { p_activity_id: string; p_new_due_at: string }
         Returns: undefined
       }
+      resume_enrollment: { Args: { p_enrollment_id: string }; Returns: Json }
       search_contractor_people: {
         Args: { p_limit?: number; p_query?: string }
         Returns: Json
