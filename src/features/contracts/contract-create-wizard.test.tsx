@@ -105,27 +105,43 @@ function makeSale(): SaleDetail {
   }
 }
 
-function renderWizard(overrides?: { open?: boolean }) {
+function renderWizard(overrides?: { open?: boolean; sale?: SaleDetail; onOpenChange?: (open: boolean) => void }) {
   const open = overrides?.open ?? true
   const onChangeCalls: boolean[] = []
+  const sale = overrides?.sale ?? makeSale()
+  const onOpenChange = overrides?.onOpenChange ?? ((next: boolean) => { onChangeCalls.push(next) })
+  const view = renderWizardTree(sale, open, onOpenChange)
+  return {
+    ...view,
+    getOnChangeCalls: () => onChangeCalls,
+    rerenderWizard: (nextSale: SaleDetail, nextOpen = true) => view.rerenderWizard(nextSale, nextOpen, onOpenChange)
+  }
+}
+
+function renderWizardTree(sale: SaleDetail, open: boolean, onOpenChange: (open: boolean) => void) {
   const view = render(
     <MemoryRouter initialEntries={['/contratos/wizard']}>
       <Routes>
-        <Route
-          path="/contratos/wizard"
-          element={
-            <ContractCreateWizard
-              sale={makeSale()}
-              open={open}
-              onOpenChange={(next) => { onChangeCalls.push(next) }}
-            />
-          }
-        />
+        <Route path="/contratos/wizard" element={<ContractCreateWizard sale={sale} open={open} onOpenChange={onOpenChange} />} />
         <Route path="/contratos/:id" element={<ContractDetailRoute />} />
       </Routes>
     </MemoryRouter>
   )
-  return { ...view, getOnChangeCalls: () => onChangeCalls }
+  return {
+    ...view,
+    rerenderWizard: (nextSale: SaleDetail, nextOpen: boolean, nextOnOpenChange: (open: boolean) => void) => view.rerender(
+      <MemoryRouter initialEntries={['/contratos/wizard']}>
+        <Routes>
+          <Route path="/contratos/wizard" element={<ContractCreateWizard sale={nextSale} open={nextOpen} onOpenChange={nextOnOpenChange} />} />
+          <Route path="/contratos/:id" element={<ContractDetailRoute />} />
+        </Routes>
+      </MemoryRouter>
+    )
+  }
+}
+
+function saleWith(changes: Partial<SaleDetail>): SaleDetail {
+  return { ...makeSale(), ...changes }
 }
 
 function ContractDetailRoute() {
@@ -221,6 +237,45 @@ describe('ContractCreateWizard — responsivo (Fase 2)', () => {
     await user.click(screen.getByRole('button', { name: 'Ver contrato' }))
     expect(await screen.findByText('Detalhe do contrato ct-1')).toBeTruthy()
     expect(getOnChangeCalls().some((c) => c === false)).toBe(true)
+  })
+
+  it('abre no passo inicial e uma atualização não relevante da venda preserva o passo atual', async () => {
+    const user = userEvent.setup()
+    const view = renderWizard()
+
+    await user.click(await screen.findByRole('button', { name: 'Revisar contrato' }))
+    expect(screen.getByText('Criar contrato em rascunho')).toBeTruthy()
+
+    view.rerenderWizard(saleWith({ net_value: 1999, updated_at: '2026-09-10T11:00:00.000Z' }))
+
+    expect(screen.getByText('Criar contrato em rascunho')).toBeTruthy()
+  })
+
+  it('trocar person_id reinicializa o contratante e trocar full_name atualiza o contexto', async () => {
+    const view = renderWizard()
+    await screen.findByRole('button', { name: 'Revisar contrato' })
+
+    view.rerenderWizard(saleWith({ person_id: 'p2', full_name: 'João Novo' }))
+
+    expect((await screen.findAllByText('João Novo')).length).toBeGreaterThan(0)
+    expect(screen.queryByText('Maria Souza')).toBeNull()
+  })
+
+  it('fechar e reabrir começa no passo inicial sem estado residual', async () => {
+    const user = userEvent.setup()
+    let open = true
+    const onOpenChange = vi.fn((next: boolean) => { open = next })
+    const view = renderWizard({ onOpenChange })
+
+    await user.click(await screen.findByRole('button', { name: 'Revisar contrato' }))
+    await user.click(screen.getByRole('button', { name: 'Voltar' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(open).toBe(false)
+
+    view.rerenderWizard(makeSale())
+
+    expect(await screen.findByRole('button', { name: 'Revisar contrato' })).toBeTruthy()
+    expect(screen.queryByText('Criar contrato em rascunho')).toBeNull()
   })
 
   it('fechar pelo botão Cancelar fecha o modal e reseta para a etapa 1', async () => {
