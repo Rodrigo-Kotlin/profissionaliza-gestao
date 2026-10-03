@@ -61,7 +61,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Merge do PR #14: aguardando autorização final.
 
 ## Fase 2.5 — Matrículas
-**Status: backend consolidado e frontend implementado, aguardando revisão**
+**Status: homologada funcionalmente (branch `feature/enrollments-phase-2-5`, PR aguardando revisão)**
 
 - `enrollments` é uma entidade acadêmica independente de `students`.
 - Contract `SIGNED` cria Enrollment `PENDING` atomicamente; ativação, pausa,
@@ -71,6 +71,17 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Frontend: `/matriculas`, `/matriculas/:id`, filtros persistidos na URL,
   ações condicionadas por status/permissão e integração com Student, Sale e
   Contract.
+- **Homologação funcional completa validada:**
+  - Contract SIGNED → Enrollment PENDING
+  - State machine: PENDING→ACTIVE→PAUSED→ACTIVE→COMPLETED + CANCELED terminais
+  - Multi-enrollment: mesmo Student com N Enrollments independentes (cursos diferentes)
+  - Student status: PRE_CADASTRO→ATIVO na primeira ativação; COMPLETED/CANCELED não rebaixam
+  - Seller scope: VENDEDOR vê apenas matrículas de suas Sales; sem ações acadêmicas
+  - Offline: `assertOnline` bloqueia mutações; `offlineAwareMessage` exibe erro; backend inalterado
+  - Responsivo: 6 viewports sem overflow
+  - Auditoria única por ação no backend
+  - Idempotência: 1 Contract → 1 Enrollment; 1 Sale → 1 Enrollment
+  - Cleanup determinístico por `RUN_ID` com 0 resíduos
 - Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico

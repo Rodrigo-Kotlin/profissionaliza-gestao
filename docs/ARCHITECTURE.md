@@ -119,6 +119,18 @@ ações independentes por status e permissão. Sale e Contract detail retornam o
 vínculo opcional da matrícula, e Student Detail consulta as matrículas por
 `student_id` pela mesma RPC.
 
+**Homologação funcional validada (Fase 2.5D):**
+- Contract SIGNED → Enrollment PENDING (idempotente)
+- State machine: PENDING→ACTIVE→PAUSED→ACTIVE→COMPLETED; CANCELED terminais
+- Multi-enrollment: Student ≠ Enrollment; um Student possui N Enrollments independentes
+- Student status: PRE_CADASTRO→ATIVO na 1ª ativação; COMPLETED/CANCELED não rebaixam
+- Seller scope: VENDEDOR vê apenas matrículas de suas Sales; sem ações acadêmicas
+- Offline: `assertOnline` bloqueia; `offlineAwareMessage` exibe erro; backend inalterado
+- Responsivo: 6 viewports (320–1366px) sem overflow
+- Auditoria: 1 evento backend por ação (`enrollment.*`)
+- Idempotência: 1 Contract → 1 Enrollment; 1 Sale → 1 Enrollment
+- Cleanup determinístico por `RUN_ID` com 0 resíduos
+
 ## Fluxo de dependências
 
 ```text
