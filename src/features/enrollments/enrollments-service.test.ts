@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { enrollmentsService } from './enrollments-service'
+import { OfflineConnectionError } from '@/lib/offline'
 
 const rpcMock = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: rpcMock } }))
@@ -28,7 +29,10 @@ describe('enrollmentsService.detail', () => {
 })
 
 describe('enrollment mutations', () => {
-  beforeEach(() => rpcMock.mockReset())
+  beforeEach(() => {
+    rpcMock.mockReset()
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => true })
+  })
 
   it.each([
     ['activate_enrollment', () => enrollmentsService.activate('e1'), { p_enrollment_id: 'e1' }],
@@ -45,5 +49,12 @@ describe('enrollment mutations', () => {
   it('propagates RPC failures', async () => {
     rpcMock.mockResolvedValue({ data: null, error: new Error('Only active enrollments can be paused') })
     await expect(enrollmentsService.pause('e1', 'reason')).rejects.toThrow('Only active enrollments can be paused')
+  })
+
+  it('blocks pause offline before reaching the backend', async () => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+
+    await expect(enrollmentsService.pause('e1', 'Sem conexão')).rejects.toBeInstanceOf(OfflineConnectionError)
+    expect(rpcMock).not.toHaveBeenCalled()
   })
 })
