@@ -10,6 +10,11 @@ describe('enrollment URL params', () => {
   it('ignores unsupported status and normalizes invalid page', () => {
     expect(parseEnrollmentListParams(new URLSearchParams('status=UNKNOWN&page=0'))).toEqual({ status: undefined, course_id: undefined, date_from: undefined, date_to: undefined, page: 1 })
   })
+
+  it('preserves spaces while the search input is being typed', () => {
+    expect(parseEnrollmentListParams(new URLSearchParams('q=QA+Manual+')).q).toBe('QA Manual ')
+    expect(parseEnrollmentListParams(new URLSearchParams('q=QA+Manual+Multi')).q).toBe('QA Manual Multi')
+  })
 })
 
 describe('enrollment dates', () => {

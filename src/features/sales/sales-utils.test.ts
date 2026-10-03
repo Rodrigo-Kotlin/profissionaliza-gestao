@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateSaleCode, formatSaleCode, canCloseSale, isSaleEligibleStage } from './sales-utils'
+import { generateSaleCode, formatSaleCode, canCloseSale, isSaleEligibleStage, parseSaleListParams } from './sales-utils'
 import type { CrmLeadDetail } from '../crm/crm-types'
 
 const baseLead: CrmLeadDetail = {
@@ -57,6 +57,13 @@ describe('generateSaleCode', () => {
   it('pads sequence to 6 digits', () => {
     expect(generateSaleCode(2026, 42)).toBe('VND-2026-000042')
     expect(generateSaleCode(2026, 123456)).toBe('VND-2026-123456')
+  })
+})
+
+describe('sale URL params', () => {
+  it('preserves spaces in a customer search', () => {
+    expect(parseSaleListParams(new URLSearchParams('q=Maria+da+Silva')).q).toBe('Maria da Silva')
+    expect(parseSaleListParams(new URLSearchParams('q=MAT-2026-000060')).q).toBe('MAT-2026-000060')
   })
 })
 

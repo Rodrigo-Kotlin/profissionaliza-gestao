@@ -6,7 +6,7 @@ export type EnrollmentUrlParams = EnrollmentListParams & { page: number }
 export function parseEnrollmentListParams(url: URLSearchParams): EnrollmentUrlParams {
   const status = url.get('status')?.trim() || undefined
   return {
-    q: url.get('q')?.trim() || undefined,
+    q: url.get('q') || undefined,
     status: status && ENROLLMENT_STATUS_LABELS[status as keyof typeof ENROLLMENT_STATUS_LABELS] ? status : undefined,
     course_id: url.get('course')?.trim() || undefined,
     date_from: url.get('date_from')?.trim() || undefined,

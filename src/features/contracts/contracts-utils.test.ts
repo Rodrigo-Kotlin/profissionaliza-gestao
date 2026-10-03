@@ -8,7 +8,8 @@ import {
   isEditDraftAllowed,
   isIssueAllowed,
   isSignAllowed,
-  isCancelAllowed
+  isCancelAllowed,
+  parseContractListParams
 } from './contracts-utils'
 
 const sale = { status: 'CONFIRMED', seller_user_id: 'user-1', contract_id: null }
@@ -112,5 +113,11 @@ describe('formatContractAddress', () => {
   it('retorna string vazia sem endereço', () => {
     expect(formatContractAddress(null)).toBe('')
     expect(formatContractAddress(undefined)).toBe('')
+  })
+})
+
+describe('contract URL params', () => {
+  it('preserves spaces in a contractor search', () => {
+    expect(parseContractListParams(new URLSearchParams('q=Maria+da+Silva')).q).toBe('Maria da Silva')
   })
 })
