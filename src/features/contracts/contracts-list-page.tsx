@@ -1,5 +1,5 @@
 import { CalendarDays, FileSignature, Search, X } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -23,6 +23,8 @@ export function ContractsPage() {
   const [params, setParams] = useSearchParams()
 
   const parsed = useMemo(() => parseContractListParams(params), [params])
+  const [searchQuery, setSearchQuery] = useState(parsed.q ?? '')
+  useEffect(() => setSearchQuery(parsed.q ?? ''), [parsed.q])
 
   const updateParams = (next: Record<string, string | number | undefined | null>) =>
     setParams(updateSearchParams(params, next), { replace: true })
@@ -69,15 +71,15 @@ export function ContractsPage() {
           <Input
             placeholder="Buscar por código, aluno ou contratante..."
             className="pl-9"
-            value={parsed.q ?? ''}
-            onChange={(e) => updateParams({ q: e.target.value || undefined })}
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); updateParams({ q: e.target.value || undefined }) }}
           />
           {parsed.q && (
             <Button
               type="button"
               aria-label="Limpar busca"
               variant="ghost"
-              onClick={() => updateParams({ q: undefined })}
+              onClick={() => { setSearchQuery(''); updateParams({ q: undefined }) }}
               className="absolute right-1 top-1 grid size-11 place-items-center rounded-lg px-0 text-muted hover:text-ink"
             >
               <X className="size-4" />

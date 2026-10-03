@@ -1,5 +1,5 @@
 import { CalendarDays, GraduationCap, Search, X } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -16,6 +16,8 @@ export function EnrollmentsPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const parsed = useMemo(() => parseEnrollmentListParams(params), [params])
+  const [searchQuery, setSearchQuery] = useState(parsed.q ?? '')
+  useEffect(() => setSearchQuery(parsed.q ?? ''), [parsed.q])
   const updateParams = (next: Record<string, string | number | undefined | null>) => setParams(updateSearchParams(params, next), { replace: true })
   const courses = useCrmCourses('ACTIVE')
   const query = useEnrollmentList({ q: parsed.q, status: parsed.status, course_id: parsed.course_id, date_from: parsed.date_from, date_to: parsed.date_to, page: parsed.page, page_size: ENROLLMENT_PAGE_SIZE })
@@ -30,8 +32,8 @@ export function EnrollmentsPage() {
       <Card className="flex flex-wrap items-center gap-3 p-4">
         <div className="relative min-w-[220px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted" />
-          <Input aria-label="Buscar matrículas" placeholder="Código, aluno ou venda..." className="pl-9" value={parsed.q ?? ''} onChange={(event) => updateParams({ q: event.target.value || undefined })} />
-          {parsed.q && <Button type="button" variant="ghost" aria-label="Limpar busca" className="absolute right-1 top-0 grid size-11 place-items-center px-0" onClick={() => updateParams({ q: undefined })}><X className="size-4" /></Button>}
+          <Input aria-label="Buscar matrículas" placeholder="Código, aluno ou venda..." className="pl-9" value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); updateParams({ q: event.target.value || undefined }) }} />
+          {searchQuery && <Button type="button" variant="ghost" aria-label="Limpar busca" className="absolute right-1 top-0 grid size-11 place-items-center px-0" onClick={() => { setSearchQuery(''); updateParams({ q: undefined }) }}><X className="size-4" /></Button>}
         </div>
         <Select aria-label="Filtrar status" value={parsed.status ?? ''} onChange={(event) => updateParams({ status: event.target.value || undefined })}>
           <option value="">Todos os status</option>

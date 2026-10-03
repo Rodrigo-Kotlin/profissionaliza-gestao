@@ -1,5 +1,5 @@
 import { GraduationCap, Plus, Search, SlidersHorizontal, TriangleAlert } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -38,6 +38,8 @@ export function StudentsPage() {
       sortDir: raw.sortDir
     }
   }, [params])
+  const [searchQuery, setSearchQuery] = useState(parsed.query ?? '')
+  useEffect(() => setSearchQuery(parsed.query ?? ''), [parsed.query])
   const { data, isLoading, isError } = useStudents(parsed)
 
   const updateParams = (next: Record<string, string | undefined>) => {
@@ -72,8 +74,8 @@ export function StudentsPage() {
             <Input
               aria-label="Buscar aluno"
               placeholder="Nome, CPF, telefone ou código..."
-              defaultValue={parsed.query ?? ''}
-              onChange={(e) => updateParams({ q: e.target.value || undefined, page: undefined })}
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); updateParams({ q: e.target.value || undefined, page: undefined }) }}
               className="pl-10"
             />
           </div>
@@ -90,7 +92,7 @@ export function StudentsPage() {
                 <option key={value} value={value}>{STUDENT_ORIGIN_LABELS[value]}</option>
               ))}
             </Select>
-            <Button variant="secondary" onClick={() => updateParams({ q: undefined, status: undefined, origin: undefined, page: undefined })}>
+            <Button variant="secondary" onClick={() => { setSearchQuery(''); updateParams({ q: undefined, status: undefined, origin: undefined, page: undefined }) }}>
               Limpar
             </Button>
           </div>

@@ -24,8 +24,8 @@ test.describe('Matrículas — navegação autenticada', () => {
         const list = viewport.width < 640 ? page.getByRole('list') : page.locator('tbody')
         await expect(list.getByRole('button', { name: fixture.enrollmentCode, exact: true })).toBeVisible()
         await expect(list.getByText(fixture.studentName, { exact: true })).toBeVisible()
-        await expect(list.getByText('Barbeiro Profissional', { exact: true })).toBeVisible()
-        await expect(list.getByText('Pendente', { exact: true })).toBeVisible()
+        await expect(list.getByText('Barbeiro Profissional', { exact: true }).first()).toBeVisible()
+        await expect(list.getByText('Pendente', { exact: true }).first()).toBeVisible()
         const metrics = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }))
         expect(metrics.scrollWidth, `overflow em ${viewport.width}x${viewport.height}: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(metrics.clientWidth + 1)
       }
