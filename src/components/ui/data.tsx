@@ -32,9 +32,9 @@ export function DataTable<T>({ data, columns, getKey, mobileCard }: { data: T[];
         </Table>
       </div>
       {mobileCard && (
-        <div className="grid gap-3 p-4 sm:hidden" role="list">
+        <div className="grid min-w-0 gap-3 p-4 sm:hidden" role="list">
           {data.map((row) => (
-            <Card key={getKey(row)} className="p-4">{mobileCard(row)}</Card>
+            <Card key={getKey(row)} className="min-w-0 p-4">{mobileCard(row)}</Card>
           ))}
         </div>
       )}

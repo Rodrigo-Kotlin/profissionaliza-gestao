@@ -210,15 +210,15 @@ export function StudentsPage() {
 function StudentMobileRow({ row }: { row: StudentListItem }) {
   const navigate = useNavigate()
   return (
-    <div className="space-y-1.5" role="listitem">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <button className="block truncate text-left font-semibold text-navy" onClick={() => navigate(`/alunos/${row.student_id}`)}>
+    <div className="min-w-0 space-y-1.5" role="listitem">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0 max-w-full">
+          <button className="block max-w-full break-words text-left font-semibold text-navy" onClick={() => navigate(`/alunos/${row.student_id}`)}>
             {row.full_name}
           </button>
-          <p className="font-mono text-xs text-muted">{row.student_code}</p>
+          <p className="max-w-full break-words font-mono text-xs text-muted">{row.student_code}</p>
         </div>
-        <Badge variant={STATUS_TONE[row.status]}>{STUDENT_STATUS_LABELS[row.status]}</Badge>
+        <Badge className="shrink-0" variant={STATUS_TONE[row.status]}>{STUDENT_STATUS_LABELS[row.status]}</Badge>
       </div>
       <Button variant="ghost" className="h-11 px-2" onClick={() => navigate(`/alunos/${row.student_id}`)}>
         Ver aluno

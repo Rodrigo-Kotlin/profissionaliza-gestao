@@ -216,21 +216,21 @@ export function SalesPage() {
 function SaleMobileRow({ row }: { row: SaleListItem }) {
   const navigate = useNavigate()
   return (
-    <div className="space-y-1.5" role="listitem">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <button className="block truncate text-left font-mono text-xs font-semibold text-navy" onClick={() => navigate(`/vendas/${row.id}`)}>
+    <div className="min-w-0 space-y-1.5" role="listitem">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0 max-w-full">
+          <button className="block max-w-full break-words text-left font-mono text-xs font-semibold text-navy" onClick={() => navigate(`/vendas/${row.id}`)}>
             {row.sale_code}
           </button>
-          <button className="block truncate text-left text-sm font-semibold" onClick={() => navigate(`/vendas/${row.id}`)}>
+          <button className="block max-w-full break-words text-left text-sm font-semibold" onClick={() => navigate(`/vendas/${row.id}`)}>
             {row.full_name}
           </button>
         </div>
-        <Badge variant={SALE_STATUS_TONES[row.status]}>{SALE_STATUS_LABELS[row.status]}</Badge>
+        <Badge className="shrink-0" variant={SALE_STATUS_TONES[row.status]}>{SALE_STATUS_LABELS[row.status]}</Badge>
       </div>
-      <p className="truncate text-sm text-muted">{row.course_name}</p>
+      <p className="break-words text-sm text-muted">{row.course_name}</p>
       <p className="truncate text-sm font-medium">{formatCurrency(row.net_value)}</p>
-      <p className="truncate text-xs text-muted">{formatDateOnly(row.sale_date.slice(0, 10))}</p>
+      <p className="break-words text-xs text-muted">{formatDateOnly(row.sale_date.slice(0, 10))}</p>
       <Button
         variant="ghost"
         className="h-11 px-2"

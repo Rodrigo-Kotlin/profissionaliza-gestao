@@ -81,7 +81,7 @@
 
 @layer utilities {
   .safe-top { padding-top: var(--safe-top); }
-  .safe-bottom { padding-bottom: var(--safe-bottom); }
+  .safe-bottom { padding-bottom: max(2rem, var(--safe-bottom)); }
   .surface-max { max-width: 1600px; margin-inline: auto; }
   .text-balance { text-wrap: balance; }
 
