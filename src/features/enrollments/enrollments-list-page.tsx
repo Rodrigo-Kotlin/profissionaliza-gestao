@@ -1,5 +1,5 @@
 import { CalendarDays, GraduationCap, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -17,7 +17,6 @@ export function EnrollmentsPage() {
   const [params, setParams] = useSearchParams()
   const parsed = useMemo(() => parseEnrollmentListParams(params), [params])
   const [searchQuery, setSearchQuery] = useState(parsed.q ?? '')
-  useEffect(() => setSearchQuery(parsed.q ?? ''), [parsed.q])
   const updateParams = (next: Record<string, string | number | undefined | null>) => setParams(updateSearchParams(params, next), { replace: true })
   const courses = useCrmCourses('ACTIVE')
   const query = useEnrollmentList({ q: parsed.q, status: parsed.status, course_id: parsed.course_id, date_from: parsed.date_from, date_to: parsed.date_to, page: parsed.page, page_size: ENROLLMENT_PAGE_SIZE })

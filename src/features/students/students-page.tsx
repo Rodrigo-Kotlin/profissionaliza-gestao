@@ -1,5 +1,5 @@
 import { GraduationCap, Plus, Search, SlidersHorizontal, TriangleAlert } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -39,7 +39,6 @@ export function StudentsPage() {
     }
   }, [params])
   const [searchQuery, setSearchQuery] = useState(parsed.query ?? '')
-  useEffect(() => setSearchQuery(parsed.query ?? ''), [parsed.query])
   const { data, isLoading, isError } = useStudents(parsed)
 
   const updateParams = (next: Record<string, string | undefined>) => {

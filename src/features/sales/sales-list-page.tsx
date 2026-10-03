@@ -1,5 +1,5 @@
 import { ShoppingBag, Search, X, CalendarDays } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -24,7 +24,6 @@ export function SalesPage() {
 
   const parsed = useMemo(() => parseSaleListParams(params), [params])
   const [searchQuery, setSearchQuery] = useState(parsed.q ?? '')
-  useEffect(() => setSearchQuery(parsed.q ?? ''), [parsed.q])
 
   const updateParams = (next: Record<string, string | number | undefined | null>) =>
     setParams(updateSearchParams(params, next), { replace: true })
