@@ -94,6 +94,14 @@ export function ContractDetailPage() {
           </Button>
         </Card>
 
+        {contract.enrollment_id && (
+          <Card className="p-5">
+            <SectionHeader icon={CheckCircle2} title="Matrícula" />
+            <dl className="space-y-2 text-sm"><Row label="Código" value={contract.enrollment_code ?? '—'} /><Row label="Status" value={enrollmentStatusText(contract.enrollment_status)} /></dl>
+            <Button variant="ghost" className="mt-3" onClick={() => navigate(`/matriculas/${contract.enrollment_id}`)}>Ver matrícula</Button>
+          </Card>
+        )}
+
         {/* Contratante */}
         <Card className="p-5">
           <SectionHeader icon={Users} title="Contratante" />
@@ -323,6 +331,10 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
       <dd className={`text-right font-medium ${highlight ? 'font-bold text-emerald-700' : ''}`}>{value}</dd>
     </div>
   )
+}
+
+function enrollmentStatusText(status: string | null | undefined): string {
+  return ({ PENDING: 'Pendente', ACTIVE: 'Ativa', PAUSED: 'Pausada', COMPLETED: 'Concluída', CANCELED: 'Cancelada' } as Record<string, string>)[status ?? ''] ?? '—'
 }
 
 function formatDateTime(value: string): string {

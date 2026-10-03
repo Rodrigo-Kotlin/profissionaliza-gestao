@@ -60,6 +60,37 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Homologação física: concluída pelo usuário.
 - Merge do PR #14: aguardando autorização final.
 
+## Fase 2.5 — Matrículas
+**Status: homologada manualmente (branch `feature/enrollments-phase-2-5`, PR aguardando decisão de merge)**
+
+- `enrollments` é uma entidade acadêmica independente de `students`.
+- Contract `SIGNED` cria Enrollment `PENDING` atomicamente; ativação, pausa,
+  retomada, conclusão e cancelamento são transições manuais via RPC.
+- Backend RPC-only com RLS, ownership de vendedor somente para leitura e
+  auditoria autoritativa no PostgreSQL.
+- Frontend: `/matriculas`, `/matriculas/:id`, filtros persistidos na URL,
+  ações condicionadas por status/permissão e integração com Student, Sale e
+  Contract.
+- **Homologação funcional completa validada:**
+  - Contract SIGNED → Enrollment PENDING
+  - State machine: PENDING→ACTIVE→PAUSED→ACTIVE→COMPLETED + CANCELED terminais
+  - Multi-enrollment: mesmo Student com N Enrollments independentes (cursos diferentes)
+  - Student status: PRE_CADASTRO→ATIVO na primeira ativação; COMPLETED/CANCELED não rebaixam
+  - Seller scope: VENDEDOR vê apenas matrículas de suas Sales; sem ações acadêmicas
+  - Offline: `assertOnline` bloqueia mutações; `offlineAwareMessage` exibe erro; backend inalterado
+  - Responsivo: 6 viewports sem overflow
+  - Auditoria única por ação no backend
+  - Idempotência: 1 Contract → 1 Enrollment; 1 Sale → 1 Enrollment
+- Cleanup determinístico por `RUN_ID` com 0 resíduos
+- Busca mobile preserva espaços durante a digitação (`QA Manual`, `Maria da Silva` e códigos MAT)
+- Mobile cards sem overflow em Matrículas, Vendas, Contratos e Alunos
+- Espaçamento inferior consistente com `safe-bottom` (`max(2rem, var(--safe-bottom))`)
+- Homologação manual final concluída pelo usuário no HEAD `517c6e3`
+- Supabase DEV: 26 migrations locais = 26 remotas, sem drift
+- Quality gates: 589 testes Vitest / 50 arquivos, typecheck, lint e build aprovados
+- Merge: aguardando autorização final
+- Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
+
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
 **Status: em desenvolvimento
 

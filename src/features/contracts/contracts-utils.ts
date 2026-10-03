@@ -22,7 +22,7 @@ export function parseContractListParams(url: URLSearchParams): ContractListUrlPa
   const rawStatus = url.get('status')?.trim() || ''
   const status = rawStatus && (CONTRACT_STATUS_LABELS as Record<string, string>)[rawStatus] ? rawStatus : undefined
   return {
-    q: url.get('q')?.trim() || undefined,
+    q: url.get('q') || undefined,
     status,
     seller: url.get('seller')?.trim() || undefined,
     course: url.get('course')?.trim() || undefined,

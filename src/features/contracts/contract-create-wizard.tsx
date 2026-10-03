@@ -42,7 +42,7 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
       setContractor({ id: sale.person_id, full_name: sale.full_name, preferred_name: null, reused: true })
       setStep(1)
     }
-  }, [open, sale])
+  }, [open, sale.person_id, sale.full_name])
 
   const reset = () => {
     setStep(1)

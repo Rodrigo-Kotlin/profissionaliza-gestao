@@ -71,6 +71,9 @@ export type ContractDetail = {
   created_by: string
   created_by_name: string | null
   sensitive: boolean
+  enrollment_id?: string | null
+  enrollment_code?: string | null
+  enrollment_status?: string | null
 }
 
 export type ContractListParams = {

@@ -105,6 +105,39 @@ RPCs `SECURITY DEFINER` (`create_contract_from_sale`, `issue_contract`, …) que
 aplicam ownership, transições de estado e masking — o frontend nunca grava em
 `public.contracts` diretamente.
 
+### Feature enrollments (Fase 2.5)
+
+`enrollments` representa a relação acadêmica do aluno com um curso; `students`
+continua sendo o perfil global do aluno. A assinatura de um contrato chama a
+mesma regra transacional que cria uma matrícula `PENDING`. A interface usa
+`enrollments-service` e React Query para chamar exclusivamente as RPCs; não há
+`select` direto da tabela nem auditoria duplicada no cliente.
+
+O módulo expõe `/matriculas` e `/matriculas/:id`, com filtros em
+`URLSearchParams`, leitura por `list_enrollments`/`get_enrollment_detail` e
+ações independentes por status e permissão. Sale e Contract detail retornam o
+vínculo opcional da matrícula, e Student Detail consulta as matrículas por
+`student_id` pela mesma RPC.
+
+**Homologação funcional validada (Fase 2.5D):**
+- Contract SIGNED → Enrollment PENDING (idempotente)
+- State machine: PENDING→ACTIVE→PAUSED→ACTIVE→COMPLETED; CANCELED terminais
+- Multi-enrollment: Student ≠ Enrollment; um Student possui N Enrollments independentes
+- Student status: PRE_CADASTRO→ATIVO na 1ª ativação; COMPLETED/CANCELED não rebaixam
+- Seller scope: VENDEDOR vê apenas matrículas de suas Sales; sem ações acadêmicas
+- Offline: `assertOnline` bloqueia; `offlineAwareMessage` exibe erro; backend inalterado
+- Responsivo: 6 viewports (320–1366px) sem overflow
+- Auditoria: 1 evento backend por ação (`enrollment.*`)
+- Idempotência: 1 Contract → 1 Enrollment; 1 Sale → 1 Enrollment
+- Cleanup determinístico por `RUN_ID` com 0 resíduos
+
+**Homologação manual final (Fase 2.5G):**
+- Usuário validou Dashboard, Vendas, Contratos, Alunos, Cursos, Matrículas e Enrollment Detail.
+- Busca preserva espaços durante a digitação; listas cobertas: Matrículas, Vendas, Contratos e Alunos.
+- Mobile cards usam `min-w-0`, `max-w-full` e quebra natural de texto; não há overflow horizontal nos viewports 320, 360, 390 e 412px.
+- `safe-bottom` mantém pelo menos 32px de respiro e respeita `safe-area-inset-bottom`.
+- Preview final: `517c6e3`; PR #15 permanece aberto e não mergeado.
+
 ## Fluxo de dependências
 
 ```text

@@ -66,7 +66,7 @@ export function parseStudentListParams(
   sort: string
   sortDir: 'ASC' | 'DESC'
 } {
-  const query = url.get('q')?.trim() || undefined
+  const query = url.get('q') || undefined
   const status = url.get('status')?.trim() || undefined
   const origin = url.get('origin')?.trim() || undefined
   const page = Math.max(1, Number(url.get('page')) || 1)

@@ -38,6 +38,7 @@ export function StudentsPage() {
       sortDir: raw.sortDir
     }
   }, [params])
+  const [searchQuery, setSearchQuery] = useState(parsed.query ?? '')
   const { data, isLoading, isError } = useStudents(parsed)
 
   const updateParams = (next: Record<string, string | undefined>) => {
@@ -72,8 +73,8 @@ export function StudentsPage() {
             <Input
               aria-label="Buscar aluno"
               placeholder="Nome, CPF, telefone ou código..."
-              defaultValue={parsed.query ?? ''}
-              onChange={(e) => updateParams({ q: e.target.value || undefined, page: undefined })}
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); updateParams({ q: e.target.value || undefined, page: undefined }) }}
               className="pl-10"
             />
           </div>
@@ -90,7 +91,7 @@ export function StudentsPage() {
                 <option key={value} value={value}>{STUDENT_ORIGIN_LABELS[value]}</option>
               ))}
             </Select>
-            <Button variant="secondary" onClick={() => updateParams({ q: undefined, status: undefined, origin: undefined, page: undefined })}>
+            <Button variant="secondary" onClick={() => { setSearchQuery(''); updateParams({ q: undefined, status: undefined, origin: undefined, page: undefined }) }}>
               Limpar
             </Button>
           </div>
@@ -210,15 +211,15 @@ export function StudentsPage() {
 function StudentMobileRow({ row }: { row: StudentListItem }) {
   const navigate = useNavigate()
   return (
-    <div className="space-y-1.5" role="listitem">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <button className="block truncate text-left font-semibold text-navy" onClick={() => navigate(`/alunos/${row.student_id}`)}>
+    <div className="min-w-0 space-y-1.5" role="listitem">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0 max-w-full">
+          <button className="block max-w-full break-words text-left font-semibold text-navy" onClick={() => navigate(`/alunos/${row.student_id}`)}>
             {row.full_name}
           </button>
-          <p className="font-mono text-xs text-muted">{row.student_code}</p>
+          <p className="max-w-full break-words font-mono text-xs text-muted">{row.student_code}</p>
         </div>
-        <Badge variant={STATUS_TONE[row.status]}>{STUDENT_STATUS_LABELS[row.status]}</Badge>
+        <Badge className="shrink-0" variant={STATUS_TONE[row.status]}>{STUDENT_STATUS_LABELS[row.status]}</Badge>
       </div>
       <Button variant="ghost" className="h-11 px-2" onClick={() => navigate(`/alunos/${row.student_id}`)}>
         Ver aluno

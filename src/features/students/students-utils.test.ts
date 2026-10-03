@@ -105,6 +105,9 @@ describe('parseStudentListParams', () => {
     expect(params.sort).toBe('full_name')
     expect(params.sortDir).toBe('ASC')
   })
+  it('preserves spaces in a student search', () => {
+    expect(parseStudentListParams(new URLSearchParams('q=QA+Manual+Multi')).query).toBe('QA Manual Multi')
+  })
   it('clamps page size to 100', () => {
     const params = parseStudentListParams(new URLSearchParams('page_size=999'))
     expect(params.pageSize).toBe(100)

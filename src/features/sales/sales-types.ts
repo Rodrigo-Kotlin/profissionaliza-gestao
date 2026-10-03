@@ -53,6 +53,9 @@ export type SaleDetail = {
   contract_id?: string | null
   contract_code?: string | null
   contract_status?: string | null
+  enrollment_id?: string | null
+  enrollment_code?: string | null
+  enrollment_status?: string | null
 }
 
 export type SaleListParams = {
