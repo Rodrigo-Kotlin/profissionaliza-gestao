@@ -131,6 +131,13 @@ vínculo opcional da matrícula, e Student Detail consulta as matrículas por
 - Idempotência: 1 Contract → 1 Enrollment; 1 Sale → 1 Enrollment
 - Cleanup determinístico por `RUN_ID` com 0 resíduos
 
+**Homologação manual final (Fase 2.5G):**
+- Usuário validou Dashboard, Vendas, Contratos, Alunos, Cursos, Matrículas e Enrollment Detail.
+- Busca preserva espaços durante a digitação; listas cobertas: Matrículas, Vendas, Contratos e Alunos.
+- Mobile cards usam `min-w-0`, `max-w-full` e quebra natural de texto; não há overflow horizontal nos viewports 320, 360, 390 e 412px.
+- `safe-bottom` mantém pelo menos 32px de respiro e respeita `safe-area-inset-bottom`.
+- Preview final: `517c6e3`; PR #15 permanece aberto e não mergeado.
+
 ## Fluxo de dependências
 
 ```text

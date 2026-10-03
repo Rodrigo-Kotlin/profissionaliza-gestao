@@ -81,4 +81,7 @@ manualmente contra o deploy candidato à release.
 - Playwright seller scope: VENDEDOR QA vê apenas suas matrículas; sem ações acadêmicas; acesso direto negado.
 - Responsividade: 6 viewports (320–1366px) sem overflow validados.
 - Cleanup: determinístico por `RUN_ID` com `E2E_SERVICE_ROLE_KEY` (Node-only); 0 resíduos.
+- Correções UX mobile: busca com espaços e cards sem overflow validadas no preview final.
+- Playwright final do preview: 2 testes aprovados, cobrindo busca `QA Manual`, Matrículas, Vendas, Contratos, Alunos, detalhe e viewports 320x568, 360x800, 390x844 e 412x915.
+- Espaçamento inferior validado com `safe-bottom` computado em 32px.
 - Artefatos de falha (`test-results/`, traces, screenshots e vídeos) são ignorados pelo Git.

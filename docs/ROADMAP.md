@@ -61,7 +61,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Merge do PR #14: aguardando autorização final.
 
 ## Fase 2.5 — Matrículas
-**Status: homologada funcionalmente (branch `feature/enrollments-phase-2-5`, PR aguardando revisão)**
+**Status: homologada manualmente (branch `feature/enrollments-phase-2-5`, PR aguardando decisão de merge)**
 
 - `enrollments` é uma entidade acadêmica independente de `students`.
 - Contract `SIGNED` cria Enrollment `PENDING` atomicamente; ativação, pausa,
@@ -81,7 +81,14 @@ Migration aplicada no Supabase DEV; tipos regenerados.
   - Responsivo: 6 viewports sem overflow
   - Auditoria única por ação no backend
   - Idempotência: 1 Contract → 1 Enrollment; 1 Sale → 1 Enrollment
-  - Cleanup determinístico por `RUN_ID` com 0 resíduos
+- Cleanup determinístico por `RUN_ID` com 0 resíduos
+- Busca mobile preserva espaços durante a digitação (`QA Manual`, `Maria da Silva` e códigos MAT)
+- Mobile cards sem overflow em Matrículas, Vendas, Contratos e Alunos
+- Espaçamento inferior consistente com `safe-bottom` (`max(2rem, var(--safe-bottom))`)
+- Homologação manual final concluída pelo usuário no HEAD `517c6e3`
+- Supabase DEV: 26 migrations locais = 26 remotas, sem drift
+- Quality gates: 589 testes Vitest / 50 arquivos, typecheck, lint e build aprovados
+- Merge: aguardando autorização final
 - Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico
