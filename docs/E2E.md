@@ -23,7 +23,7 @@ export E2E_PASSWORD="..."
 export E2E_EMAIL_RESTRICTED="recepcao@instituicao.com.br"
 export E2E_PASSWORD_RESTRICTED="..."
 # Service Role para fixture/cleanup determinísticos (APENAS processo Node, NUNCA VITE_*)
-export E2E_SERVICE_ROLE_KEY="..."
+export E2E_SECRET_KEY="..."
 
 # 3) Rodar
 npm run test:e2e
@@ -45,7 +45,7 @@ npm run test:e2e
 | 12B homologação autenticada | `homologation-auth.spec.ts`, `homologation-triage.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Rotas, responsividade, PWA, navegação e guards |
 | 12C.5 transacional | `transactional-flow.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Lead → Venda → Contrato → Enrollment até `COMPLETED` |
 | 2.5C matrículas | `enrollments.spec.ts` | `E2E_EMAIL`/`E2E_PASSWORD` | Listagem responsiva (6 viewports) e detalhe de matrícula |
-| 2.5D multi-enrollment | `enrollments.spec.ts` + fluxo | `E2E_EMAIL`/`E2E_PASSWORD` + `E2E_SERVICE_ROLE_KEY` | Mesmo Student com N Enrollments; status independentes; Student global coerente |
+| 2.5D multi-enrollment | `enrollments.spec.ts` + fluxo | `E2E_EMAIL`/`E2E_PASSWORD` + `E2E_SECRET_KEY` | Mesmo Student com N Enrollments; status independentes; Student global coerente |
 | 2.5D offline | `enrollments.spec.ts` (manual) | `E2E_EMAIL`/`E2E_PASSWORD` | `assertOnline` bloqueia; backend inalterado; reconexão funciona |
 | 2.5D seller scope | `rbac.spec.ts` + manual | `E2E_EMAIL_RESTRICTED`/`E2E_PASSWORD_RESTRICTED` | VENDEDOR vê apenas suas Sales; sem ações acadêmicas; acesso direto negado |
 
@@ -80,7 +80,7 @@ manualmente contra o deploy candidato à release.
 - Playwright offline: `assertOnline` bloqueia mutações; backend inalterado; reconexão funciona.
 - Playwright seller scope: VENDEDOR QA vê apenas suas matrículas; sem ações acadêmicas; acesso direto negado.
 - Responsividade: 6 viewports (320–1366px) sem overflow validados.
-- Cleanup: determinístico por `RUN_ID` com `E2E_SERVICE_ROLE_KEY` (Node-only); 0 resíduos.
+- Cleanup: determinístico por `RUN_ID` com `E2E_SECRET_KEY` (Node-only); 0 resíduos.
 - Correções UX mobile: busca com espaços e cards sem overflow validadas no preview final.
 - Playwright final do preview: 2 testes aprovados, cobrindo busca `QA Manual`, Matrículas, Vendas, Contratos, Alunos, detalhe e viewports 320x568, 360x800, 390x844 e 412x915.
 - Espaçamento inferior validado com `safe-bottom` computado em 32px.

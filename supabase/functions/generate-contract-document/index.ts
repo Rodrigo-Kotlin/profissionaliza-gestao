@@ -9,6 +9,7 @@ import {
 } from '../_shared/contract-document.ts'
 import { getInstitutionSnapshot } from '../_shared/institution.ts'
 import { renderContractPdf } from '../_shared/contract-pdf.ts'
+import { getSupabaseSecretKey } from '../_shared/supabase-admin.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,11 +29,15 @@ Deno.serve(async (request) => {
   const authorization = request.headers.get('Authorization')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!authorization || !supabaseUrl || !anonKey || !serviceRoleKey) return json({ error: 'Server configuration error' }, 500)
+  if (!authorization || !supabaseUrl || !anonKey) return json({ error: 'Server configuration error' }, 500)
 
   const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authorization } } })
-  const adminClient = createClient(supabaseUrl, serviceRoleKey)
+  let adminClient: ReturnType<typeof createClient>
+  try {
+    adminClient = createClient(supabaseUrl, getSupabaseSecretKey())
+  } catch {
+    return json({ error: 'Server configuration error' }, 500)
+  }
   const { data: authData, error: authError } = await userClient.auth.getUser()
   if (authError || !authData.user) return json({ error: 'Authentication required' }, 401)
 

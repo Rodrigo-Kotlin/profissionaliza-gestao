@@ -98,9 +98,9 @@ export async function createEnrollmentFixture(page: Page, runId: string): Promis
 
 async function completeQaPerson(email: string, runId: string) {
   const url = process.env.VITE_SUPABASE_URL
-  const serviceRoleKey = process.env.E2E_SERVICE_ROLE_KEY
-  if (!url || !serviceRoleKey) throw new Error('E2E_SERVICE_ROLE_KEY é obrigatório para preparar a fixture.')
-  const client = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  const secretKey = process.env.E2E_SECRET_KEY
+  if (!url || !secretKey) throw new Error('E2E_SECRET_KEY é obrigatório para preparar a fixture.')
+  const client = createClient(url, secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const result = await client.from('people').update({
     cpf: runId.replace(/\D/g, '').slice(-11).padStart(11, '1'),
     postal_code: '01001000',
@@ -116,10 +116,10 @@ async function completeQaPerson(email: string, runId: string) {
 
 export async function cleanupE2eRun(runId: string) {
   const url = process.env.VITE_SUPABASE_URL
-  const serviceRoleKey = process.env.E2E_SERVICE_ROLE_KEY
-  if (!url || !serviceRoleKey) throw new Error('E2E_SERVICE_ROLE_KEY é obrigatório para cleanup determinístico.')
+  const secretKey = process.env.E2E_SECRET_KEY
+  if (!url || !secretKey) throw new Error('E2E_SECRET_KEY é obrigatório para cleanup determinístico.')
 
-  const client = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  const client = createClient(url, secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const [leadsResult, salesResult] = await Promise.all([
     client.from('crm_leads').select('id, person_id').ilike('commercial_notes', `%${runId}%`),
     client.from('sales').select('id, student_id, person_id').ilike('commercial_notes', `%${runId}%`)
