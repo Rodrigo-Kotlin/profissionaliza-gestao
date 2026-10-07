@@ -1,14 +1,16 @@
 import {
-  ArrowLeft, Ban, BookOpen, CheckCircle2, Clock, CreditCard, Eye, FileSignature,
-  MapPin, PencilLine, Send, ShoppingBag, User, Users
+  ArrowLeft, Ban, BookOpen, CheckCircle2, Clock, CreditCard, Eye, FileDown, FileSignature,
+  FileText, MapPin, PencilLine, Send, ShoppingBag, User, Users
 } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
 import { useAuth } from '@/features/auth/auth-context'
+import { offlineAwareMessage } from '@/lib/offline'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
-import { useContractDetail, useContractTimeline } from './contracts-hooks'
+import { useContractDetail, useContractDocuments, useContractTimeline, useDownloadContractDocument, useGenerateContractDocument } from './contracts-hooks'
 import { EditContractDialog } from './edit-contract-dialog'
 import { IssueContractDialog } from './issue-contract-dialog'
 import { SignContractDialog } from './sign-contract-dialog'
@@ -31,6 +33,7 @@ export function ContractDetailPage() {
 
   const detail = useContractDetail(contractId)
   const timeline = useContractTimeline(contractId)
+  const documents = useContractDocuments(contractId)
 
   if (detail.isLoading) return <PageSkeleton />
 
@@ -79,6 +82,14 @@ export function ContractDetailPage() {
           </div>
         </div>
       </Card>
+
+      <ContractDocumentSection
+        contractId={contract.contract_id}
+        contractStatus={contract.status}
+        permissions={permissions}
+        documents={documents.data?.data ?? []}
+        isLoading={documents.isLoading}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Origem */}
@@ -232,6 +243,91 @@ export function ContractDetailPage() {
         onOpenChange={setCancelOpen}
       />
     </div>
+  )
+}
+
+function ContractDocumentSection({
+  contractId,
+  contractStatus,
+  permissions,
+  documents,
+  isLoading
+}: {
+  contractId: string
+  contractStatus: ContractDetailType['status']
+  permissions: readonly string[]
+  documents: import('./contracts-types').ContractDocumentListItem[]
+  isLoading: boolean
+}) {
+  const generate = useGenerateContractDocument()
+  const download = useDownloadContractDocument()
+  const canGenerate = contractStatus === 'DRAFT' && can(permissions, PERMISSIONS.CONTRACTS_DOCUMENTS_GENERATE)
+  const finalDocument = documents.find((document) => document.status === 'FINAL')
+
+  const onGenerate = async () => {
+    try {
+      await generate.mutateAsync(contractId)
+      toast.success('PDF contratual gerado e finalizado.')
+    } catch (error) {
+      toast.error(offlineAwareMessage(error, 'Não foi possível gerar o PDF contratual.'))
+    }
+  }
+
+  const onDownload = async () => {
+    if (!finalDocument) return
+    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer')
+    try {
+      const result = await download.mutateAsync(finalDocument.document_id)
+      if (popup) popup.location.href = result.signed_url
+      else window.location.href = result.signed_url
+    } catch (error) {
+      popup?.close()
+      toast.error(offlineAwareMessage(error, 'Não foi possível abrir o PDF contratual.'))
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <FileText className="mt-0.5 size-5 shrink-0 text-muted" />
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">Documento do contrato</h2>
+            {isLoading ? <p className="mt-1 text-sm text-muted">Consultando documento...</p> : finalDocument ? (
+              <dl className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+                <Row label="Código" value={finalDocument.document_code} />
+                <Row label="Versão" value={`v${finalDocument.version}`} />
+                <Row label="Status" value="Final" />
+                <Row label="Emitido em" value={finalDocument.issued_at ? formatDateOnly(finalDocument.issued_at.slice(0, 10)) : '—'} />
+                <Row label="Hash SHA-256" value={finalDocument.original_sha256_prefix ? `${finalDocument.original_sha256_prefix}…` : '—'} />
+                <Row label="Template" value={finalDocument.template_version} />
+              </dl>
+            ) : (
+              <p className="mt-1 text-sm text-muted">
+                {contractStatus === 'SIGNED' ? 'Documento digital não disponível para este contrato legado.' : 'Nenhum PDF final disponível.'}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          {finalDocument && (
+            <>
+              <Button variant="secondary" loading={download.isPending} disabled={download.isPending} onClick={onDownload}>
+                <FileText className="size-4" /> Visualizar PDF
+              </Button>
+              <Button variant="ghost" loading={download.isPending} disabled={download.isPending} onClick={onDownload}>
+                <FileDown className="size-4" /> Baixar PDF
+              </Button>
+            </>
+          )}
+          {!finalDocument && canGenerate && (
+            <Button loading={generate.isPending} disabled={generate.isPending} onClick={onGenerate}>
+              <FileText className="size-4" /> Gerar contrato
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
   )
 }
 

@@ -9,6 +9,7 @@ const useAuthMock = vi.hoisted(() => vi.fn(() => ({
 })))
 const detailMock = vi.hoisted(() => vi.fn())
 const timelineMock = vi.hoisted(() => vi.fn())
+const documentsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/features/auth/auth-context', () => ({
   useAuth: () => useAuthMock()
@@ -16,7 +17,10 @@ vi.mock('@/features/auth/auth-context', () => ({
 
 vi.mock('./contracts-hooks', () => ({
   useContractDetail: () => detailMock(),
-  useContractTimeline: () => timelineMock()
+  useContractTimeline: () => timelineMock(),
+  useContractDocuments: () => documentsMock(),
+  useGenerateContractDocument: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDownloadContractDocument: () => ({ mutateAsync: vi.fn(), isPending: false })
 }))
 
 vi.mock('./edit-contract-dialog', () => ({ EditContractDialog: () => null }))
@@ -65,6 +69,7 @@ const contract = {
 function renderPage(status: string = 'DRAFT') {
   detailMock.mockReturnValue({ data: { ...contract, status }, isLoading: false, isError: false })
   timelineMock.mockReturnValue({ data: { data: [], total: 0 }, isLoading: false, isError: false })
+  documentsMock.mockReturnValue({ data: { data: [], total: 0 }, isLoading: false, isError: false })
   return render(
     <MemoryRouter initialEntries={['/contratos/c1']}>
       <Routes>
