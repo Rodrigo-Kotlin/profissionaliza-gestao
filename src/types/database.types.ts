@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,31 +11,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -71,6 +46,199 @@ export type Database = {
           metadata?: Json
         }
         Relationships: []
+      }
+      contract_documents: {
+        Row: {
+          canonical_payload_hash: string | null
+          contract_id: string
+          created_at: string
+          document_code: string
+          document_payload: Json
+          document_type: string
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          issued_at: string | null
+          original_file_name: string | null
+          original_file_path: string | null
+          original_file_size: number | null
+          original_mime_type: string | null
+          original_sha256: string | null
+          previous_document_id: string | null
+          status: string
+          superseded_at: string | null
+          superseded_by_document_id: string | null
+          template_version: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          canonical_payload_hash?: string | null
+          contract_id: string
+          created_at?: string
+          document_code: string
+          document_payload: Json
+          document_type: string
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          issued_at?: string | null
+          original_file_name?: string | null
+          original_file_path?: string | null
+          original_file_size?: number | null
+          original_mime_type?: string | null
+          original_sha256?: string | null
+          previous_document_id?: string | null
+          status?: string
+          superseded_at?: string | null
+          superseded_by_document_id?: string | null
+          template_version: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          canonical_payload_hash?: string | null
+          contract_id?: string
+          created_at?: string
+          document_code?: string
+          document_payload?: Json
+          document_type?: string
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          issued_at?: string | null
+          original_file_name?: string | null
+          original_file_path?: string | null
+          original_file_size?: number | null
+          original_mime_type?: string | null
+          original_sha256?: string | null
+          previous_document_id?: string | null
+          status?: string
+          superseded_at?: string | null
+          superseded_by_document_id?: string | null
+          template_version?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_documents_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_documents_previous_document_id_fkey"
+            columns: ["previous_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_documents_superseded_by_document_id_fkey"
+            columns: ["superseded_by_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_executions: {
+        Row: {
+          contract_document_id: string
+          created_at: string
+          evidence_json: Json | null
+          execution_method: string
+          id: string
+          received_at: string | null
+          received_by: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          signed_at: string | null
+          signed_file_name: string | null
+          signed_file_path: string | null
+          signed_file_size: number | null
+          signed_mime_type: string | null
+          signed_sha256: string | null
+          signer_name_snapshot: string
+          signer_person_id: string | null
+          status: string
+          updated_at: string
+          verification_method: string | null
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          contract_document_id: string
+          created_at?: string
+          evidence_json?: Json | null
+          execution_method: string
+          id?: string
+          received_at?: string | null
+          received_by?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          signed_at?: string | null
+          signed_file_name?: string | null
+          signed_file_path?: string | null
+          signed_file_size?: number | null
+          signed_mime_type?: string | null
+          signed_sha256?: string | null
+          signer_name_snapshot: string
+          signer_person_id?: string | null
+          status?: string
+          updated_at?: string
+          verification_method?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          contract_document_id?: string
+          created_at?: string
+          evidence_json?: Json | null
+          execution_method?: string
+          id?: string
+          received_at?: string | null
+          received_by?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          signed_at?: string | null
+          signed_file_name?: string | null
+          signed_file_path?: string | null
+          signed_file_size?: number | null
+          signed_mime_type?: string | null
+          signed_sha256?: string | null
+          signer_name_snapshot?: string
+          signer_person_id?: string | null
+          status?: string
+          updated_at?: string
+          verification_method?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_executions_contract_document_id_fkey"
+            columns: ["contract_document_id"]
+            isOneToOne: false
+            referencedRelation: "contract_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_executions_signer_person_id_fkey"
+            columns: ["signer_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contracts: {
         Row: {
@@ -1215,6 +1383,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _can_access_contract_document: {
+        Args: { p_contract_id: string }
+        Returns: boolean
+      }
+      _contract_id_for_document: {
+        Args: { p_document_id: string }
+        Returns: string
+      }
       _create_enrollment_from_signed_contract: {
         Args: { p_contract_id: string }
         Returns: Json
@@ -1266,6 +1442,25 @@ export type Database = {
         Returns: undefined
       }
       complete_enrollment: { Args: { p_enrollment_id: string }; Returns: Json }
+      create_contract_document_draft: {
+        Args: {
+          p_contract_id: string
+          p_document_payload: Json
+          p_document_type: string
+          p_template_version: string
+        }
+        Returns: Json
+      }
+      create_contract_execution: {
+        Args: {
+          p_contract_document_id: string
+          p_execution_method: string
+          p_signed_at?: string
+          p_signer_name_snapshot: string
+          p_signer_person_id: string
+        }
+        Returns: Json
+      }
       create_contract_from_sale: {
         Args: {
           p_contract_notes?: string
@@ -1393,6 +1588,14 @@ export type Database = {
       }
       crm_dashboard_kpis: { Args: never; Returns: Json }
       get_contract_detail: { Args: { p_contract_id: string }; Returns: Json }
+      get_contract_document_detail: {
+        Args: { p_document_id: string }
+        Returns: Json
+      }
+      get_contract_execution_detail: {
+        Args: { p_execution_id: string }
+        Returns: Json
+      }
       get_contract_timeline: { Args: { p_contract_id: string }; Returns: Json }
       get_contractor_detail: { Args: { p_person_id: string }; Returns: Json }
       get_crm_lead_detail: { Args: { p_lead_id: string }; Returns: Json }
@@ -1431,6 +1634,14 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: string
+      }
+      list_contract_documents: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
+      list_contract_executions: {
+        Args: { p_document_id: string }
+        Returns: Json
       }
       list_contracts: {
         Args: {
@@ -1497,6 +1708,10 @@ export type Database = {
       }
       pause_enrollment: {
         Args: { p_enrollment_id: string; p_reason: string }
+        Returns: Json
+      }
+      reject_contract_execution: {
+        Args: { p_execution_id: string; p_rejection_reason: string }
         Returns: Json
       }
       reschedule_crm_activity: {
@@ -1765,9 +1980,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
