@@ -7,7 +7,8 @@ export const contractKeys = {
   all: ['contracts'] as const,
   list: (params: ContractListParams) => ['contracts', 'list', params] as const,
   detail: (id: string) => ['contracts', 'detail', id] as const,
-  timeline: (id: string) => [...contractKeys.detail(id), 'timeline'] as const
+  timeline: (id: string) => [...contractKeys.detail(id), 'timeline'] as const,
+  documents: (id: string) => [...contractKeys.detail(id), 'documents'] as const
 }
 
 export function useContractList(params: ContractListParams) {
@@ -31,6 +32,30 @@ export function useContractTimeline(id: string) {
     queryFn: () => contractsService.timeline(id),
     enabled: Boolean(id)
   })
+}
+
+export function useContractDocuments(id: string) {
+  return useQuery({
+    queryKey: contractKeys.documents(id),
+    queryFn: () => contractsService.listDocuments(id),
+    enabled: Boolean(id)
+  })
+}
+
+export function useGenerateContractDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: contractsService.generateDocument,
+    onSuccess: (_data, contractId) => {
+      qc.invalidateQueries({ queryKey: contractKeys.documents(contractId) })
+      qc.invalidateQueries({ queryKey: contractKeys.detail(contractId) })
+      qc.invalidateQueries({ queryKey: contractKeys.timeline(contractId) })
+    }
+  })
+}
+
+export function useDownloadContractDocument() {
+  return useMutation({ mutationFn: contractsService.downloadDocument })
 }
 
 export function useCreateContractFromSale() {

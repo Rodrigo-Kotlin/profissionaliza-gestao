@@ -10,6 +10,9 @@ import type {
   ContractorSearchResponse,
   CreateContractResult,
   CreatePersonResult,
+  ContractDocumentListResponse,
+  DownloadContractDocumentResult,
+  GenerateContractDocumentResult,
   PersonFormPayload,
   UpdatePersonPayload
 } from './contracts-types'
@@ -131,6 +134,29 @@ export const contractsService = {
     const { data, error } = await rpc('get_contract_timeline', { p_contract_id: contractId })
     if (error) throw error
     return data as ContractTimelineResponse
+  },
+
+  async listDocuments(contractId: string): Promise<ContractDocumentListResponse> {
+    const { data, error } = await rpc('list_contract_documents', { p_contract_id: contractId })
+    if (error) throw error
+    return data as ContractDocumentListResponse
+  },
+
+  async generateDocument(contractId: string): Promise<GenerateContractDocumentResult> {
+    assertOnline()
+    const { data, error } = await supabase.functions.invoke('generate-contract-document', {
+      body: { contract_id: contractId }
+    })
+    if (error) throw error
+    return data as GenerateContractDocumentResult
+  },
+
+  async downloadDocument(documentId: string): Promise<DownloadContractDocumentResult> {
+    const { data, error } = await supabase.functions.invoke('download-contract-document', {
+      body: { document_id: documentId }
+    })
+    if (error) throw error
+    return data as DownloadContractDocumentResult
   },
 
   async searchContractorPeople(input: { query?: string; limit?: number }): Promise<ContractorSearchResponse> {

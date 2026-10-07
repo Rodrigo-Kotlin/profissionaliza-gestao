@@ -1587,6 +1587,18 @@ export type Database = {
         Returns: Json
       }
       crm_dashboard_kpis: { Args: never; Returns: Json }
+      finalize_contract_document: {
+        Args: {
+          p_canonical_payload_hash: string
+          p_document_id: string
+          p_document_payload: Json
+          p_original_file_name: string
+          p_original_file_path: string
+          p_original_file_size: number
+          p_original_sha256: string
+        }
+        Returns: Json
+      }
       get_contract_detail: { Args: { p_contract_id: string }; Returns: Json }
       get_contract_document_detail: {
         Args: { p_document_id: string }
@@ -1608,6 +1620,15 @@ export type Database = {
         Returns: Json
       }
       get_my_permissions: { Args: never; Returns: string[] }
+      get_or_create_contract_document_draft: {
+        Args: {
+          p_contract_id: string
+          p_document_payload: Json
+          p_document_type: string
+          p_template_version: string
+        }
+        Returns: Json
+      }
       get_sale_detail: { Args: { p_sale_id: string }; Returns: Json }
       get_sale_timeline: { Args: { p_sale_id: string }; Returns: Json }
       get_student_detail: { Args: { p_student_id: string }; Returns: Json }

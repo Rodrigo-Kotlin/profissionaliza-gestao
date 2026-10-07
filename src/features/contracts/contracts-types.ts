@@ -110,6 +110,40 @@ export type ContractTimelineResponse = {
   total: number
 }
 
+export type ContractDocumentStatus = 'DRAFT' | 'FINAL' | 'SUPERSEDED' | 'VOID'
+
+export type ContractDocumentListItem = {
+  document_id: string
+  contract_id: string
+  document_code: string
+  version: number
+  document_type: string
+  status: ContractDocumentStatus
+  template_version: string
+  original_file_name: string | null
+  original_mime_type: string | null
+  original_file_size: number | null
+  original_sha256_prefix: string | null
+  generated_at: string | null
+  issued_at: string | null
+  superseded_at: string | null
+}
+
+export type ContractDocumentListResponse = {
+  data: ContractDocumentListItem[]
+  total: number
+}
+
+export type GenerateContractDocumentResult = {
+  document: ContractDocumentListItem
+  idempotent: boolean
+}
+
+export type DownloadContractDocumentResult = {
+  signed_url: string
+  expires_in: number
+}
+
 export type ContractorSearchResult = {
   id: string
   full_name: string
