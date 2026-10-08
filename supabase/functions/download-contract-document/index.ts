@@ -19,7 +19,8 @@ Deno.serve(async (request) => {
   const authorization = request.headers.get('Authorization')
   const url = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!authorization || !url || !anonKey) return json({ error: 'Server configuration error' }, 500)
+  if (!authorization) return json({ error: 'Authentication required' }, 401)
+  if (!url || !anonKey) return json({ error: 'Server configuration error' }, 500)
 
   const userClient = createClient(url, anonKey, { global: { headers: { Authorization: authorization } } })
   let adminClient: ReturnType<typeof createClient>
@@ -30,6 +31,13 @@ Deno.serve(async (request) => {
   }
   const { data: authData, error: authError } = await userClient.auth.getUser()
   if (authError || !authData.user) return json({ error: 'Authentication required' }, 401)
+
+  const { data: permissions, error: permissionError } = await userClient.rpc('get_my_permissions')
+  const canViewDocuments = (permissions as string[] | null)?.includes('contracts.documents.view')
+  const canViewSensitive = (permissions as string[] | null)?.includes('contracts.view_sensitive')
+  if (permissionError || !canViewDocuments || !canViewSensitive) {
+    return json({ error: 'Document not found or not authorized' }, 404)
+  }
 
   let body: { document_id?: string }
   try { body = await request.json() } catch { return json({ error: 'Invalid JSON body' }, 400) }
