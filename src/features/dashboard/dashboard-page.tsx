@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, MoreVertical, TriangleAlert } from 'lucide-react'
+import { CalendarDays, CircleAlert, MoreVertical, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import {
   Area,
@@ -59,7 +59,7 @@ export function DashboardPage() {
     <div className="space-y-6 md:space-y-8">
       <PageHeader
         title="Visão Geral"
-        description="Acompanhe os principais indicadores da Profissionaliza."
+        description="Indicadores disponíveis no ambiente atual. Dados financeiros e operacionais ainda não estão disponíveis."
       >
         <Tabs items={periods} value={period} onChange={setPeriod} />
       </PageHeader>
@@ -85,11 +85,11 @@ export function DashboardPage() {
               <h2 className="text-xl font-semibold">Vendas x Recebimentos</h2>
               <p className="mt-1 text-sm text-muted">Evolução dos últimos sete meses</p>
             </div>
-            <Button variant="ghost" aria-label="Mais opções" className="px-3">
+             <Button variant="ghost" aria-label="Mais opções disponíveis em breve" title="Disponível em breve" disabled className="px-3">
               <MoreVertical className="size-5" />
             </Button>
           </div>
-          <div className="h-[290px] w-full">
+          {data.chart.length === 0 ? <EmptyState icon={CircleAlert} title="Dados ainda não disponíveis" description="O histórico de vendas e recebimentos será exibido quando o módulo financeiro estiver implementado." /> : <div className="h-[290px] w-full">
             <ResponsiveContainer>
               <AreaChart data={[...data.chart]} margin={{ left: -12, right: 4 }}>
                 <defs>
@@ -128,12 +128,12 @@ export function DashboardPage() {
                 />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </div>}
         </Card>
         <Card className="p-5 sm:p-6">
           <h2 className="text-xl font-semibold">Funil Comercial</h2>
           <p className="mt-1 text-sm text-muted">Conversão do período selecionado</p>
-          <div className="mt-6 space-y-3">
+          {data.funnel.length === 0 ? <EmptyState icon={CircleAlert} title="Dados ainda não disponíveis" description="O funil real será exibido a partir das consultas comerciais." /> : <div className="mt-6 space-y-3">
             {data.funnel.map((stage, index) => (
               <div
                 key={stage.label}
@@ -148,7 +148,7 @@ export function DashboardPage() {
                 <strong className="font-display text-xl">{stage.value}</strong>
               </div>
             ))}
-          </div>
+          </div>}
         </Card>
       </section>
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -157,7 +157,7 @@ export function DashboardPage() {
             <CalendarDays className="size-5 text-gold-dark" />
             <h2 className="text-lg font-semibold">Agenda</h2>
           </div>
-          <div className="space-y-4">
+          {data.agenda.length === 0 ? <EmptyState icon={CalendarDays} title="Agenda indisponível" description="Nenhum compromisso real está conectado ao dashboard." /> : <div className="space-y-4">
             {data.agenda.map((item) => (
               <div key={`${item.time}-${item.title}`} className="flex gap-4">
                 <time className="w-11 text-sm font-semibold text-navy">{item.time}</time>
@@ -167,11 +167,11 @@ export function DashboardPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
         </Card>
         <Card className="p-5 sm:p-6">
           <h2 className="mb-4 text-lg font-semibold">Alertas gerenciais</h2>
-          <div className="space-y-3">
+          {data.alerts.length === 0 ? <EmptyState icon={CircleAlert} title="Alertas indisponíveis" description="Alertas gerenciais reais ainda não estão conectados." /> : <div className="space-y-3">
             {data.alerts.map((alert) => (
               <AlertCard
                 key={alert.title}
@@ -181,11 +181,11 @@ export function DashboardPage() {
                 {alert.detail}
               </AlertCard>
             ))}
-          </div>
+          </div>}
         </Card>
         <Card className="p-5 sm:p-6">
           <h2 className="mb-5 text-lg font-semibold">Atividades recentes</h2>
-          <Timeline items={[...data.activities]} />
+          {data.activities.length === 0 ? <EmptyState icon={CircleAlert} title="Atividades indisponíveis" description="Atividades recentes reais ainda não estão conectadas." /> : <Timeline items={[...data.activities]} />}
         </Card>
       </section>
     </div>
