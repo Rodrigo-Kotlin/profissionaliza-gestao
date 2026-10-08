@@ -98,6 +98,21 @@ Consulte `docs/DATABASE.md` para o guia de migrations e `docs/RBAC.md` para o mo
 - **LGPD**: o repositório nunca deve conter dados reais de alunos, CPFs, telefones ou dados financeiros.
 - **Secrets**: nunca versionar `.env`, `service_role` ou qualquer credencial.
 
+## Estado atual
+
+O projeto está na Fase 2.6 em hardening pré-assinatura. As Edge Functions de
+geração e download de documentos usam `SUPABASE_SECRET_KEYS.default`; o
+download de PDF com PII exige também `contracts.view_sensitive`. Gov.br,
+upload assinado, Financeiro e Pedagógico ainda não foram implementados.
+
+O dashboard exibe somente indicadores respaldados por backend. Indicadores
+financeiros, agenda, alertas e atividades sem fonte real aparecem como dados
+ainda não disponíveis, nunca como valores demonstrativos operacionais.
+
+Preview e Production do Cloudflare Pages continuam apontando para o Supabase
+DEV. Isso é um bloqueador para dados reais e não representa uma separação de
+ambientes de produção.
+
 Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
 ## Desenvolvimento

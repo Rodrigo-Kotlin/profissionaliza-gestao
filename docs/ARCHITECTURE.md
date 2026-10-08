@@ -136,7 +136,24 @@ vínculo opcional da matrícula, e Student Detail consulta as matrículas por
 - Busca preserva espaços durante a digitação; listas cobertas: Matrículas, Vendas, Contratos e Alunos.
 - Mobile cards usam `min-w-0`, `max-w-full` e quebra natural de texto; não há overflow horizontal nos viewports 320, 360, 390 e 412px.
 - `safe-bottom` mantém pelo menos 32px de respiro e respeita `safe-area-inset-bottom`.
-- Preview final: `517c6e3`; PR #15 permanece aberto e não mergeado.
+- O trabalho da Fase 2.5 está merged em `main` no commit `6f880bf`.
+
+### Feature contract documents (Fase 2.6)
+
+Os documentos contratuais são gerados pelas Edge Functions
+`generate-contract-document` e `download-contract-document`. A geração usa o
+contrato autenticado, finaliza um PDF versionado e grava o objeto no bucket
+privado `contract-documents`. O download cria uma signed URL temporária somente
+quando a sessão possui `contracts.documents.view` e `contracts.view_sensitive`,
+além do escopo do contrato e do status `FINAL`.
+
+Esta fase ainda não implementa Gov.br, upload assinado, assinatura física ou
+`ContractExecution VERIFIED`. O texto jurídico permanece
+`LEGAL_TEXT_PENDING_APPROVAL` e é bloqueador para produção.
+
+O DEV possui 29 migrations locais e remotas, sem drift. A migration
+`20261008000100_phase2_6_sensitive_document_hash.sql` expõe o SHA completo
+apenas para o mesmo grant sensível usado no acesso ao payload documental.
 
 ## Fluxo de dependências
 

@@ -61,7 +61,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Merge do PR #14: aguardando autorização final.
 
 ## Fase 2.5 — Matrículas
-**Status: homologada manualmente (branch `feature/enrollments-phase-2-5`, PR aguardando decisão de merge)**
+**Status: homologada manualmente e merged em `main` (`6f880bf`)**
 
 - `enrollments` é uma entidade acadêmica independente de `students`.
 - Contract `SIGNED` cria Enrollment `PENDING` atomicamente; ativação, pausa,
@@ -85,14 +85,25 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Busca mobile preserva espaços durante a digitação (`QA Manual`, `Maria da Silva` e códigos MAT)
 - Mobile cards sem overflow em Matrículas, Vendas, Contratos e Alunos
 - Espaçamento inferior consistente com `safe-bottom` (`max(2rem, var(--safe-bottom))`)
-- Homologação manual final concluída pelo usuário no HEAD `517c6e3`
-- Supabase DEV: 26 migrations locais = 26 remotas, sem drift
-- Quality gates: 589 testes Vitest / 50 arquivos, typecheck, lint e build aprovados
-- Merge: aguardando autorização final
+- Homologação manual final foi concluída antes do merge; o HEAD atual de `main` é `6f880bf`
+- Supabase DEV: 29 migrations locais = 29 remotas, sem drift
+- Quality gates da branch 2.6: 591 testes Vitest / 51 arquivos, typecheck, lint e build aprovados
+- O trabalho posterior de documentos contratuais permanece na branch `feature/contract-documents-phase-2-6`
 - Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
 
-## Fase 2 — Cadastros mestres e núcleo acadêmico
-**Status: em desenvolvimento
+## Fase 2.6 — Contract Documents
+**Status: hardening pré-assinatura; geração/download implementados, assinatura ainda não iniciada**
+
+- Edge Functions `generate-contract-document` e `download-contract-document` usam `SUPABASE_SECRET_KEYS.default`.
+- Geração idempotente de PDF `FINAL`, hashes, Storage privado e signed URL estão implementados.
+- Download de documento completo exige `contracts.documents.view` e `contracts.view_sensitive`.
+- O dashboard mantém somente indicadores respaldados por backend; dados financeiros e operacionais indisponíveis são apresentados como empty state.
+- Não iniciado nesta fase: Gov.br, upload assinado, assinatura física, `ContractExecution VERIFIED`, Financeiro e Pedagógico.
+- O smoke autenticado DEV da migração de secrets continua sendo requisito antes de desativar qualquer chave legacy.
+- Migration `20261008000100_phase2_6_sensitive_document_hash.sql` permite o cross-check do SHA completo somente para acesso sensível.
+
+## Fase 2 — Cadastros mestres e núcleo acadêmico (histórico legado)
+**Status: substituída pelas fases 2.1–2.5
 
 - Pessoas
 - Alunos

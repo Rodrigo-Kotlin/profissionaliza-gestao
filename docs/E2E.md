@@ -22,16 +22,26 @@ export E2E_PASSWORD="..."
 # Conta restrita SEM courses.view (valida o 403 de rota)
 export E2E_EMAIL_RESTRICTED="recepcao@instituicao.com.br"
 export E2E_PASSWORD_RESTRICTED="..."
-# Service Role para fixture/cleanup determinísticos (APENAS processo Node, NUNCA VITE_*)
+# Secret API key para fixture/cleanup determinísticos (APENAS processo Node, NUNCA VITE_*)
 export E2E_SECRET_KEY="..."
 
 # 3) Rodar
 npm run test:e2e
 ```
 
+Para o smoke documental da Fase 2.6H, sem navegador ou localhost, com as
+mesmas variáveis carregadas no processo Node:
+
+```sh
+node scripts/phase-2-6h-smoke.mjs
+```
+
+O script usa sessão normal para fixture e Edge Functions. `E2E_SECRET_KEY` é
+usada somente no cleanup administrativo e nunca é enviada às Edge Functions.
+
 > Credenciais vão apenas como variáveis de ambiente — nunca no repositório.
 > Os testes usam dados **reais** do ambiente (nunca dados pessoais reais em staging).
-> **Service Role**: usada APENAS no processo Node de fixture/cleanup (`tests/e2e/enrollment-fixture.ts`), isolada via `tests/e2e/helpers.ts` com `dotenv/config`. Nunca em `VITE_*`, nunca no browser.
+> **Secret API key**: usada APENAS no processo Node de fixture/cleanup (`tests/e2e/enrollment-fixture.ts`), isolada via `tests/e2e/helpers.ts` com `dotenv/config`. Nunca em `VITE_*`, nunca no browser. As Edge Functions usam `SUPABASE_SECRET_KEYS.default`; a legacy `SUPABASE_SERVICE_ROLE_KEY` não deve ser usada pelo smoke.
 
 ## Matriz de execução
 
@@ -79,6 +89,7 @@ manualmente contra o deploy candidato à release.
 - Playwright multi-enrollment: mesmo Student com N Enrollments independentes validado.
 - Playwright offline: `assertOnline` bloqueia mutações; backend inalterado; reconexão funciona.
 - Playwright seller scope: VENDEDOR QA vê apenas suas matrículas; sem ações acadêmicas; acesso direto negado.
+- Documentos contratuais: download do PDF completo exige `contracts.documents.view` e `contracts.view_sensitive`; VENDEDOR sem grant sensível deve receber resposta sanitizada.
 - Responsividade: 6 viewports (320–1366px) sem overflow validados.
 - Cleanup: determinístico por `RUN_ID` com `E2E_SECRET_KEY` (Node-only); 0 resíduos.
 - Correções UX mobile: busca com espaços e cards sem overflow validadas no preview final.
