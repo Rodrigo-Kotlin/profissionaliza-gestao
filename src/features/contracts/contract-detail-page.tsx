@@ -420,7 +420,7 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
   return (
     <div className="flex items-start justify-between gap-2">
       <dt className="text-muted">{label}</dt>
-      <dd className={`text-right font-medium ${highlight ? 'font-bold text-emerald-700' : ''}`}>{value}</dd>
+      <dd className={`min-w-0 break-words text-right font-medium ${highlight ? 'font-bold text-emerald-700' : ''}`}>{value}</dd>
     </div>
   )
 }
