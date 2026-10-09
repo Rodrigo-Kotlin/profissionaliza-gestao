@@ -12,7 +12,12 @@ export type EnrollmentFixture = {
   enrollmentCode: string
 }
 
-export async function createEnrollmentFixture(page: Page, runId: string): Promise<EnrollmentFixture> {
+export type ExecutionFixtureOptions = {
+  method?: 'GOV_BR' | 'PHYSICAL'
+  rejectOnce?: boolean
+}
+
+export async function createEnrollmentFixture(page: Page, runId: string, options: ExecutionFixtureOptions = {}): Promise<EnrollmentFixture> {
   const leadName = `QA ${runId}`
   const email = `qa+${runId.toLowerCase()}@profissionaliza.test`
   const phone = `119${runId.replace(/\D/g, '').slice(-8)}`
@@ -83,12 +88,38 @@ export async function createEnrollmentFixture(page: Page, runId: string): Promis
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/contratos\/[^/]+$/)
 
+  await page.getByRole('button', { name: 'Gerar contrato', exact: true }).click()
+  await expect(page.getByText('PDF contratual gerado e finalizado.')).toBeVisible()
   await page.getByRole('button', { name: 'Emitir contrato' }).click()
   const issueDialog = page.getByRole('dialog', { name: new RegExp(`Emitir ${contractCode}`) })
   await issueDialog.getByRole('button', { name: 'Confirmar emissão' }).click()
-  await page.getByRole('button', { name: 'Registrar assinatura' }).click()
-  const signDialog = page.getByRole('dialog', { name: new RegExp(`Assinar ${contractCode}`) })
-  await signDialog.getByRole('button', { name: 'Confirmar assinatura' }).click()
+  await expect(page.getByRole('heading', { name: 'Formalização da assinatura' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Registrar assinatura' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Marcar como assinado' })).toHaveCount(0)
+  const methodSelect = page.locator('label').filter({ hasText: 'Método' }).getByRole('combobox')
+  await methodSelect.selectOption(options.method ?? 'GOV_BR')
+  await page.getByLabel('Data da assinatura').fill('2026-10-08')
+  await page.getByRole('button', { name: 'Preparar recebimento' }).click()
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n')
+  await page.getByLabel('PDF assinado').setInputFiles({ name: 'qa-signed.pdf', mimeType: 'application/pdf', buffer: pdf })
+  await page.getByRole('button', { name: 'Enviar PDF' }).click()
+  await expect(page.getByText('Recebido, aguardando conferência')).toBeVisible()
+  if (options.rejectOnce) {
+    const rejectedExecution = await page.getByText('Recebido, aguardando conferência').count()
+    expect(rejectedExecution).toBeGreaterThan(0)
+    await page.getByPlaceholder('Motivo obrigatório da rejeição').fill(`${runId} rejection`)
+    await page.getByRole('button', { name: 'Rejeitar' }).click()
+    await expect(page.getByText('Rejeitado', { exact: true })).toBeVisible()
+    await expect(page.getByText(/Última tentativa rejeitada/)).toBeVisible()
+    await page.getByLabel('Data da assinatura').fill('2026-10-08')
+    await page.getByRole('button', { name: 'Preparar recebimento' }).click()
+    await page.getByLabel('PDF assinado').setInputFiles({ name: 'qa-signed-retry.pdf', mimeType: 'application/pdf', buffer: pdf })
+    await page.getByRole('button', { name: 'Enviar PDF' }).click()
+    await expect(page.getByText('Recebido, aguardando conferência')).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Confirmar conferência' }).click()
+  await expect(page.getByText('Conferido', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Concluir contrato' }).click()
   await page.getByRole('button', { name: 'Ver matrícula' }).click()
 
   await page.waitForURL(/\/matriculas\/[^/]+$/)

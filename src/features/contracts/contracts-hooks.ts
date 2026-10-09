@@ -156,20 +156,6 @@ export function useIssueContract() {
   })
 }
 
-export function useSignContract() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: contractsService.sign,
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: contractKeys.all })
-      qc.invalidateQueries({ queryKey: contractKeys.detail(data.contract_id) })
-      qc.invalidateQueries({ queryKey: contractKeys.timeline(data.contract_id) })
-      qc.invalidateQueries({ queryKey: saleKeys.all })
-      qc.invalidateQueries({ queryKey: ['enrollments'] })
-    }
-  })
-}
-
 export function useCancelContract() {
   const qc = useQueryClient()
   return useMutation({

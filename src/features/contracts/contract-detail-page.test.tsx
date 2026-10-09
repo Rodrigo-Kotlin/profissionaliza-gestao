@@ -25,7 +25,6 @@ vi.mock('./contracts-hooks', () => ({
 
 vi.mock('./edit-contract-dialog', () => ({ EditContractDialog: () => null }))
 vi.mock('./issue-contract-dialog', () => ({ IssueContractDialog: () => null }))
-vi.mock('./sign-contract-dialog', () => ({ SignContractDialog: () => null }))
 vi.mock('./cancel-contract-dialog', () => ({ CancelContractDialog: () => null }))
 
 const contract = {

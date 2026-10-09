@@ -65,12 +65,6 @@ describe('contractsService.updateDraft / issue / sign / cancel', () => {
     expect(rpcMock).toHaveBeenCalledWith('issue_contract', { p_contract_id: 'ct-1' })
   })
 
-  it('calls mark_contract_signed', async () => {
-    rpcMock.mockResolvedValue({ data: { ...contractResult, status: 'SIGNED' }, error: null })
-    await contractsService.sign('ct-1')
-    expect(rpcMock).toHaveBeenCalledWith('mark_contract_signed', { p_contract_id: 'ct-1' })
-  })
-
   it('calls cancel_contract with reason', async () => {
     rpcMock.mockResolvedValue({ data: { ...contractResult, status: 'CANCELED' }, error: null })
     await contractsService.cancel({ contract_id: 'ct-1', cancellation_reason: 'Motivo' })
@@ -278,7 +272,6 @@ describe('contractsService — proteção offline em mutations', () => {
     ['createFromSale', () => contractsService.createFromSale({ sale_id: 's1', contractor_person_id: 'p1' })],
     ['updateDraft', () => contractsService.updateDraft({ contract_id: 'c1', contractor_person_id: 'p1', contract_notes: '' })],
     ['issue', () => contractsService.issue('c1')],
-    ['sign', () => contractsService.sign('c1')],
     ['cancel', () => contractsService.cancel({ contract_id: 'c1', cancellation_reason: 'Motivo' })],
     ['createPerson', () => contractsService.createPerson({ full_name: 'Teste' })],
     ['updatePerson', () => contractsService.updatePerson({ person_id: 'p1', full_name: 'Teste' })],

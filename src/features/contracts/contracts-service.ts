@@ -96,13 +96,6 @@ export const contractsService = {
     return data as CreateContractResult
   },
 
-  async sign(contractId: string): Promise<CreateContractResult> {
-    assertOnline()
-    const { data, error } = await rpc('mark_contract_signed', { p_contract_id: contractId })
-    if (error) throw error
-    return data as CreateContractResult
-  },
-
   async cancel(input: CancelContractInput & { contract_id: string }): Promise<CreateContractResult> {
     assertOnline()
     const { data, error } = await rpc('cancel_contract', {

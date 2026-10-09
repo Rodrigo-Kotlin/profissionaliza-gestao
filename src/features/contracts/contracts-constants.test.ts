@@ -5,7 +5,6 @@ import {
   CONTRACT_STATUS_TONES,
   CONTRACT_EDITABLE_STATUSES,
   CONTRACT_ISSUABLE_STATUSES,
-  CONTRACT_SIGNABLE_STATUSES,
   CONTRACT_CANCELABLE_STATUSES
 } from './contracts-constants'
 
@@ -40,10 +39,6 @@ describe('transições de status', () => {
     expect(CONTRACT_ISSUABLE_STATUSES).toContain('DRAFT')
   })
 
-  it('PENDING_SIGNATURE é assinável', () => {
-    expect(CONTRACT_SIGNABLE_STATUSES).toContain('PENDING_SIGNATURE')
-  })
-
   it('DRAFT e PENDING_SIGNATURE são canceláveis, SIGNED e CANCELED não', () => {
     expect(CONTRACT_CANCELABLE_STATUSES).toContain('DRAFT')
     expect(CONTRACT_CANCELABLE_STATUSES).toContain('PENDING_SIGNATURE')
@@ -55,7 +50,5 @@ describe('transições de status', () => {
     expect(CONTRACT_EDITABLE_STATUSES).not.toContain('PENDING_SIGNATURE')
     expect(CONTRACT_EDITABLE_STATUSES).not.toContain('SIGNED')
     expect(CONTRACT_ISSUABLE_STATUSES).not.toContain('PENDING_SIGNATURE')
-    expect(CONTRACT_SIGNABLE_STATUSES).not.toContain('DRAFT')
-    expect(CONTRACT_SIGNABLE_STATUSES).not.toContain('SIGNED')
   })
 })
