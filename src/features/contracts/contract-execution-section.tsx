@@ -16,8 +16,8 @@ import {
 import type { ContractDetail, ContractDocumentListItem, ContractExecution, ContractExecutionMethod } from './contracts-types'
 
 const methodLabels: Record<ContractExecutionMethod, string> = {
-  GOV_BR: 'Gov.br: validação manual no VALIDAR ITI',
-  PHYSICAL: 'Física: conferência presencial'
+  GOV_BR: 'Gov.br: conferência manual no VALIDAR ITI',
+  PHYSICAL: 'Assinatura presencial'
 }
 
 const statusLabels: Record<ContractExecution['status'], string> = {
@@ -151,10 +151,11 @@ export function ContractExecutionSection({
 
       {!active && canUpload && contract.status === 'PENDING_SIGNATURE' && (
         <div className="mt-4 grid gap-3 rounded-lg border border-dashed border-navy/20 bg-navy-50/40 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <label className="space-y-1.5 text-sm font-medium">Método<Select value={method} onChange={(event) => setMethod(event.target.value as ContractExecutionMethod)}><option value="GOV_BR">{methodLabels.GOV_BR}</option><option value="PHYSICAL">{methodLabels.PHYSICAL}</option></Select></label>
-          <Input label="Data da assinatura" type="date" value={signedDate} onChange={(event) => setSignedDate(event.target.value)} />
-          <Button loading={create.isPending} disabled={create.isPending || !signedDate} onClick={createExecution}><FileUp className="size-4" />Preparar recebimento</Button>
-        </div>
+           <label className="space-y-1.5 text-sm font-medium">Método<Select value={method} onChange={(event) => setMethod(event.target.value as ContractExecutionMethod)}><option value="GOV_BR">{methodLabels.GOV_BR}</option><option value="PHYSICAL">{methodLabels.PHYSICAL}</option></Select></label>
+           <Input label="Data da assinatura" type="date" value={signedDate} onChange={(event) => setSignedDate(event.target.value)} />
+           <Button loading={create.isPending} disabled={create.isPending || !signedDate} onClick={createExecution}><FileUp className="size-4" />Preparar recebimento</Button>
+           <p className="text-xs font-normal text-muted md:col-span-2">{method === 'GOV_BR' ? 'Assine o PDF pelo Gov.br e envie o arquivo assinado.' : 'Assinatura presencial: envie o PDF assinado para conferência.'}</p>
+         </div>
       )}
 
       {active?.status === 'PENDING_UPLOAD' && canUpload && (
