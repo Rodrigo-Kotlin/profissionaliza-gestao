@@ -160,7 +160,7 @@ export function ContractExecutionSection({
 
       {active?.status === 'PENDING_UPLOAD' && canUpload && (
         <div className="mt-4 grid gap-3 rounded-lg border border-dashed border-gold/50 bg-gold/5 p-4 md:grid-cols-[1fr_auto] md:items-end">
-          <label className="space-y-1.5 text-sm font-medium">PDF assinado<input type="file" accept="application/pdf" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-lg border bg-white px-3 py-2 text-sm" /><span className="block text-xs font-normal text-muted">Somente PDF, até 20 MiB. O arquivo será validado por MIME, assinatura `%PDF-` e SHA-256.</span></label>
+           <label className="min-w-0 space-y-1.5 text-sm font-medium">PDF assinado<input type="file" accept="application/pdf" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} className="block min-h-11 min-w-0 w-full rounded-lg border bg-white px-3 py-2 text-sm" /><span className="block text-xs font-normal text-muted">Somente PDF, até 20 MiB. O arquivo será validado por MIME, assinatura `%PDF-` e SHA-256.</span></label>
           <Button loading={upload.isPending} disabled={upload.isPending || !selectedFile} onClick={uploadExecution}><FileUp className="size-4" />Enviar PDF</Button>
         </div>
       )}
@@ -183,5 +183,5 @@ export function ContractExecutionSection({
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-2"><span className="text-muted">{label}</span><span className="text-right font-medium">{value}</span></div>
+  return <div className="flex items-start justify-between gap-2"><span className="shrink-0 text-muted">{label}</span><span className="min-w-0 break-words text-right font-medium">{value}</span></div>
 }
