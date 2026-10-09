@@ -68,19 +68,19 @@ test.describe('2.6B3 — homologação não funcional', () => {
             mimeType: 'application/pdf',
             buffer: longFile
           })
-          await currentPage.context().setOffline(true)
+          await currentPage.route('**/*', (route) => route.abort('internetdisconnected'))
           await currentPage.getByRole('button', { name: 'Enviar PDF' }).click()
           await expect(currentPage.getByText(/Sem conexão|conexão/i).last()).toBeVisible()
-          await currentPage.context().setOffline(false)
+          await currentPage.unroute('**/*')
         },
         onReceived: async (currentPage) => {
-          await currentPage.context().setOffline(true)
+          await currentPage.route('**/*', (route) => route.abort('internetdisconnected'))
           await currentPage.getByRole('button', { name: 'Confirmar conferência' }).click()
           await expect(currentPage.getByText(/Sem conexão|conexão/i).last()).toBeVisible()
           await currentPage.getByPlaceholder('Motivo obrigatório da rejeição').fill(`${runId} offline rejection reason`) 
           await currentPage.getByRole('button', { name: 'Rejeitar' }).click()
           await expect(currentPage.getByText(/Sem conexão|conexão/i).last()).toBeVisible()
-          await currentPage.context().setOffline(false)
+          await currentPage.unroute('**/*')
         }
       })
       await expect(page.getByRole('heading', { name: fixture.enrollmentCode, exact: true })).toBeVisible()
@@ -89,7 +89,6 @@ test.describe('2.6B3 — homologação não funcional', () => {
       expect(pageErrors, 'pageerror').toEqual([])
       expect(unexpectedResponses, 'unexpected network errors').toEqual([])
     } finally {
-      await page.context().setOffline(false)
       await cleanupE2eRun(runId)
     }
   })
