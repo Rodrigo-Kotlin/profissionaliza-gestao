@@ -10,9 +10,15 @@ const VIEWPORTS = [
 async function assertNoOverflow(page: Page, viewport: string) {
   const result = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth
+    clientWidth: document.documentElement.clientWidth,
+    offenders: Array.from(document.querySelectorAll<HTMLElement>('*')).flatMap((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.right > document.documentElement.clientWidth + 1
+        ? [{ tag: element.tagName, className: element.className, right: Math.round(rect.right), text: element.textContent?.trim().slice(0, 80) }]
+        : []
+    }).slice(0, 5)
   }))
-  expect(result.scrollWidth, `${viewport}: horizontal overflow`).toBeLessThanOrEqual(result.clientWidth + 1)
+  expect(result.scrollWidth, `${viewport}: horizontal overflow ${JSON.stringify(result.offenders)}`).toBeLessThanOrEqual(result.clientWidth + 1)
   return result
 }
 
