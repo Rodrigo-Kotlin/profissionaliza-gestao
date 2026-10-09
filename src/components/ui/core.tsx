@@ -89,7 +89,7 @@ export function Switch({ checked, onChange, ...props }: Omit<React.InputHTMLAttr
 }
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('rounded-card border bg-white shadow-ambient', className)} {...props} />
+  return <div className={cn('min-w-0 rounded-card border bg-white shadow-ambient', className)} {...props} />
 }
 
 const badgeVariants = cva('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold', {
