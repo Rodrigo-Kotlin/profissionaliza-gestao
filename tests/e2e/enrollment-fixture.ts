@@ -15,6 +15,8 @@ export type EnrollmentFixture = {
 export type ExecutionFixtureOptions = {
   method?: 'GOV_BR' | 'PHYSICAL'
   rejectOnce?: boolean
+  onPendingUpload?: (page: Page) => Promise<void>
+  onReceived?: (page: Page) => Promise<void>
 }
 
 export async function createEnrollmentFixture(page: Page, runId: string, options: ExecutionFixtureOptions = {}): Promise<EnrollmentFixture> {
@@ -100,10 +102,12 @@ export async function createEnrollmentFixture(page: Page, runId: string, options
   await methodSelect.selectOption(options.method ?? 'GOV_BR')
   await page.getByLabel('Data da assinatura').fill('2026-10-08')
   await page.getByRole('button', { name: 'Preparar recebimento' }).click()
+  await options.onPendingUpload?.(page)
   const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n')
   await page.getByLabel('PDF assinado').setInputFiles({ name: 'qa-signed.pdf', mimeType: 'application/pdf', buffer: pdf })
   await page.getByRole('button', { name: 'Enviar PDF' }).click()
   await expect(page.getByText('Recebido, aguardando conferência')).toBeVisible()
+  await options.onReceived?.(page)
   if (options.rejectOnce) {
     const rejectedExecution = await page.getByText('Recebido, aguardando conferência').count()
     expect(rejectedExecution).toBeGreaterThan(0)
