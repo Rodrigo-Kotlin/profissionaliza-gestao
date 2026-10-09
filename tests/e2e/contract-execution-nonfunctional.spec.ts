@@ -89,6 +89,7 @@ test.describe('2.6B3 — homologação não funcional', () => {
       expect(pageErrors, 'pageerror').toEqual([])
       expect(unexpectedResponses, 'unexpected network errors').toEqual([])
     } finally {
+      await page.context().setOffline(false)
       await cleanupE2eRun(runId)
     }
   })
