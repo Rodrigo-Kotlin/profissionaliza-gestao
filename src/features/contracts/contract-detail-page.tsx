@@ -13,10 +13,10 @@ import { formatCurrency, formatDateOnly } from '@/lib/utils'
 import { useContractDetail, useContractDocuments, useContractTimeline, useDownloadContractDocument, useGenerateContractDocument } from './contracts-hooks'
 import { EditContractDialog } from './edit-contract-dialog'
 import { IssueContractDialog } from './issue-contract-dialog'
-import { SignContractDialog } from './sign-contract-dialog'
 import { CancelContractDialog } from './cancel-contract-dialog'
+import { ContractExecutionSection } from './contract-execution-section'
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_TONES, CONTRACT_COURSE_MODALITY_LABELS } from './contracts-constants'
-import { isCancelAllowed, isEditDraftAllowed, isIssueAllowed, isSignAllowed, formatContractAddress } from './contracts-utils'
+import { isCancelAllowed, isEditDraftAllowed, isIssueAllowed, formatContractAddress } from './contracts-utils'
 import { SALE_PAYMENT_METHOD_LABELS } from '../sales/sales-constants'
 import type { ContractDetail as ContractDetailType, ContractTimelineEvent } from './contracts-types'
 
@@ -28,7 +28,6 @@ export function ContractDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false)
   const [issueOpen, setIssueOpen] = useState(false)
-  const [signOpen, setSignOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
 
   const detail = useContractDetail(contractId)
@@ -58,7 +57,6 @@ export function ContractDetailPage() {
         <ContractActions contract={contract} permissions={permissions}
           onEdit={() => setEditOpen(true)}
           onIssue={() => setIssueOpen(true)}
-          onSign={() => setSignOpen(true)}
           onCancel={() => setCancelOpen(true)}
         />
       </PageHeader>
@@ -90,6 +88,13 @@ export function ContractDetailPage() {
         documents={documents.data?.data ?? []}
         isLoading={documents.isLoading}
       />
+      {contract.status !== 'DRAFT' && documents.data?.data.find((document) => document.status === 'FINAL') && (
+        <ContractExecutionSection
+          contract={contract}
+          document={documents.data.data.find((document) => document.status === 'FINAL')!}
+          permissions={permissions}
+        />
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Origem */}
@@ -235,7 +240,6 @@ export function ContractDetailPage() {
 
       <EditContractDialog contract={contract} open={editOpen} onOpenChange={setEditOpen} />
       <IssueContractDialog contract={contract} open={issueOpen} onOpenChange={setIssueOpen} />
-      <SignContractDialog contract={contract} open={signOpen} onOpenChange={setSignOpen} />
       <CancelContractDialog
         contractId={contract.contract_id}
         contractCode={contract.contract_code}
@@ -336,19 +340,16 @@ function ContractActions({
   permissions,
   onEdit,
   onIssue,
-  onSign,
   onCancel
 }: {
   contract: ContractDetailType
   permissions: readonly string[]
   onEdit: () => void
   onIssue: () => void
-  onSign: () => void
   onCancel: () => void
 }) {
   const canEdit = isEditDraftAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_EDIT_DRAFT)
   const canIssue = isIssueAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_ISSUE)
-  const canSign = isSignAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_MARK_SIGNED)
   const canCancel = isCancelAllowed(contract.status) && can(permissions, PERMISSIONS.CONTRACTS_CANCEL)
 
   return (
@@ -356,11 +357,6 @@ function ContractActions({
       {canIssue && (
         <Button onClick={onIssue}>
           <Send className="size-4" /> Emitir contrato
-        </Button>
-      )}
-      {canSign && (
-        <Button onClick={onSign}>
-          <CheckCircle2 className="size-4" /> Registrar assinatura
         </Button>
       )}
       {canEdit && (

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       audit_logs: {
@@ -1437,6 +1462,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_contract_from_verified_execution: {
+        Args: { p_execution_id: string }
+        Returns: Json
+      }
       complete_crm_activity: {
         Args: { p_activity_id: string; p_outcome?: string }
         Returns: undefined
@@ -1731,6 +1760,18 @@ export type Database = {
         Args: { p_enrollment_id: string; p_reason: string }
         Returns: Json
       }
+      receive_contract_execution: {
+        Args: {
+          p_evidence_json?: Json
+          p_execution_id: string
+          p_signed_at?: string
+          p_signed_file_name: string
+          p_signed_file_path: string
+          p_signed_file_size: number
+          p_signed_sha256: string
+        }
+        Returns: Json
+      }
       reject_contract_execution: {
         Args: { p_execution_id: string; p_rejection_reason: string }
         Returns: Json
@@ -1863,6 +1904,16 @@ export type Database = {
           p_whatsapp?: string
         }
         Returns: undefined
+      }
+      verify_contract_execution: {
+        Args: {
+          p_evidence_json?: Json
+          p_execution_id: string
+          p_signed_at?: string
+          p_verification_method: string
+          p_verification_notes?: string
+        }
+        Returns: Json
       }
       write_audit_log: {
         Args: {
@@ -2001,6 +2052,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

@@ -144,6 +144,50 @@ export type DownloadContractDocumentResult = {
   expires_in: number
 }
 
+export type ContractExecutionMethod = 'GOV_BR' | 'PHYSICAL'
+export type ContractExecutionStatus = 'PENDING_UPLOAD' | 'RECEIVED' | 'VERIFIED' | 'REJECTED'
+
+export type ContractExecution = {
+  execution_id: string
+  contract_document_id: string
+  execution_method: ContractExecutionMethod
+  status: ContractExecutionStatus
+  signer_person_id: string
+  signer_name_snapshot: string
+  signed_file_name: string | null
+  signed_mime_type: string | null
+  signed_file_size: number | null
+  signed_sha256: string | null
+  signed_at: string | null
+  received_at: string | null
+  received_by: string | null
+  verified_at: string | null
+  verified_by: string | null
+  verification_method: string | null
+  verification_notes?: string | null
+  rejection_reason: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ContractExecutionListResponse = {
+  data: ContractExecution[]
+  total: number
+}
+
+export type ContractExecutionResult = {
+  execution_id: string
+  status: ContractExecutionStatus
+  signed_sha256?: string
+  [key: string]: unknown
+}
+
+export type CompleteContractExecutionResult = CreateContractResult & {
+  execution_id: string
+  enrollment?: { enrollment_id?: string; enrollment_code?: string; status?: string; created?: boolean }
+  created: boolean
+}
+
 export type ContractorSearchResult = {
   id: string
   full_name: string

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { assertOnline } from '@/lib/offline'
-import type { Database } from '@/types/database.types'
+import type { Database, Json } from '@/types/database.types'
 import type {
   ContractListParams,
   ContractListResponse,
@@ -13,6 +13,10 @@ import type {
   ContractDocumentListResponse,
   DownloadContractDocumentResult,
   GenerateContractDocumentResult,
+  ContractExecutionMethod,
+  ContractExecutionListResponse,
+  ContractExecutionResult,
+  CompleteContractExecutionResult,
   PersonFormPayload,
   UpdatePersonPayload
 } from './contracts-types'
@@ -157,6 +161,94 @@ export const contractsService = {
     })
     if (error) throw error
     return data as DownloadContractDocumentResult
+  },
+
+  async listExecutions(documentId: string): Promise<ContractExecutionListResponse> {
+    const { data, error } = await rpc('list_contract_executions', { p_document_id: documentId })
+    if (error) throw error
+    return data as ContractExecutionListResponse
+  },
+
+  async createExecution(input: {
+    document_id: string
+    execution_method: ContractExecutionMethod
+    signer_person_id: string
+    signer_name_snapshot: string
+    signed_at?: string | null
+  }): Promise<ContractExecutionResult> {
+    assertOnline()
+    const { data, error } = await rpc('create_contract_execution', {
+      p_contract_document_id: input.document_id,
+      p_execution_method: input.execution_method,
+      p_signer_person_id: input.signer_person_id,
+      p_signer_name_snapshot: input.signer_name_snapshot,
+      p_signed_at: input.signed_at ?? undefined
+    })
+    if (error) throw error
+    return data as ContractExecutionResult
+  },
+
+  async uploadExecution(input: {
+    execution_id: string
+    file: File
+    signed_at?: string | null
+    evidence_json?: Record<string, unknown> | null
+  }): Promise<ContractExecutionResult> {
+    assertOnline()
+    const form = new FormData()
+    form.append('execution_id', input.execution_id)
+    form.append('file', input.file)
+    if (input.signed_at) form.append('signed_at', input.signed_at)
+    if (input.evidence_json) form.append('evidence_json', JSON.stringify(input.evidence_json))
+    const { data, error } = await supabase.functions.invoke('upload-contract-execution', { body: form })
+    if (error) throw error
+    return data as ContractExecutionResult
+  },
+
+  async downloadExecution(executionId: string): Promise<DownloadContractDocumentResult> {
+    const { data, error } = await supabase.functions.invoke('download-contract-execution', {
+      body: { execution_id: executionId }
+    })
+    if (error) throw error
+    return data as DownloadContractDocumentResult
+  },
+
+  async verifyExecution(input: {
+    execution_id: string
+    verification_method: 'GOV_BR_VALIDAR_MANUAL' | 'PHYSICAL_IN_PERSON'
+    verification_notes?: string | null
+    signed_at: string
+    evidence_json?: Record<string, unknown> | null
+  }): Promise<ContractExecutionResult> {
+    assertOnline()
+    const { data, error } = await rpc('verify_contract_execution', {
+      p_execution_id: input.execution_id,
+      p_verification_method: input.verification_method,
+      p_verification_notes: input.verification_notes ?? undefined,
+      p_signed_at: input.signed_at,
+      p_evidence_json: input.evidence_json ? input.evidence_json as Json : undefined
+    })
+    if (error) throw error
+    return data as ContractExecutionResult
+  },
+
+  async rejectExecution(input: { execution_id: string; rejection_reason: string }): Promise<ContractExecutionResult> {
+    assertOnline()
+    const { data, error } = await rpc('reject_contract_execution', {
+      p_execution_id: input.execution_id,
+      p_rejection_reason: input.rejection_reason
+    })
+    if (error) throw error
+    return data as ContractExecutionResult
+  },
+
+  async completeExecution(executionId: string): Promise<CompleteContractExecutionResult> {
+    assertOnline()
+    const { data, error } = await rpc('complete_contract_from_verified_execution', {
+      p_execution_id: executionId
+    })
+    if (error) throw error
+    return data as CompleteContractExecutionResult
   },
 
   async searchContractorPeople(input: { query?: string; limit?: number }): Promise<ContractorSearchResponse> {

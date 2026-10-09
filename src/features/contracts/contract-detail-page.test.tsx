@@ -177,11 +177,11 @@ describe('ContractDetailPage — continuidade E2E (Fase 10)', () => {
     expect(screen.getByRole('button', { name: /cancelar contrato/i })).toBeInTheDocument()
   })
 
-  it('Contrato PENDING_SIGNATURE mostra assinatura e cancelamento, sem ações de DRAFT', () => {
+  it('Contrato PENDING_SIGNATURE mantém o cancelamento e não permite assinatura direta', () => {
     useAuthMock.mockReturnValue({ permissions: ['contracts.view', 'contracts.edit_draft', 'contracts.issue', 'contracts.mark_signed', 'contracts.cancel', 'contracts.view_all'] })
     renderPage('PENDING_SIGNATURE')
 
-    expect(screen.getByRole('button', { name: /registrar assinatura/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /registrar assinatura/i })).toBeNull()
     expect(screen.getByRole('button', { name: /cancelar contrato/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /editar rascunho/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /emitir contrato/i })).toBeNull()
