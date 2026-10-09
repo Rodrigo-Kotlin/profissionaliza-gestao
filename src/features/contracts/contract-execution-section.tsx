@@ -146,7 +146,7 @@ export function ContractExecutionSection({
           <div className="flex items-center gap-2"><ShieldCheck className="size-5 text-navy" /><h2 className="text-sm font-semibold">Formalização da assinatura</h2></div>
           <p className="mt-1 text-sm text-muted">O PDF assinado é recebido em armazenamento privado e só muda o contrato após conferência humana.</p>
         </div>
-        {active && <Badge variant={active.status === 'VERIFIED' ? 'success' : active.status === 'REJECTED' ? 'danger' : 'warning'}>{statusLabels[active.status]}</Badge>}
+        {active ? <Badge variant={active.status === 'VERIFIED' ? 'success' : active.status === 'REJECTED' ? 'danger' : 'warning'}>{statusLabels[active.status]}</Badge> : latestRejected && <Badge variant="danger">{statusLabels.REJECTED}</Badge>}
       </div>
 
       {!active && canUpload && contract.status === 'PENDING_SIGNATURE' && (
