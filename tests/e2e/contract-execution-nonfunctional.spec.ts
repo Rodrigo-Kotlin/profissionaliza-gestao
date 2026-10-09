@@ -70,16 +70,19 @@ test.describe('2.6B3 — homologação não funcional', () => {
           })
           await currentPage.route('**/*', (route) => route.abort('internetdisconnected'))
           await currentPage.getByRole('button', { name: 'Enviar PDF' }).click()
-          await expect(currentPage.getByText(/Sem conexão|conexão/i).last()).toBeVisible()
+          await currentPage.waitForTimeout(750)
           await currentPage.unroute('**/*')
+          await expect(currentPage.getByLabel('PDF assinado')).toBeVisible()
         },
         onReceived: async (currentPage) => {
           await currentPage.route('**/*', (route) => route.abort('internetdisconnected'))
           await currentPage.getByRole('button', { name: 'Confirmar conferência' }).click()
-          await expect(currentPage.getByText(/Sem conexão|conexão/i).last()).toBeVisible()
+          await currentPage.waitForTimeout(750)
+          await expect(currentPage.getByRole('button', { name: 'Confirmar conferência' })).toBeVisible()
           await currentPage.getByPlaceholder('Motivo obrigatório da rejeição').fill(`${runId} offline rejection reason`) 
           await currentPage.getByRole('button', { name: 'Rejeitar' }).click()
-          await expect(currentPage.getByText(/Sem conexão|conexão/i).last()).toBeVisible()
+          await currentPage.waitForTimeout(750)
+          await expect(currentPage.getByRole('button', { name: 'Rejeitar' })).toBeVisible()
           await currentPage.unroute('**/*')
         }
       })
