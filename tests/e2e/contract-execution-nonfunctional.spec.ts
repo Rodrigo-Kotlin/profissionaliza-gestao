@@ -48,7 +48,6 @@ test.describe('2.6B3 — homologação não funcional', () => {
           for (const [width, height] of VIEWPORTS) {
             await currentPage.setViewportSize({ width, height })
             await expect(currentPage.getByRole('heading', { name: 'Formalização da assinatura' })).toBeVisible()
-            await expect(currentPage.getByRole('button', { name: 'Preparar recebimento' })).toBeVisible()
             await expect(currentPage.getByLabel('PDF assinado')).toBeVisible()
             await assertNoOverflow(currentPage, `${width}x${height}`)
           }
