@@ -169,8 +169,33 @@ export async function cleanupE2eRun(runId: string) {
   const personIds = [...new Set([...leadsResult.data.map((row) => row.person_id), ...salesResult.data.map((row) => row.person_id)])]
 
   if (contractIds.length) {
+    const documentsResult = await client.from('contract_documents').select('id, contract_id, version').in('contract_id', contractIds)
+    if (documentsResult.error) throw documentsResult.error
+    const documentIds = documentsResult.data.map((row) => row.id)
+    const executionsResult = documentIds.length
+      ? await client.from('contract_executions').select('id, contract_document_id').in('contract_document_id', documentIds)
+      : { data: [], error: null }
+    if (executionsResult.error) throw executionsResult.error
+    const storagePaths = documentsResult.data.flatMap((document) => [
+      `contracts/${document.contract_id}/v${document.version}/original.pdf`,
+      ...executionsResult.data
+        .filter((execution) => execution.contract_document_id === document.id)
+        .map((execution) => `contracts/${document.contract_id}/v${document.version}/executions/${execution.id}/signed.pdf`)
+    ])
+    if (storagePaths.length) {
+      const storageResult = await client.storage.from('contract-documents').remove(storagePaths)
+      if (storageResult.error) throw storageResult.error
+    }
     const result = await client.from('enrollments').delete().in('contract_id', contractIds)
     if (result.error) throw result.error
+    if (executionsResult.data.length) {
+      const resultExecutions = await client.from('contract_executions').delete().in('id', executionsResult.data.map((row) => row.id))
+      if (resultExecutions.error) throw resultExecutions.error
+    }
+    if (documentIds.length) {
+      const resultDocuments = await client.from('contract_documents').delete().in('id', documentIds)
+      if (resultDocuments.error) throw resultDocuments.error
+    }
     const resultContracts = await client.from('contracts').delete().in('id', contractIds)
     if (resultContracts.error) throw resultContracts.error
   }
