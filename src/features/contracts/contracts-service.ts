@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { assertOnline } from '@/lib/offline'
+import { assertOnline, withTimeout } from '@/lib/offline'
 import type { Database, Json } from '@/types/database.types'
 import type {
   ContractListParams,
@@ -42,10 +42,12 @@ type RpcReturns<K extends keyof Functions> = Functions[K] extends { Returns: inf
  */
 async function rpc<K extends keyof Functions>(
   fn: K,
-  args?: RpcArgs<K>
+  args?: RpcArgs<K>,
+  timeoutMs?: number
 ): Promise<{ data: RpcReturns<K> | null; error: unknown }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await (supabase.rpc as any)(fn, args ?? {})
+  const request = (supabase.rpc as any)(fn, args ?? {}) as Promise<unknown>
+  const res = await (timeoutMs ? withTimeout(request, timeoutMs) : request)
   return res as { data: RpcReturns<K> | null; error: unknown }
 }
 
@@ -193,7 +195,10 @@ export const contractsService = {
     form.append('file', input.file)
     if (input.signed_at) form.append('signed_at', input.signed_at)
     if (input.evidence_json) form.append('evidence_json', JSON.stringify(input.evidence_json))
-    const { data, error } = await supabase.functions.invoke('upload-contract-execution', { body: form })
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke('upload-contract-execution', { body: form }),
+      45_000
+    )
     if (error) throw error
     return data as ContractExecutionResult
   },
@@ -220,7 +225,7 @@ export const contractsService = {
       p_verification_notes: input.verification_notes ?? undefined,
       p_signed_at: input.signed_at,
       p_evidence_json: input.evidence_json ? input.evidence_json as Json : undefined
-    })
+    }, 15_000)
     if (error) throw error
     return data as ContractExecutionResult
   },
@@ -230,7 +235,7 @@ export const contractsService = {
     const { data, error } = await rpc('reject_contract_execution', {
       p_execution_id: input.execution_id,
       p_rejection_reason: input.rejection_reason
-    })
+    }, 15_000)
     if (error) throw error
     return data as ContractExecutionResult
   },

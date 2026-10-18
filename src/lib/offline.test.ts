@@ -8,6 +8,9 @@ import {
   isNetworkError,
   offlineAwareMessage,
   OFFLINE_MESSAGE,
+  REQUEST_TIMEOUT_MESSAGE,
+  RequestTimeoutError,
+  withTimeout,
   useOnlineStatus,
 } from './offline'
 
@@ -45,6 +48,25 @@ describe('assertOnline', () => {
       expect.fail('Deveria ter lançado')
     } catch (err) {
       expect((err as Error).message).toBe(OFFLINE_MESSAGE)
+    }
+  })
+})
+
+describe('withTimeout', () => {
+  it('returns the request result before the deadline', async () => {
+    await expect(withTimeout(Promise.resolve('ok'), 50)).resolves.toBe('ok')
+  })
+
+  it('rejects with a controlled timeout error', async () => {
+    vi.useFakeTimers()
+    try {
+      const pending = withTimeout(new Promise<string>(() => undefined), 100)
+      const result = expect(pending).rejects.toBeInstanceOf(RequestTimeoutError)
+      await vi.advanceTimersByTimeAsync(100)
+      await result
+      expect(new RequestTimeoutError().message).toBe(REQUEST_TIMEOUT_MESSAGE)
+    } finally {
+      vi.useRealTimers()
     }
   })
 })

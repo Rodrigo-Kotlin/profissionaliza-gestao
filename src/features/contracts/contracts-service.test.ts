@@ -282,6 +282,16 @@ describe('contractsService — proteção offline em mutations', () => {
   })
 
   it.each([
+    ['uploadExecution', () => contractsService.uploadExecution({ execution_id: 'e1', file: new File(['%PDF'], 'signed.pdf', { type: 'application/pdf' }) })],
+    ['verifyExecution', () => contractsService.verifyExecution({ execution_id: 'e1', verification_method: 'GOV_BR_VALIDAR_MANUAL', signed_at: '2026-10-08T12:00:00.000Z' })],
+    ['rejectExecution', () => contractsService.rejectExecution({ execution_id: 'e1', rejection_reason: 'Motivo' })]
+  ])('%s falha imediatamente e não chama o serviço quando offline', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    await expect(fn()).rejects.toThrow('Sem conexão')
+    expect(rpcMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
     ['list', () => contractsService.list({})],
     ['detail', () => contractsService.detail('c1')],
   ])('%s não lança offline quando navigator.onLine é false', async (_name, fn) => {

@@ -91,6 +91,8 @@ export function useUploadContractExecution(contractId: string, documentId: strin
   const qc = useQueryClient()
   return useMutation({
     mutationFn: contractsService.uploadExecution,
+    networkMode: 'always',
+    retry: false,
     onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
   })
 }
@@ -99,6 +101,8 @@ export function useVerifyContractExecution(contractId: string, documentId: strin
   const qc = useQueryClient()
   return useMutation({
     mutationFn: contractsService.verifyExecution,
+    networkMode: 'always',
+    retry: false,
     onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
   })
 }
@@ -107,6 +111,8 @@ export function useRejectContractExecution(contractId: string, documentId: strin
   const qc = useQueryClient()
   return useMutation({
     mutationFn: contractsService.rejectExecution,
+    networkMode: 'always',
+    retry: false,
     onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
   })
 }
