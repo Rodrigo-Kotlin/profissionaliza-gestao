@@ -15,6 +15,20 @@ export type EnrollmentFixture = {
 export type ExecutionFixtureOptions = {
   method?: 'GOV_BR' | 'PHYSICAL'
   rejectOnce?: boolean
+  stopAt?: 'PENDING_UPLOAD' | 'RECEIVED'
+}
+
+export type ExecutionRunState = {
+  contractId: string
+  documentId: string
+  documentVersion: number
+  executionId: string
+  executionStatus: string
+  rejectionReason: string | null
+  contractStatus: string
+  enrollmentCount: number
+  storagePath: string
+  storageExists: boolean
 }
 
 export async function createEnrollmentFixture(page: Page, runId: string, options: ExecutionFixtureOptions = {}): Promise<EnrollmentFixture> {
@@ -100,10 +114,16 @@ export async function createEnrollmentFixture(page: Page, runId: string, options
   await methodSelect.selectOption(options.method ?? 'GOV_BR')
   await page.getByLabel('Data da assinatura').fill('2026-10-08')
   await page.getByRole('button', { name: 'Preparar recebimento' }).click()
+  if (options.stopAt === 'PENDING_UPLOAD') {
+    return { runId, studentName: leadName, leadCode, saleCode, studentCode, contractCode, enrollmentCode: '' }
+  }
   const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n')
   await page.getByLabel('PDF assinado').setInputFiles({ name: 'qa-signed.pdf', mimeType: 'application/pdf', buffer: pdf })
   await page.getByRole('button', { name: 'Enviar PDF' }).click()
   await expect(page.getByText('Recebido, aguardando conferência')).toBeVisible()
+  if (options.stopAt === 'RECEIVED') {
+    return { runId, studentName: leadName, leadCode, saleCode, studentCode, contractCode, enrollmentCode: '' }
+  }
   if (options.rejectOnce) {
     const rejectedExecution = await page.getByText('Recebido, aguardando conferência').count()
     expect(rejectedExecution).toBeGreaterThan(0)
@@ -228,5 +248,40 @@ export async function cleanupE2eRun(runId: string) {
   if (remainingContracts.error) throw remainingContracts.error
   if ((remainingLeads.count ?? 0) + (remainingSales.count ?? 0) + (remainingContracts.count ?? 0) !== 0) {
     throw new Error(`Resíduos encontrados para ${runId}.`)
+  }
+}
+
+export async function inspectExecutionRun(runId: string): Promise<ExecutionRunState> {
+  const url = process.env.VITE_SUPABASE_URL
+  const secretKey = process.env.E2E_SECRET_KEY
+  if (!url || !secretKey) throw new Error('E2E_SECRET_KEY é obrigatório para inspecionar a fixture.')
+
+  const client = createClient(url, secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  const salesResult = await client.from('sales').select('id').ilike('commercial_notes', `%${runId}%`).single()
+  if (salesResult.error) throw salesResult.error
+  const contractResult = await client.from('contracts').select('id, status').eq('sale_id', salesResult.data.id).single()
+  if (contractResult.error) throw contractResult.error
+  const documentResult = await client.from('contract_documents').select('id, version, contract_id').eq('contract_id', contractResult.data.id).single()
+  if (documentResult.error) throw documentResult.error
+  const executionResult = await client.from('contract_executions').select('id, status, rejection_reason').eq('contract_document_id', documentResult.data.id).order('created_at', { ascending: false }).limit(1).single()
+  if (executionResult.error) throw executionResult.error
+  const enrollmentResult = await client.from('enrollments').select('id', { count: 'exact', head: true }).eq('contract_id', contractResult.data.id)
+  if (enrollmentResult.error) throw enrollmentResult.error
+  const storagePath = `contracts/${contractResult.data.id}/v${documentResult.data.version}/executions/${executionResult.data.id}/signed.pdf`
+  const storageDirectory = storagePath.slice(0, storagePath.lastIndexOf('/'))
+  const storageResult = await client.storage.from('contract-documents').list(storageDirectory, { search: 'signed.pdf' })
+  if (storageResult.error) throw storageResult.error
+
+  return {
+    contractId: contractResult.data.id,
+    documentId: documentResult.data.id,
+    documentVersion: documentResult.data.version,
+    executionId: executionResult.data.id,
+    executionStatus: executionResult.data.status,
+    rejectionReason: executionResult.data.rejection_reason,
+    contractStatus: contractResult.data.status,
+    enrollmentCount: enrollmentResult.count ?? 0,
+    storagePath,
+    storageExists: storageResult.data.some((object) => object.name === 'signed.pdf')
   }
 }
