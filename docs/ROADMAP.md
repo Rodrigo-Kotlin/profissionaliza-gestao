@@ -92,15 +92,51 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
 
 ## Fase 2.6 — Contract Documents
-**Status: hardening pré-assinatura; geração/download implementados, assinatura ainda não iniciada**
+**Status: implementada e validada tecnicamente em ambiente DEV; aprovação jurídica e separação de ambientes pendentes**
 
-- Edge Functions `generate-contract-document` e `download-contract-document` usam `SUPABASE_SECRET_KEYS.default`.
-- Geração idempotente de PDF `FINAL`, hashes, Storage privado e signed URL estão implementados.
-- Download de documento completo exige `contracts.documents.view` e `contracts.view_sensitive`.
-- O dashboard mantém somente indicadores respaldados por backend; dados financeiros e operacionais indisponíveis são apresentados como empty state.
-- Não iniciado nesta fase: Gov.br, upload assinado, assinatura física, `ContractExecution VERIFIED`, Financeiro e Pedagógico.
-- O smoke autenticado DEV da migração de secrets continua sendo requisito antes de desativar qualquer chave legacy.
-- Migration `20261008000100_phase2_6_sensitive_document_hash.sql` permite o cross-check do SHA completo somente para acesso sensível.
+### Implementado e validado
+
+- 2.6A: domínio documental e invariantes de `ContractDocument`.
+- 2.6B1: `ContractDocument`, versionamento, imutabilidade e Storage privado.
+- 2.6B2: geração idempotente/download de PDF, hashes e signed URLs.
+- 2.6B3: formalização manual `GOV_BR` e `PHYSICAL`.
+- 2.6H: hardening de acesso sensível, SHA-256 e secrets.
+- Offline hardening: `assertOnline`, `networkMode: 'always'`, `retry: false` e timeouts controlados.
+- Homologação técnica: Vitest, Playwright autenticado, smoke DEV e cleanup determinístico.
+
+O fluxo `GOV_BR` é manual: o usuário assina externamente no Gov.br, envia o
+PDF e a operação confere o arquivo. Não existe integração automática com o
+Gov.br. O fluxo `PHYSICAL` cobre impressão, assinatura presencial,
+digitalização, upload e conferência.
+
+Estados implementados de `ContractExecution`:
+
+```text
+PENDING_UPLOAD -> RECEIVED -> VERIFIED
+RECEIVED -> REJECTED -> novo retry
+```
+
+Após `VERIFIED`, a conclusão atômica produz:
+
+```text
+ContractExecution VERIFIED -> Contract SIGNED -> Enrollment PENDING
+```
+
+### Futuro
+
+- Integração automática com Gov.br.
+- ICP Brasil automática.
+- Provedor externo e webhooks de assinatura.
+- Financeiro e Pedagógico.
+
+O dashboard mantém somente indicadores respaldados por backend; dados
+financeiros e operacionais indisponíveis são apresentados como empty state.
+
+As Edge Functions usam `SUPABASE_SECRET_KEYS.default`. O download completo
+exige `contracts.documents.view` e `contracts.view_sensitive`.
+
+`LEGAL_TEXT_PENDING_APPROVAL` e a ausência de ambientes separados DEV/STAGING/
+PRODUCTION continuam blockers de produção, não do merge técnico.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico (histórico legado)
 **Status: substituída pelas fases 2.1–2.5

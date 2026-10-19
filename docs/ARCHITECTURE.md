@@ -140,16 +140,41 @@ vínculo opcional da matrícula, e Student Detail consulta as matrículas por
 
 ### Feature contract documents (Fase 2.6)
 
-Os documentos contratuais são gerados pelas Edge Functions
-`generate-contract-document` e `download-contract-document`. A geração usa o
-contrato autenticado, finaliza um PDF versionado e grava o objeto no bucket
+O fluxo documental mantém a cadeia:
+
+```text
+Contract
+  -> ContractDocument
+      -> ContractExecution
+```
+
+`ContractDocument` é versionado e imutável após a finalização. A geração usa o
+contrato autenticado, produz PDF, calcula hashes e grava o objeto no bucket
 privado `contract-documents`. O download cria uma signed URL temporária somente
 quando a sessão possui `contracts.documents.view` e `contracts.view_sensitive`,
 além do escopo do contrato e do status `FINAL`.
 
-Esta fase ainda não implementa Gov.br, upload assinado, assinatura física ou
-`ContractExecution VERIFIED`. O texto jurídico permanece
-`LEGAL_TEXT_PENDING_APPROVAL` e é bloqueador para produção.
+`ContractExecution` representa a forma de formalização do documento. Os métodos
+suportados são `GOV_BR` (assinatura externa e conferência manual) e `PHYSICAL`
+(assinatura presencial, digitalização e conferência). Seus estados são:
+
+```text
+PENDING_UPLOAD -> RECEIVED -> VERIFIED
+RECEIVED -> REJECTED
+```
+
+Após a conferência, a conclusão autoritativa é atômica:
+
+```text
+ContractExecution VERIFIED -> Contract SIGNED -> Enrollment PENDING
+```
+
+`mark_contract_signed` permanece disponível apenas como guard de compatibilidade
+e bloqueio. Não é mais o caminho normal de negócio.
+
+Não existe integração automática com Gov.br, ICP Brasil, provedor externo ou
+webhook de assinatura. O texto jurídico permanece `LEGAL_TEXT_PENDING_APPROVAL`
+e é blocker de produção.
 
 O DEV possui 29 migrations locais e remotas, sem drift. A migration
 `20261008000100_phase2_6_sensitive_document_hash.sql` expõe o SHA completo

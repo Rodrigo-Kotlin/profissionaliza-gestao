@@ -58,6 +58,26 @@ usada somente no cleanup administrativo e nunca é enviada às Edge Functions.
 | 2.5D multi-enrollment | `enrollments.spec.ts` + fluxo | `E2E_EMAIL`/`E2E_PASSWORD` + `E2E_SECRET_KEY` | Mesmo Student com N Enrollments; status independentes; Student global coerente |
 | 2.5D offline | `enrollments.spec.ts` (manual) | `E2E_EMAIL`/`E2E_PASSWORD` | `assertOnline` bloqueia; backend inalterado; reconexão funciona |
 | 2.5D seller scope | `rbac.spec.ts` + manual | `E2E_EMAIL_RESTRICTED`/`E2E_PASSWORD_RESTRICTED` | VENDEDOR vê apenas suas Sales; sem ações acadêmicas; acesso direto negado |
+| Fase 2.6 Login | `login.spec.ts` | ADMIN | `2/2` |
+| Fase 2.6 Sales | `sales.spec.ts` | ADMIN | `3/3` |
+| Fase 2.6 fluxo transacional | `transactional-flow.spec.ts` | ADMIN | `1/1` |
+| Fase 2.6 matrículas | `enrollments.spec.ts` | ADMIN | `2/2` |
+| Fase 2.6 Contract B3 | `contract-execution.spec.ts` | ADMIN | `2/2` |
+| Fase 2.6 B3 offline | `contracts-execution-offline.spec.ts` | ADMIN + secret Node-only | `3/3` |
+| Fase 2.6 seller RBAC | `rbac.spec.ts` | VENDEDOR/restricted | `2/2` |
+| Fase 2.6 triagem responsiva | `homologation-triage.spec.ts` | público + guards | `30/30` |
+
+Checkpoint final da matriz acima: **46/46 testes Playwright aprovados**.
+
+## Fase 2.6 — comportamento offline
+
+As mutações de contratos usam `assertOnline` antes de iniciar a operação,
+`networkMode: 'always'` e `retry: false`. Não há auto replay: depois de
+reconectar, o usuário precisa tentar novamente manualmente.
+
+- Upload: timeout de `45s`.
+- Verify/reject: timeout de `15s`.
+- Offline: feedback local imediato e backend inalterado.
 
 ## Decisões
 
@@ -90,6 +110,7 @@ manualmente contra o deploy candidato à release.
 - Playwright offline: `assertOnline` bloqueia mutações; backend inalterado; reconexão funciona.
 - Playwright seller scope: VENDEDOR QA vê apenas suas matrículas; sem ações acadêmicas; acesso direto negado.
 - Documentos contratuais: download do PDF completo exige `contracts.documents.view` e `contracts.view_sensitive`; VENDEDOR sem grant sensível deve receber resposta sanitizada.
+- Contract B3: `PENDING_UPLOAD`, `RECEIVED`, `VERIFIED`, `REJECTED`, retry e conclusão atômica até Enrollment `PENDING` validados.
 - Responsividade: 6 viewports (320–1366px) sem overflow validados.
 - Cleanup: determinístico por `RUN_ID` com `E2E_SECRET_KEY` (Node-only); 0 resíduos.
 - Correções UX mobile: busca com espaços e cards sem overflow validadas no preview final.
