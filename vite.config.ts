@@ -1,9 +1,26 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 
-export default defineConfig({
+function validateBuildEnvironment(mode: string) {
+  const env = loadEnv(mode, process.cwd(), '')
+  const required = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_APP_ENV']
+  const missing = required.filter((name) => !env[name]?.trim())
+  if (missing.length) throw new Error(`Missing required build environment variables: ${missing.join(', ')}`)
+  if (!['development', 'production'].includes(env.VITE_APP_ENV.trim().toLowerCase())) {
+    throw new Error('VITE_APP_ENV must be development or production')
+  }
+  try {
+    new URL(env.VITE_SUPABASE_URL)
+  } catch {
+    throw new Error('VITE_SUPABASE_URL must be a valid URL')
+  }
+}
+
+export default defineConfig(({ mode }) => {
+  validateBuildEnvironment(mode)
+  return {
   plugins: [
     react(),
     VitePWA({
@@ -46,5 +63,6 @@ export default defineConfig({
         }
       }
     }
+  }
   }
 })

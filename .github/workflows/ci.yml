@@ -10,6 +10,10 @@ jobs:
   build:
     name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://ci.invalid.supabase.co
+      VITE_SUPABASE_ANON_KEY: ci-public-anon-key
+      VITE_APP_ENV: development
 
     steps:
       - name: Checkout
