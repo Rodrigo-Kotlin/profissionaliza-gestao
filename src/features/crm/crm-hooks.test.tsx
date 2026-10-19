@@ -26,10 +26,7 @@ const serviceMock = vi.hoisted(() => ({
   completeActivity: vi.fn(),
   rescheduleActivity: vi.fn()
 }))
-const writeAuditLogMock = vi.hoisted(() => vi.fn())
-
 vi.mock('./crm-service', () => ({ crmService: serviceMock }))
-vi.mock('@/services/audit-service', () => ({ writeAuditLog: writeAuditLogMock }))
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>{children}</QueryClientProvider>
@@ -61,7 +58,6 @@ describe('CRM hooks — auditoria de domínio fica no RPC', () => {
     await mutation.mutateAsync(input)
 
     expect(serviceMock[serviceName]).toHaveBeenCalled()
-    expect(writeAuditLogMock).not.toHaveBeenCalled()
   })
 
   it('mantém a invalidação após criar um lead', async () => {
@@ -73,6 +69,5 @@ describe('CRM hooks — auditoria de domínio fica no RPC', () => {
     await result.current.mutateAsync({ full_name: 'Ana' })
 
     await waitFor(() => expect(invalidateQueries).toHaveBeenCalled())
-    expect(writeAuditLogMock).not.toHaveBeenCalled()
   })
 })

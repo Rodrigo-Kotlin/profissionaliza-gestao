@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { BrandLogo } from '@/components/brand'
 import { Button, Input } from '@/components/ui/core'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
-import { writeAuditLog } from '@/services/audit-service'
+import { logSessionEvent } from '@/services/audit-service'
 import { useAuth } from './auth-context'
 
 const loginSchema = z.object({ email: z.email('Informe um e-mail válido.'), password: z.string().min(6, 'A senha deve ter ao menos 6 caracteres.') })
@@ -25,7 +25,7 @@ export function LoginPage() {
     if (!isSupabaseConfigured) { toast.error('Configure as variáveis do Supabase para entrar.'); return }
     const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password })
     if (error) { toast.error(error.message.includes('Invalid') ? 'E-mail ou senha inválidos.' : 'Não foi possível entrar. Tente novamente.'); return }
-    await writeAuditLog('auth.login', 'session')
+    await logSessionEvent('auth.login')
     navigate('/', { replace: true })
   }
 

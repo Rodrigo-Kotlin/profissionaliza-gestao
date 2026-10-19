@@ -14,7 +14,7 @@ import { useOnlineStatus } from '@/lib/offline'
 import { isDevEnvironment } from '@/lib/env'
 import { canAny, PERMISSIONS } from '@/lib/rbac'
 import type { PermissionCode } from '@/types/database'
-import { writeAuditLog } from '@/services/audit-service'
+import { logSessionEvent } from '@/services/audit-service'
 import { useAuth } from '@/features/auth/auth-context'
 import { CommandPalette } from '@/features/search/command-palette'
 
@@ -52,7 +52,7 @@ export function AppShell() {
   useEffect(() => setMobileOpen(false), [location.pathname])
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCommandOpen(true) } }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler) }, [])
   const name = profile?.full_name || user?.email?.split('@')[0] || 'Usuário'
-  const logout = async () => { await writeAuditLog('auth.logout', 'session'); await signOut(); navigate('/login', { replace: true }) }
+  const logout = async () => { await logSessionEvent('auth.logout'); await signOut(); navigate('/login', { replace: true }) }
   return <div className={cn('min-h-screen bg-canvas', !online && 'offline-banner-active')}>
     <a href="#main" className="skip-link">Pular para o conteúdo</a>
     <aside className={cn('fixed inset-y-0 left-0 z-50 hidden bg-navy transition-[width] duration-200 lg:block', collapsed ? 'w-[84px]' : 'w-[264px]')}><Sidebar collapsed={collapsed} onCollapse={() => setCollapsed((value) => !value)} onLogout={logout} /></aside>

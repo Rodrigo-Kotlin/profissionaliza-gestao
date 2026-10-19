@@ -1,20 +1,14 @@
 import { supabase } from '@/lib/supabase'
-import type { Json } from '@/types/database.types'
-import type { AuditAction } from '@/types/database'
 
-type AuditMetadata = Record<string, unknown>
+export type SessionAuditEvent = 'auth.login' | 'auth.logout'
 
-export async function writeAuditLog(
-  action: AuditAction,
-  entityType: string,
-  entityId?: string,
-  metadata: AuditMetadata = {}
-) {
-  const { error } = await supabase.rpc('write_audit_log', {
-    p_action: action,
-    p_entity_type: entityType,
-    p_entity_id: entityId ?? undefined,
-    p_metadata: metadata as Json
-  })
-  if (error) console.warn('Não foi possível registrar auditoria:', error.message)
+export async function logSessionEvent(eventType: SessionAuditEvent) {
+  if (eventType !== 'auth.login' && eventType !== 'auth.logout') return
+
+  try {
+    const { error } = await supabase.rpc('log_session_event', { p_event_type: eventType })
+    if (error) console.warn('Não foi possível registrar o evento de sessão.')
+  } catch {
+    console.warn('Não foi possível registrar o evento de sessão.')
+  }
 }

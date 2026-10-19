@@ -6,14 +6,14 @@ import { LoginPage } from './auth-pages'
 
 const authMock = vi.hoisted(() => ({ signInWithPassword: vi.fn() }))
 const toastMock = vi.hoisted(() => ({ error: vi.fn() }))
-const writeAuditLogMock = vi.hoisted(() => vi.fn())
+const logSessionEventMock = vi.hoisted(() => vi.fn())
 const useAuthMock = vi.hoisted(() => vi.fn(() => ({ session: null })))
 
 vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: true,
   supabase: { auth: authMock }
 }))
-vi.mock('@/services/audit-service', () => ({ writeAuditLog: writeAuditLogMock }))
+vi.mock('@/services/audit-service', () => ({ logSessionEvent: logSessionEventMock }))
 vi.mock('sonner', () => ({ toast: toastMock }))
 vi.mock('./auth-context', () => ({ useAuth: () => useAuthMock() }))
 
@@ -68,7 +68,7 @@ describe('LoginPage', () => {
     await user.keyboard('{Enter}')
 
     expect(authMock.signInWithPassword).toHaveBeenCalledTimes(1)
-    expect(writeAuditLogMock).toHaveBeenCalledWith('auth.login', 'session')
+    expect(logSessionEventMock).toHaveBeenCalledWith('auth.login')
   })
 
   it('mantém o feedback atual para credenciais inválidas', async () => {
@@ -80,6 +80,6 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(toastMock.error).toHaveBeenCalledWith('E-mail ou senha inválidos.')
-    expect(writeAuditLogMock).not.toHaveBeenCalled()
+    expect(logSessionEventMock).not.toHaveBeenCalled()
   })
 })

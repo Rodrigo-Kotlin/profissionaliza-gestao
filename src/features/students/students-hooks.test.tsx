@@ -16,11 +16,9 @@ const serviceMock = vi.hoisted(() => ({
   linkGuardian: vi.fn(),
   unlinkGuardian: vi.fn()
 }))
-const writeAuditLogMock = vi.hoisted(() => vi.fn())
 const toastMock = vi.hoisted(() => ({ success: vi.fn() }))
 
 vi.mock('./students-service', () => ({ studentsService: serviceMock }))
-vi.mock('@/services/audit-service', () => ({ writeAuditLog: writeAuditLogMock }))
 vi.mock('sonner', () => ({ toast: toastMock }))
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -47,7 +45,6 @@ describe('Students hooks — auditoria de domínio fica no RPC', () => {
 
     expect(serviceMock.create).toHaveBeenCalled()
     expect(invalidateQueries).toHaveBeenCalled()
-    expect(writeAuditLogMock).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -62,6 +59,5 @@ describe('Students hooks — auditoria de domínio fica no RPC', () => {
     await mutation.mutateAsync(input)
 
     expect(serviceMock[serviceName]).toHaveBeenCalled()
-    expect(writeAuditLogMock).not.toHaveBeenCalled()
   })
 })
