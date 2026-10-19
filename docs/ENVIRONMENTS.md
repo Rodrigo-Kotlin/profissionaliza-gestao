@@ -17,6 +17,11 @@ the product is still in a limited rollout.
 | Local development | `development` | Local Supabase or local mock | Test data only |
 | Controlled production | `production` | `epjshcgsjvrydwuyqixi` | Pilot/real data |
 
+The only approved browser origins for document Edge Functions are
+`https://profissionaliza-gestao.pages.dev` and single-label Cloudflare Pages
+previews under `*.profissionaliza-gestao.pages.dev`. Unknown or similar domains
+are denied. There is no staging origin.
+
 `VITE_APP_ENV` accepts only `development` and `production`. Missing or invalid
 values fail the Vite bootstrap/build. Production does not display the DEV
 badge.
@@ -31,6 +36,8 @@ badge.
 - Production schema changes use versioned migrations only.
 - Production data operations require explicit operator approval.
 - The legacy `SUPABASE_SERVICE_ROLE_KEY` is not removed by this phase.
+- The active document-function secret is `SUPABASE_SECRET_KEYS.default`.
+- Remote secret names were audited read-only; legacy removal still requires human approval.
 
 ## Migration Workflow
 
