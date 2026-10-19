@@ -171,7 +171,7 @@ RPCs `SECURITY DEFINER` com `search_path` fixo, `row_security = off` apenas dent
 
 ## 20. Concorrência
 
-`contracts.sale_id` é **UNIQUE**: dois `create_contract_from_sale` simultâneos para a mesma venda → exatamente 1 contrato; o segundo falha (a ser validado por teste de concorrência manual no DEV).
+`contracts.sale_id` é **UNIQUE**: dois `create_contract_from_sale` simultâneos para a mesma venda → exatamente 1 contrato; o segundo falha (a ser validado por teste de concorrência manual local).
 
 ---
 
@@ -243,9 +243,9 @@ Trabalho realizado na branch `feature/contracts-phase-2-4` (mesmo PR). **Não me
 
 ## 29. Pendências
 
-1. QA manual do wizard em navegador (DEV) — pré-seleção, troca, completude, CEP.
+1. QA manual do wizard em navegador local — pré-seleção, troca, completude, CEP.
 2. Teste de concorrência real (`create_contract_from_sale` duplicado).
-3. `get_contractor_detail`/`update_person` — smoke via SQL no DEV já validados na aplicação da migration (sem erro).
+3. `get_contractor_detail`/`update_person` — smoke via SQL local já validado na aplicação da migration (sem erro).
 4. Decisão de produto: conceder `people.edit` a GERENTE_COMERCIAL/VENDEDOR para permitir completar contratante no fluxo? (por padrão esta auditoria **não** concedeu).
 5. Regenerar `database.types.ts`.
 
@@ -271,7 +271,7 @@ RPCs corrigidas: `create_person`, `update_person` (validação explícita adicio
 
 ### 31.2. Drift da migration `20260912100000` (BLOCKER)
 
-**Problema:** No DEV, a migration `20260912100000` foi registrada em `schema_migrations` com o
+**Problema:** No ambiente remoto controlado, a migration `20260912100000` foi registrada em `schema_migrations` com o
 conteúdo antigo (commit `b355657`), enquanto o repositório avançou para `8a9626a`. O drift
 foi contornado temporariamente com um script manual de sincronização (`sync-pr14-identity-functions.sql`).
 
