@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { expect, type Page } from '@playwright/test'
+import { assertSafeTarget } from '../../scripts/lib/assert-safe-target.mjs'
 import { e2eEnv, login } from './helpers'
 
 export type EnrollmentFixture = {
@@ -32,6 +33,7 @@ export type ExecutionRunState = {
 }
 
 export async function createEnrollmentFixture(page: Page, runId: string, options: ExecutionFixtureOptions = {}): Promise<EnrollmentFixture> {
+  assertSafeTarget({ environment: process.env.VITE_APP_ENV, url: process.env.VITE_SUPABASE_URL, operation: 'E2E fixture creation' })
   const leadName = `QA ${runId}`
   const email = `qa+${runId.toLowerCase()}@profissionaliza.test`
   const phone = `119${runId.replace(/\D/g, '').slice(-8)}`
@@ -151,6 +153,7 @@ async function completeQaPerson(email: string, runId: string) {
   const url = process.env.VITE_SUPABASE_URL
   const secretKey = process.env.E2E_SECRET_KEY
   if (!url || !secretKey) throw new Error('E2E_SECRET_KEY é obrigatório para preparar a fixture.')
+  assertSafeTarget({ environment: process.env.VITE_APP_ENV, url, operation: 'E2E fixture update' })
   const client = createClient(url, secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const result = await client.from('people').update({
     cpf: runId.replace(/\D/g, '').slice(-11).padStart(11, '1'),
@@ -169,6 +172,7 @@ export async function cleanupE2eRun(runId: string) {
   const url = process.env.VITE_SUPABASE_URL
   const secretKey = process.env.E2E_SECRET_KEY
   if (!url || !secretKey) throw new Error('E2E_SECRET_KEY é obrigatório para cleanup determinístico.')
+  assertSafeTarget({ environment: process.env.VITE_APP_ENV, url, operation: 'E2E cleanup' })
 
   const client = createClient(url, secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const [leadsResult, salesResult] = await Promise.all([
@@ -255,6 +259,7 @@ export async function inspectExecutionRun(runId: string): Promise<ExecutionRunSt
   const url = process.env.VITE_SUPABASE_URL
   const secretKey = process.env.E2E_SECRET_KEY
   if (!url || !secretKey) throw new Error('E2E_SECRET_KEY é obrigatório para inspecionar a fixture.')
+  assertSafeTarget({ environment: process.env.VITE_APP_ENV, url, operation: 'E2E fixture inspection' })
 
   const client = createClient(url, secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const salesResult = await client.from('sales').select('id').ilike('commercial_notes', `%${runId}%`).single()

@@ -2,10 +2,12 @@
 
 import { createHash, randomBytes } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
+import { assertSafeTarget } from '../lib/assert-safe-target.mjs'
 
 const url = process.env.B3_SUPABASE_URL
 const anonKey = process.env.B3_ANON_KEY
 const secretKey = process.env.E2E_SECRET_KEY
+assertSafeTarget({ environment: process.env.VITE_APP_ENV, url, operation: 'B3 fixture' })
 if (!url || !anonKey || !secretKey) throw new Error('B3 runtime configuration is incomplete')
 const runId = process.env.B3_RUN_ID?.trim()
 if (!runId || !/^[a-z0-9_-]+$/i.test(runId)) throw new Error('B3_RUN_ID is required and must be deterministic')

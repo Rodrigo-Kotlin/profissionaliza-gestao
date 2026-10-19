@@ -2,6 +2,7 @@
 
 import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
+import { assertSafeTarget } from './lib/assert-safe-target.mjs'
 
 const url = process.env.VITE_SUPABASE_URL
 const anonKey = process.env.VITE_SUPABASE_ANON_KEY
@@ -12,6 +13,7 @@ const restrictedPassword = process.env.E2E_PASSWORD_RESTRICTED
 const cleanupKey = process.env.E2E_SECRET_KEY
 const runId = `SMOKE-HARDEN-DOC-${Date.now()}`
 
+assertSafeTarget({ environment: process.env.VITE_APP_ENV, url, operation: 'document smoke' })
 if (!url || !anonKey || !email || !password || !cleanupKey) throw new Error('DEV smoke credentials are not configured')
 
 const user = createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })

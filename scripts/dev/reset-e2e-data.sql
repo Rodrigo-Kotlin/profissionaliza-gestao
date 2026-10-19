@@ -1,5 +1,5 @@
 -- ============================================================================
--- RESET CONTROLADO — Supabase DEV (epjshcgsjvrydwuyqixi)
+-- RESET CONTROLADO — LOCAL DEV ONLY
 -- ============================================================================
 -- Finalidade: limpar APENAS dados transacionais/homologação para recriar massa
 -- E2E (LEAD -> VENDA -> CONTRATO -> ALUNO).
@@ -25,13 +25,20 @@
 --   crm_lost_reasons, profiles, roles, permissions, role_permissions,
 --   user_roles, system_settings + sequences (numeração continua).
 --
--- Uso (DEV):
---   supabase db query --linked -f scripts/dev/reset-e2e-data.sql
---     (o próprio script já define o marcador; funciona apenas no DEV linked)
+-- Uso (LOCAL):
+--   PGOPTIONS='-c app.e2e_target=local' supabase db query --local -f scripts/dev/reset-e2e-data.sql
+--     Sem a sessão explicitamente marcada como local, o script aborta.
 -- ============================================================================
 
+-- Guard clause: a sessão deve ser explicitamente local.
+do $$
+begin
+  if coalesce(current_setting('app.e2e_target', true), '') <> 'local' then
+    raise exception 'Guard clause: destructive E2E reset is local-only';
+  end if;
+end $$;
+
 -- Guard clause: exigência explícita de confirmação.
--- O arquivo define o marcador; qualquer execução sem o marcador aborta.
 set app.e2e_confirm = 'E2E-RESET-2026';
 
 do $$
