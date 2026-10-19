@@ -50,7 +50,7 @@ GitHub (main) ──► Cloudflare Pages (Git Integration)
 Os arquivos já incluídos:
 
 - `public/_redirects` — roteamento SPA (qualquer rota cai em `index.html`).
-- `public/_headers` — headers de segurança (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`).
+- `public/_headers` — headers de segurança (`CSP`, `Permissions-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`).
 - `.node-version` (`22`) + `engines.node` no `package.json` — consistência de versão em local/CI/Cloudflare.
 - `VITE_APP_ENV` — `development` local ou `production` remoto; valores desconhecidos falham.
 - `src/lib/env.ts` — helper central de ambiente.
@@ -108,7 +108,7 @@ No **dashboard do Supabase → Authentication → URL Configuration** (projeto r
 
 A recuperação de senha redireciona para `/redefinir-senha` usando `window.location.origin` (não há `localhost` hardcoded nos fluxos publicados). O app usa `detectSessionInUrl` para capturar o token de recuperação na URL.
 
-**Cadastro público**: sistema interno — mantenha o signup público desabilitado/restrito no Supabase (não alterar sem validação).
+**Cadastro público**: sistema interno — mantenha o signup público desabilitado/restrito no Supabase (não alterar sem validação). A configuração versionada local não é prova da configuração remota.
 
 ## Roteamento SPA e headers
 
@@ -124,9 +124,11 @@ A recuperação de senha redireciona para `/redefinir-senha` usando `window.loca
     X-Content-Type-Options: nosniff
     Referrer-Policy: strict-origin-when-cross-origin
     X-Frame-Options: DENY
+    Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://epjshcgsjvrydwuyqixi.supabase.co https://viacep.com.br
+    Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()
   ```
 
-  Este conjunto é seguro e não interfere com Supabase/PWA. Não adote CSP agressivo sem teste completo (Supabase, PWA, fontes, scripts).
+  Este conjunto foi conferido contra o PWA, Supabase, ViaCEP e Google Fonts usados pelo app. HSTS continua uma decisão de domínio/Cloudflare e não deve usar `preload` automaticamente.
 
 ## Node versão
 
@@ -176,7 +178,10 @@ O deploy do frontend não altera o banco. Evite cache agressivo (nunca cachear S
 
 - **Nunca versionar** `.env`, `service_role`, senha de banco, tokens Cloudflare/GitHub.
 - Dependência de autorização está no Supabase (Auth/RLS/RBAC/RPC), não na UI.
-- `public/_headers` aplica headers de segurança básicos.
+- `public/_headers` aplica headers de segurança versionados.
+- As Edge Functions documentais aceitam somente a origem Production e previews Pages de uma etiqueta; CORS não usa wildcard.
+- `contract-documents` é privado e acessado por Edge Functions, nunca por policies permissivas no browser.
+- HSTS deve ser confirmado/configurado no Cloudflare somente após validar todos os subdomínios.
 - Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
 ## Production Safety Rules
