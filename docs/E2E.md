@@ -1,8 +1,12 @@
 # Testes E2E (Playwright)
 
 Os testes E2E validam fluxos reais contra uma instância **deployada** do app
-(ex.: preview do Cloudflare Pages) ou uma instância local (`vite preview` do
+(ex.: o hostname Production controlado) ou uma instância local (`vite preview` do
 build de produção). Requerem Supabase configurado com autenticação.
+
+Os specs são classificados com `@production-safe` ou `@local-destructive`.
+Somente os primeiros podem ser executados automaticamente contra Production.
+Fixtures, mutations, execution flows e cleanup são exclusivamente locais.
 
 São **opcionais**: sem configuração de ambiente a suíte inteira é pulada, então
 `npm run test:e2e` nunca falha por ausência de ambiente.
@@ -14,7 +18,7 @@ São **opcionais**: sem configuração de ambiente a suíte inteira é pulada, e
 npx playwright install chromium
 
 # 2) Definir alvo + credenciais
-# Alvo: preview do Cloudflare Pages (ou http://localhost:4173 com `npm run preview`)
+# Alvo: Production controlado ou http://localhost:4173 com `npm run preview`
 export E2E_BASE_URL="https://<preview>.pages.dev"
 # Conta com acesso amplo (CRM, pipeline, cursos, usuários, matrículas)
 export E2E_EMAIL="admin@instituicao.com.br"
@@ -40,7 +44,8 @@ O script usa sessão normal para fixture e Edge Functions. `E2E_SECRET_KEY` é
 usada somente no cleanup administrativo e nunca é enviada às Edge Functions.
 
 > Credenciais vão apenas como variáveis de ambiente — nunca no repositório.
-> Os testes usam dados **reais** do ambiente (nunca dados pessoais reais em staging).
+> Os testes usam dados **reais** do ambiente controlado quando executados remotamente;
+> nunca use dados pessoais reais para fixtures ou cenários destrutivos.
 > **Secret API key**: usada APENAS no processo Node de fixture/cleanup (`tests/e2e/enrollment-fixture.ts`), isolada via `tests/e2e/helpers.ts` com `dotenv/config`. Nunca em `VITE_*`, nunca no browser. As Edge Functions usam `SUPABASE_SECRET_KEYS.default`; a legacy `SUPABASE_SERVICE_ROLE_KEY` não deve ser usada pelo smoke.
 
 ## Matriz de execução
@@ -99,12 +104,14 @@ reconectar, o usuário precisa tentar novamente manualmente.
 
 ## CI
 
-A suíte E2E **não** roda no CI do PR (requer deploy e credenciais). É executada
-manualmente contra o deploy candidato à release.
+A suíte E2E destrutiva **não** roda automaticamente contra Production. O CI deve
+executar somente unit tests, checks estáticos e smoke público seguro. Fluxos
+autenticados que criam dados exigem execução local explícita com a guard de
+project ref.
 
 ## Último checkpoint
 
-- Playwright autenticado: validado contra o DEV com conta QA ADMIN.
+- Playwright autenticado: validado anteriormente contra o ambiente remoto controlado com conta QA ADMIN.
 - Playwright transacional: fluxo Lead→Venda→Contrato→Enrollment até `COMPLETED` validado.
 - Playwright multi-enrollment: mesmo Student com N Enrollments independentes validado.
 - Playwright offline: `assertOnline` bloqueia mutações; backend inalterado; reconexão funciona.

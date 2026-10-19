@@ -47,9 +47,11 @@ VITE_APP_ENV=development
 
 Nunca inclua valores reais no repositório. A chave `anon` é pública por definição e opera sob RLS. Nunca coloque `service_role`, senha do banco ou outros segredos em variáveis `VITE_*`.
 
-Sem as variáveis do Supabase, a aplicação inicia e informa que o ambiente de autenticação não está configurado.
+Sem as variáveis do Supabase ou com um ambiente inválido, o bootstrap/build falha explicitamente.
 
-`VITE_APP_ENV` indica o ambiente: `development` (padrão) exibe um selo discreto "DEV" no app shell; use `production` no ambiente final sem mudar código.
+`VITE_APP_ENV` aceita somente `development` e `production`. O ambiente
+`development` exibe um selo discreto "DEV" no app shell; `production` não exibe
+badge de ambiente.
 
 ## Scripts
 
@@ -101,7 +103,7 @@ Consulte `docs/DATABASE.md` para o guia de migrations e `docs/RBAC.md` para o mo
 ## Estado atual
 
 O projeto está na Fase 2.6 com o fluxo documental e de formalização técnica
-implementado e validado em ambiente DEV. O sistema gera PDF versionado, recebe
+implementado e validado no ambiente remoto controlado atual. O sistema gera PDF versionado, recebe
 o arquivo assinado externamente e registra a conferência administrativa.
 
 Os métodos suportados são:
@@ -124,15 +126,16 @@ O dashboard exibe somente indicadores respaldados por backend. Indicadores
 financeiros, agenda, alertas e atividades sem fonte real aparecem como dados
 ainda não disponíveis, nunca como valores demonstrativos operacionais.
 
-Preview e Production do Cloudflare Pages continuam apontando para o Supabase
-DEV. Isso é um bloqueador para dados reais e não representa uma separação de
-ambientes de produção.
+O projeto remoto atual do Supabase (`epjshcgsjvrydwuyqixi`) é tratado como
+Production controlado. O Cloudflare Pages usa esse projeto enquanto a operação
+permanece em rollout limitado.
 
 ### Production readiness blockers
 
 - `LEGAL_TEXT_PENDING_APPROVAL` ainda aguarda aprovação jurídica.
-- Preview e Production ainda usam o projeto Supabase DEV.
-- Não há separação DEV/STAGING/PRODUCTION para dados reais.
+- O projeto Production controlado ainda contém dados históricos de QA/piloto que exigem classificação manual.
+- Não existe STAGING neste momento.
+- O texto jurídico `LEGAL_TEXT_PENDING_APPROVAL` ainda impede operação legal definitiva.
 
 Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
@@ -145,9 +148,11 @@ Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
 Veja `CONTRIBUTING.md` para o fluxo completo.
 
-## Remote Supabase Development
+## Supabase Operations
 
-O banco de desenvolvimento é gerenciado diretamente no projeto remoto do Supabase. Docker não é necessário neste workflow.
+O Supabase remoto atual é Production controlado. Desenvolvimento e testes
+destrutivos devem usar o Supabase local ou mocks; Docker é necessário para o
+stack local.
 
 ### Conexão
 
@@ -165,7 +170,7 @@ npx supabase migration list
 # Preview antes de aplicar
 npx supabase db push --dry-run
 
-# Aplicar migrations
+# Aplicar migrations somente após checklist e aprovação do operador
 npx supabase db push
 
 # Criar nova migration
@@ -191,6 +196,7 @@ O frontend (SPA/PWA) é publicado via **Cloudflare Pages** conectado ao GitHub. 
 - Backend (esquema e autenticação) permanece no Supabase; não há Workers nem funções nesta fase.
 
 Veja o guia completo em `docs/DEPLOYMENT.md`.
+Veja a topologia e as regras de segurança em `docs/ENVIRONMENTS.md`.
 
 ## Licença
 

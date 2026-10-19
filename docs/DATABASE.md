@@ -20,7 +20,7 @@ npx supabase login
 npx supabase link --project-ref <PROJECT_REF>
 ```
 
-Docker não é necessário neste workflow. Toda validação de banco ocorre contra o projeto Supabase remoto DEV.
+Docker não é necessário neste workflow. A validação remota ocorre contra o projeto Supabase Production controlado; testes destrutivos devem usar o banco local.
 
 ### Executar migrations
 
@@ -159,7 +159,7 @@ supabase/migrations/20260902000100_phase2_1_people_students.sql
 supabase/migrations/20260902100000_phase2_1_student_update.sql
 ```
 
-Ambas já aplicadas ao remoto DEV (linked ref `epjshcgsjvrydwuyqixi`).
+Ambas já aplicadas ao projeto remoto controlado (linked ref `epjshcgsjvrydwuyqixi`).
 
 ## Fase 2.4 — Contracts
 
@@ -218,8 +218,8 @@ supabase/migrations/20260910210000_phase2_4_contracts_core.sql
 supabase/migrations/20260910210001_phase2_4_contracts_rpcs.sql
 ```
 
-Ambas aplicadas ao remoto DEV (linked ref `epjshcgsjvrydwuyqixi`), Local = Remote.
+Ambas aplicadas ao projeto remoto controlado (linked ref `epjshcgsjvrydwuyqixi`), Local = Remote.
 
 ## Cuidado com db reset remoto
 
-**NÃO** executar `npx supabase db reset --linked` sem autorização explícita. Esse comando é destrutivo. Mesmo em DEV, pedir confirmação antes.
+**NÃO** executar `npx supabase db reset --linked` sem autorização explícita. Esse comando é destrutivo e é proibido no Production controlado. Use o banco local para resets.

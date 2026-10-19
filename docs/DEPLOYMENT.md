@@ -42,7 +42,7 @@ GitHub (main) ──► Cloudflare Pages (Git Integration)
 
 - Conta **Cloudflare** com acesso ao dashboard.
 - Repositório GitHub `Rodrigo-Kotlin/profissionaliza-gestao` (este).
-- Projeto Supabase DEV (URL + chave `anon`).
+- Projeto Supabase Production controlado (ref `epjshcgsjvrydwuyqixi`).
 - Acesso ao dashboard do Supabase para ajustar Auth.
 
 ## Preparação do repositório
@@ -52,7 +52,7 @@ Os arquivos já incluídos:
 - `public/_redirects` — roteamento SPA (qualquer rota cai em `index.html`).
 - `public/_headers` — headers de segurança (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`).
 - `.node-version` (`20`) + `engines.node` no `package.json` — consistência de versão em local/CI/Cloudflare.
-- `VITE_APP_ENV` — seletor de ambiente (selo "DEV" em dev/homologação).
+- `VITE_APP_ENV` — `development` local ou `production` remoto; valores desconhecidos falham.
 - `src/lib/env.ts` — helper central de ambiente.
 
 Garanta que `.env.local` esteja ignorado (já está) e que nenhum segredo seja versionado.
@@ -72,22 +72,26 @@ Uma primeira build será disparada automaticamente ao conectar.
 
 ## Variáveis de ambiente
 
-Configure no dashboard (**Settings → Environment Variables**) para **ambos** os ambientes (Production e Preview/Pull Requests), ambas apontando para o Supabase **DEV**:
+Configure no dashboard (**Settings → Environment Variables**) para o ambiente
+Production apontando para o projeto remoto controlado. Não existe STAGING neste
+momento. Preview deve ser usado apenas com smoke seguro e nunca com fixtures
+destrutivos.
 
-> Estado atual: Preview e Production ainda apontam para DEV. Isso é aceitável
-> somente para homologação controlada e é **BLOCKER PARA DADOS REAIS**. Não há
-> STAGING/PROD separado neste momento.
+> Estado atual: o projeto remoto é classificado como Production controlado e
+> ainda contém dados históricos de QA/piloto. A expansão para dados reais exige
+> classificação manual, aprovação jurídica e checklist operacional.
 
 | Variável | Valor |
 | --- | --- |
-| `VITE_SUPABASE_URL` | URL do projeto Supabase DEV (ex.: `https://<ref>.supabase.co`) |
-| `VITE_SUPABASE_ANON_KEY` | Chave **anon** pública do projeto DEV |
-| `VITE_APP_ENV` | `development` (mostra o selo DEV) |
+| `VITE_SUPABASE_URL` | URL do projeto Supabase Production controlado |
+| `VITE_SUPABASE_ANON_KEY` | Chave **anon** pública do projeto remoto |
+| `VITE_APP_ENV` | `production` no Cloudflare; `development` somente local |
 
 As Edge Functions de documentos usam a variável server-side
 `SUPABASE_SECRET_KEYS`, em JSON com a chave `default`. Ela nunca deve ser
 exposta em `VITE_*`. A legacy `SUPABASE_SERVICE_ROLE_KEY` não é usada pelo
-código atual e só pode ser desativada após smoke autenticado DEV aprovado.
+código atual e não é removida nesta fase. Sua rotação/remoção exige uma fase
+posterior de hardening e smoke autenticado aprovado.
 
 > Nunca use `service_role`, senha do banco ou tokens no frontend. A chave `anon` é pública e os acessos são controlados por RLS/RBAC/RPC.
 
@@ -95,13 +99,12 @@ Após salvar, **redeploy/rebuild** do projeto para que as variáveis sejam injet
 
 ## Configuração de Auth no Supabase
 
-No **dashboard do Supabase → Authentication → URL Configuration** (projeto DEV):
+No **dashboard do Supabase → Authentication → URL Configuration** (projeto remoto controlado):
 
 - **Site URL**: `https://<project>.pages.dev` (o hostname real do Pages).
 - **Redirect URLs** — adicione:
   - `http://localhost:5173/**` (desenvolvimento local)
-  - `https://<project>.pages.dev/**` (produção DEV)
-  - `https://**.pages.dev/**` (previews de branches/PRs)
+  - `https://<project>.pages.dev/**` (Production controlado)
 
 A recuperação de senha redireciona para `/redefinir-senha` usando `window.location.origin` (não há `localhost` hardcoded nos fluxos publicados). O app usa `detectSessionInUrl` para capturar o token de recuperação na URL.
 
@@ -165,7 +168,7 @@ O deploy do frontend não altera o banco. Evite cache agressivo (nunca cachear S
 3. Teste o fluxo de recuperação de senha no URL publicado: solicitar → e-mail → abrir link → `/redefinir-senha` → atualizar → login.
 4. Verifique PWA: manifest, service worker, ícones.
 5. Responsividade mobile (390–1920px), Lighthouse, rede/console sem erro — sem *mixed content*, sem 404, sem chamadas a `localhost`.
-6. Confirme o selo "DEV" no app shell (indicador de homologação).
+6. Confirme que Production não exibe o selo "DEV".
 
 ## Segurança
 
@@ -174,10 +177,13 @@ O deploy do frontend não altera o banco. Evite cache agressivo (nunca cachear S
 - `public/_headers` aplica headers de segurança básicos.
 - Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
-## Ambientes futuros
+## Production Safety Rules
 
-Para produção final, basta:
-
-1. Definir `VITE_APP_ENV=production` (e demais `VITE_*` do projeto de produção) nos ambientes Production/Preview do Pages.
-2. Ajustar Site URL e Redirect URLs no Supabase de produção.
-3. Sem mudança de código — `isDevEnvironment` deixa de exibir o selo DEV automaticamente.
+- Não executar E2E destrutivo, fixture, cleanup automático ou reset no Production.
+- Não usar `E2E_SECRET_KEY` automaticamente contra Production.
+- Aplicar somente migrations versionadas.
+- Fazer dry-run, revisar migration list e obter aprovação antes de `db push`.
+- Não usar dump manual para mover dados.
+- Manter o bucket `contract-documents` sem cleanup automático.
+- Não remover contas Production automaticamente.
+- Consultar `docs/ENVIRONMENTS.md` antes de qualquer operação remota.

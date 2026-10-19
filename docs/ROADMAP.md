@@ -16,7 +16,7 @@ domínio, RLS por permissão e masking LGPD no back end (ver `docs/DATABASE.md` 
 **Status: concluída**
 
 Pipeline, leads, atividades, catálogo de cursos, ownership, RPCs controladas.
-Migration aplicada no Supabase DEV; tipos regenerados.
+Migration aplicada no projeto remoto controlado; tipos regenerados.
 
 ## Fase 2.2.1 — Hardening
 **Status: concluída (merged em `main` via PR #12, squash `da7a4da`)**
@@ -26,7 +26,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - 14 novos testes Vitest (6 guards + 8 matriz) e cobertura v8 configurada.
 - Playwright E2E opcional (`tests/e2e/`, 5 fluxos) — ver `docs/E2E.md`.
 - `.nvmrc` e alinhamento de Node no `engines`.
-- Migration `20260910120000_phase2_2_1_rbac_consistency.sql` aplicada no Supabase DEV (Local = Remote).
+- Migration `20260910120000_phase2_2_1_rbac_consistency.sql` aplicada no projeto remoto controlado (Local = Remote).
 
 ## Fase 2.3 — Sales
 **Status: concluída (merged em `main` via PR #13, squash `0bcdfa1`)**
@@ -37,7 +37,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Sales list com filtros (search, status, seller, course, period), paginação, page_size cap 100
 - Sale detail com timeline (sales.created, sales.canceled), cancelamento com motivo
 - CRM integration: Lead 360 mostra sale card, status WON da venda
-- 4 migrations aplicadas no Supabase DEV (Local = Remote)
+- 4 migrations aplicadas no projeto remoto controlado (Local = Remote)
 - 202 testes Vitest (16 arquivos), E2E smoke specs
 - 2 correções de BLOCKER (ADMIN RBAC, VENDEDOR/RECEPCAO courses.view)
 
@@ -55,7 +55,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - E2E navegacional autenticado: validado.
 - E2E transacional Lead → Venda → Contrato → Aluno: validado até `SIGNED`.
 - UI/UX responsive hardening, PWA/offline safe mutations e accessibility hardening: concluídos.
-- 21 migrations aplicadas no Supabase DEV (`Local = Remote`); `database.types.ts` sincronizado.
+- 21 migrations aplicadas no projeto remoto controlado (`Local = Remote`); `database.types.ts` sincronizado.
 - Quality gates atuais: 564 testes Vitest, typecheck, lint e build aprovados.
 - Homologação física: concluída pelo usuário.
 - Merge do PR #14: aguardando autorização final.
@@ -86,13 +86,13 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Mobile cards sem overflow em Matrículas, Vendas, Contratos e Alunos
 - Espaçamento inferior consistente com `safe-bottom` (`max(2rem, var(--safe-bottom))`)
 - Homologação manual final foi concluída antes do merge; o HEAD atual de `main` é `6f880bf`
-- Supabase DEV: 29 migrations locais = 29 remotas, sem drift
+- Supabase remoto controlado: migrations locais = remotas, sem drift
 - Quality gates da branch 2.6: 591 testes Vitest / 51 arquivos, typecheck, lint e build aprovados
 - O trabalho posterior de documentos contratuais permanece na branch `feature/contract-documents-phase-2-6`
 - Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
 
 ## Fase 2.6 — Contract Documents
-**Status: implementada e validada tecnicamente em ambiente DEV; aprovação jurídica e separação de ambientes pendentes**
+**Status: implementada e validada tecnicamente no ambiente remoto controlado; aprovação jurídica e classificação de dados pendentes**
 
 ### Implementado e validado
 
@@ -102,7 +102,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - 2.6B3: formalização manual `GOV_BR` e `PHYSICAL`.
 - 2.6H: hardening de acesso sensível, SHA-256 e secrets.
 - Offline hardening: `assertOnline`, `networkMode: 'always'`, `retry: false` e timeouts controlados.
-- Homologação técnica: Vitest, Playwright autenticado, smoke DEV e cleanup determinístico.
+- Homologação técnica: Vitest, Playwright autenticado, smoke controlado e cleanup determinístico local.
 
 O fluxo `GOV_BR` é manual: o usuário assina externamente no Gov.br, envia o
 PDF e a operação confere o arquivo. Não existe integração automática com o
@@ -135,8 +135,8 @@ financeiros e operacionais indisponíveis são apresentados como empty state.
 As Edge Functions usam `SUPABASE_SECRET_KEYS.default`. O download completo
 exige `contracts.documents.view` e `contracts.view_sensitive`.
 
-`LEGAL_TEXT_PENDING_APPROVAL` e a ausência de ambientes separados DEV/STAGING/
-PRODUCTION continuam blockers de produção, não do merge técnico.
+`LEGAL_TEXT_PENDING_APPROVAL` e a presença de dados históricos de QA/piloto no
+Production controlado continuam blockers de produção, não do merge técnico.
 
 ## Fase 2 — Cadastros mestres e núcleo acadêmico (histórico legado)
 **Status: substituída pelas fases 2.1–2.5

@@ -1,8 +1,7 @@
-# Scripts DEV — Massa E2E (Supabase DEV)
+# Scripts DEV — Massa E2E (banco local)
 
-Ambiente: único projeto da org `lkkdfzezwsbeuxllclct` = **DEV**
-(`epjshcgsjvrydwuyqixi`). Sem Docker; acesso SQL via
-`supabase db query --linked`.
+Ambiente: execução somente local. O projeto remoto controlado nunca deve receber esta massa automaticamente.
+Use Docker e `supabase db query --local`.
 
 > **Importante (2026-09-13):** o drift da migration `20260912100000` e o bug de
 > CEP com zero à esquerda foram reconciliados/corrigidos oficialmente pela
@@ -18,12 +17,12 @@ Ambiente: único projeto da org `lkkdfzezwsbeuxllclct` = **DEV**
 #    transacional. PRESERVA courses, stages, sources, lost_reasons, roles,
 #    permissions, profiles, system_settings e sequences (numeração continua).
 #    Guard clause exige app.e2e_confirm = 'E2E-RESET-2026'.
-supabase db query --linked -f scripts/dev/reset-e2e-data.sql
+supabase db query --local -f scripts/dev/reset-e2e-data.sql
 
 # 2) Seed: 5 clientes fictícios LEAD -> VENDA -> CONTRATO -> ALUNO via RPCs reais,
 #    + 3 cenários de identidade (cpf_exact, LEAD_NAME_MISMATCH -> cpf_exact_forced,
 #    POSSIBLE_DUPLICATE:phone -> contact_conflict_forced).
-supabase db query --linked -f scripts/dev/seed-e2e-sales-contracts.sql
+supabase db query --local -f scripts/dev/seed-e2e-sales-contracts.sql
 ```
 
 ## Revalidação pós-correção (CEP via RPCs, sem UPDATE direto)
@@ -33,17 +32,17 @@ supabase db query --linked -f scripts/dev/seed-e2e-sales-contracts.sql
 # incluindo CEP '01001-000' por create_person e update_student, e valida
 # people.postal_code + contractor_address_snapshot. Transação com ROLLBACK:
 # nada persiste, reexecutável a qualquer momento.
-supabase db query --linked -f scripts/dev/revalidate-cep-rpc-e2e.sql
+supabase db query --local -f scripts/dev/revalidate-cep-rpc-e2e.sql
 ```
 
 ## Smoke tests (transação, ROLLBACK, nada persiste)
 
 ```powershell
 # Identidade v2 (create_crm_lead): 11 cenários.
-supabase db query --linked -f supabase/tests/create_crm_lead_identity_smoke.sql
+supabase db query --local -f supabase/tests/create_crm_lead_identity_smoke.sql
 
 # CEP (zeros à esquerda) nas 4 portas de entrada: 8 cenários.
-supabase db query --linked -f supabase/tests/postal_code_smoke.sql
+supabase db query --local -f supabase/tests/postal_code_smoke.sql
 ```
 
 ## Deprecated
@@ -54,7 +53,7 @@ supabase db query --linked -f supabase/tests/postal_code_smoke.sql
 ## Identidade de execução
 
 Os RPCs exigem `auth.uid()` + permissões. Os scripts executam como usuário de
-reserva ADMIN (perfil único do DEV) via `request.jwt.claims` — mesmo mecanismo
+reserva ADMIN (perfil único local) via `request.jwt.claims` — mesmo mecanismo
 dos smoke tests da fase 2.4.
 
 ## Guardas
@@ -63,5 +62,5 @@ dos smoke tests da fase 2.4.
 - `seed-e2e-sales-contracts.sql`: falha se já existir lead/pessoa com marcador
   `E2E QA RESET 2026-09` (rode o reset antes de re-seedar).
 - `revalidate-cep-rpc-e2e.sql`: roda em transação com ROLLBACK final; nada
-  persiste no DEV (sequences podem avançar — comportamento esperado).
+persiste no banco local (sequences podem avançar — comportamento esperado).
 - Todos rodam dentro de transação quando aplicável; sem TRUNCATE CASCADE.

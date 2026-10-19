@@ -176,7 +176,7 @@ Não existe integração automática com Gov.br, ICP Brasil, provedor externo ou
 webhook de assinatura. O texto jurídico permanece `LEGAL_TEXT_PENDING_APPROVAL`
 e é blocker de produção.
 
-O DEV possui 29 migrations locais e remotas, sem drift. A migration
+O ambiente remoto controlado possui migrations locais e remotas, sem drift. A migration
 `20261008000100_phase2_6_sensitive_document_hash.sql` expõe o SHA completo
 apenas para o mesmo grant sensível usado no acesso ao payload documental.
 

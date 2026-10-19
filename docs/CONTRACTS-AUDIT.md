@@ -21,7 +21,7 @@ As correções implementadas nesta auditoria:
 6. **Busca automática de CEP (ViaCEP)** com debounce, cache em sessão, fallback manual e campos `número`/`complemento` nunca auto‑preenchidos.
 7. **Correção do bug de permissão** em `ContractorSearch`/wizard/edição de rascunho (`canCreate = contracts.create AND people.create`).
 
-Qualidade: `typecheck`, `lint` (0 warnings), **288 testes** (+21) e `build` OK. Migration `20260911120000` aplicada no Supabase DEV (`local = remote`).
+Qualidade: `typecheck`, `lint` (0 warnings), **288 testes** (+21) e `build` OK. Migration `20260911120000` aplicada no projeto remoto controlado (`local = remote`).
 
 O contrato **não** é bloqueado por dados incompletos: o DRAFT é o estado de conferência/complementação (a state machine `DRAFT → PENDING_SIGNATURE → SIGNED` é preservada).
 
@@ -211,7 +211,7 @@ RPCs `SECURITY DEFINER` com `search_path` fixo, `row_security = off` apenas dent
 | --- | --- | --- |
 | `20260911120000_phase2_4_contracts_audit_fixes.sql` | `get_contractor_detail`, `update_person` | `phase2_4_contracts_audit_fixes` |
 
-Aplicada no Supabase DEV via `supabase db push`; `supabase migration list` confirma `local = remote`.
+Aplicada no projeto remoto controlado via `supabase db push`; `supabase migration list` confirma `local = remote`.
 
 ## 24. Tests
 
@@ -219,7 +219,7 @@ Aplicada no Supabase DEV via `supabase db push`; `supabase migration list` confi
 - Novos: `cep-service` (+1, zeros à esquerda), `contractor-data` (9), `use-cep-lookup` (7), `contracts-service` (+5 para `getContractorDetail`/`updatePerson`).
 - Cobertos: normalização/masked CEP, inválido, not_found, unavailable, debounce, cache/refire, completude (essenciais, contato único, complemento opcional, CPF separado), RPC args/normalização/`''`→undefined.
 
-## 25. Manual QA (Supabase DEV)
+## 25. Manual QA (projeto remoto controlado)
 
 Não executado neste ciclo (sem navegador): recomendado o checklist da seção 30 (homologação) antes do merge.
 
@@ -232,7 +232,7 @@ Não executado neste ciclo (sem navegador): recomendado o checklist da seção 3
 | `npm run test` | 288 passed / 0 failed |
 | `npm run build` | OK (avisos pré-existentes de chunk > 500 kB, não bloqueadores) |
 
-## 27. Supabase DEV
+## 27. Supabase remoto controlado
 
 - Migration `20260911120000` aplicada; lista `local = remote`.
 - Regeneração oficial de `database.types.ts` via `supabase gen types typescript` recomendada (entradas adicionadas manualmente nesta auditoria).
@@ -294,7 +294,7 @@ foi contornado temporariamente com um script manual de sincronização (`sync-pr
   - `create_person(p_postal_code => '01001-000')` → `01001000`.
   - `update_student(p_postal_code => '01001-000')` → `people.postal_code 01001000`.
   - `contracts.contractor_address_snapshot->>'postal_code'` → `01001000`.
-- **Supabase DEV:** `local = remote` com 21 migrations; funções validadas remotamente
+- **Supabase remoto controlado:** `local = remote` com 21 migrations; funções validadas remotamente
   (sem `ltrim` bug, com `v_normalized_postal`, `_crm_name_matches` presente, `_crm_name_overlap` ausente).
 
 ### 31.4. Scripts DEV
