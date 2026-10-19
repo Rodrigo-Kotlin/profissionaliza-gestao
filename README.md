@@ -21,7 +21,7 @@ Este repositório é a **fonte oficial de verdade** do projeto. Todo o desenvolv
 
 ## Pré-requisitos
 
-- Node.js 20 ou superior
+- Node.js 22 ou superior
 - npm 10 ou superior
 - Conta e projeto Supabase
 
@@ -190,7 +190,7 @@ Consulte `docs/DATABASE.md` para detalhes sobre migrations e `docs/ARCHITECTURE.
 
 O frontend (SPA/PWA) é publicado via **Cloudflare Pages** conectado ao GitHub. O branch `main` gera o build de produção; branches/PRs geram previews.
 
-- Framework: Vite — build `npm run build`, output `dist/`, Node 20.
+- Framework: Vite — build `npm run build`, output `dist/`, Node 22+.
 - Variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`) configuradas no dashboard do Cloudflare para produção e preview.
 - `public/_redirects` garante o roteamento SPA em qualquer rota; `public/_headers` aplica headers de segurança.
 - Backend (esquema e autenticação) permanece no Supabase; não há Workers nem funções nesta fase.

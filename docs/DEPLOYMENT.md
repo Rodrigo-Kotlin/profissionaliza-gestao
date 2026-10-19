@@ -26,7 +26,7 @@ Nenhuma alteração é feita no banco por este processo — deploys de schema co
 GitHub (main) ──► Cloudflare Pages (Git Integration)
    │                    │ build: npm run build
    │                    │ output: dist/
-   │                    │ Node 20
+   │                    │ Node 22+
    └── env (VITE_*)     └── hosting estático + PWA
                               │
                               ▼
@@ -51,7 +51,7 @@ Os arquivos já incluídos:
 
 - `public/_redirects` — roteamento SPA (qualquer rota cai em `index.html`).
 - `public/_headers` — headers de segurança (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`).
-- `.node-version` (`20`) + `engines.node` no `package.json` — consistência de versão em local/CI/Cloudflare.
+- `.node-version` (`22`) + `engines.node` no `package.json` — consistência de versão em local/CI/Cloudflare.
 - `VITE_APP_ENV` — `development` local ou `production` remoto; valores desconhecidos falham.
 - `src/lib/env.ts` — helper central de ambiente.
 
@@ -65,7 +65,7 @@ Garanta que `.env.local` esteja ignorado (já está) e que nenhum segredo seja v
    - **Production branch**: `main`
    - **Build command**: `npm run build`
    - **Output directory**: `dist`
-   - **Build system / Node**: versão 20 (ou `20` em `.node-version`)
+   - **Build system / Node**: versão 22 ou superior (ou `22` em `.node-version`)
 4. Salve o projeto. O nome gerado define a URL — registre o hostname real (ex.: `profissionaliza-gestao.pages.dev`).
 
 Uma primeira build será disparada automaticamente ao conectar.
@@ -132,9 +132,11 @@ A recuperação de senha redireciona para `/redefinir-senha` usando `window.loca
 
 | Local | CI (GitHub Actions) | Cloudflare Pages |
 | --- | --- | --- |
-| Node 20 | `node-version: 20` | Build system: Node 20 |
+| Node 22+ | `node-version: 22` | Build system: Node 22+ |
 
-`vite` 7 exige Node `^20.19.0 || >=22.12.0` — a linha 20.x atual (≥20.19) atende. `engines.node` e `.node-version` ajudam a pinar a versão.
+`@supabase/supabase-js` e seus subpacotes exigem Node `>=22`. `engines.node`,
+`.node-version` e o CI mantêm o runtime alinhado; o build system do Cloudflare
+Pages deve usar Node 22 ou superior.
 
 ## Validando antes de publicar
 
