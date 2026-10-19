@@ -9,6 +9,7 @@ const useAuthMock = vi.hoisted(() => vi.fn(() => ({
 })))
 const detailMock = vi.hoisted(() => vi.fn())
 const timelineMock = vi.hoisted(() => vi.fn())
+const documentsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/features/auth/auth-context', () => ({
   useAuth: () => useAuthMock()
@@ -16,12 +17,14 @@ vi.mock('@/features/auth/auth-context', () => ({
 
 vi.mock('./contracts-hooks', () => ({
   useContractDetail: () => detailMock(),
-  useContractTimeline: () => timelineMock()
+  useContractTimeline: () => timelineMock(),
+  useContractDocuments: () => documentsMock(),
+  useGenerateContractDocument: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDownloadContractDocument: () => ({ mutateAsync: vi.fn(), isPending: false })
 }))
 
 vi.mock('./edit-contract-dialog', () => ({ EditContractDialog: () => null }))
 vi.mock('./issue-contract-dialog', () => ({ IssueContractDialog: () => null }))
-vi.mock('./sign-contract-dialog', () => ({ SignContractDialog: () => null }))
 vi.mock('./cancel-contract-dialog', () => ({ CancelContractDialog: () => null }))
 
 const contract = {
@@ -65,6 +68,7 @@ const contract = {
 function renderPage(status: string = 'DRAFT') {
   detailMock.mockReturnValue({ data: { ...contract, status }, isLoading: false, isError: false })
   timelineMock.mockReturnValue({ data: { data: [], total: 0 }, isLoading: false, isError: false })
+  documentsMock.mockReturnValue({ data: { data: [], total: 0 }, isLoading: false, isError: false })
   return render(
     <MemoryRouter initialEntries={['/contratos/c1']}>
       <Routes>
@@ -172,11 +176,11 @@ describe('ContractDetailPage — continuidade E2E (Fase 10)', () => {
     expect(screen.getByRole('button', { name: /cancelar contrato/i })).toBeInTheDocument()
   })
 
-  it('Contrato PENDING_SIGNATURE mostra assinatura e cancelamento, sem ações de DRAFT', () => {
+  it('Contrato PENDING_SIGNATURE mantém o cancelamento e não permite assinatura direta', () => {
     useAuthMock.mockReturnValue({ permissions: ['contracts.view', 'contracts.edit_draft', 'contracts.issue', 'contracts.mark_signed', 'contracts.cancel', 'contracts.view_all'] })
     renderPage('PENDING_SIGNATURE')
 
-    expect(screen.getByRole('button', { name: /registrar assinatura/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /registrar assinatura/i })).toBeNull()
     expect(screen.getByRole('button', { name: /cancelar contrato/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /editar rascunho/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /emitir contrato/i })).toBeNull()

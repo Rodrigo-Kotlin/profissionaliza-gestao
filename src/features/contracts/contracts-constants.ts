@@ -26,5 +26,4 @@ export const CONTRACT_PAGE_SIZE = 25
 
 export const CONTRACT_EDITABLE_STATUSES: readonly ContractStatus[] = ['DRAFT']
 export const CONTRACT_ISSUABLE_STATUSES: readonly ContractStatus[] = ['DRAFT']
-export const CONTRACT_SIGNABLE_STATUSES: readonly ContractStatus[] = ['PENDING_SIGNATURE']
 export const CONTRACT_CANCELABLE_STATUSES: readonly ContractStatus[] = ['DRAFT', 'PENDING_SIGNATURE']

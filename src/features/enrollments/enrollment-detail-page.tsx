@@ -1,6 +1,6 @@
 import { ArrowLeft, BookOpen, CalendarDays, CheckCircle2, Eye, FileSignature, GraduationCap, ShoppingBag } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
+import { Button, Card, Breadcrumb, EmptyState, PageContentContainer, PageHeader, Skeleton } from '@/components/ui/core'
 import { useEnrollmentDetail, useEnrollmentList } from './enrollments-hooks'
 import { EnrollmentActions } from './enrollment-actions'
 import { EnrollmentStatusBadge } from './enrollment-status-badge'
@@ -16,7 +16,7 @@ export function EnrollmentDetailPage() {
 
   const { enrollment, student, course, sale, contract } = detail.data
   return (
-    <div className="space-y-6 md:space-y-8">
+    <PageContentContainer className="space-y-6 md:space-y-8" width="wide">
       <Breadcrumb items={[{ label: 'Matrículas', href: '/matriculas' }, { label: enrollment.enrollment_code }]} />
       <PageHeader title="Matrícula">
         <Button variant="secondary" onClick={() => navigate(-1)}><ArrowLeft className="size-4" /> Voltar</Button>
@@ -39,7 +39,7 @@ export function EnrollmentDetailPage() {
 
       {(enrollment.notes || enrollment.pause_reason || enrollment.cancellation_reason) && <Card className="p-5"><SectionHeader icon={FileSignature} title="Observações" />{enrollment.notes && <Note label="Observações" value={enrollment.notes} />}{enrollment.pause_reason && <Note label="Motivo da pausa atual" value={enrollment.pause_reason} />}{enrollment.cancellation_reason && <Note label="Motivo do cancelamento" value={enrollment.cancellation_reason} />}</Card>}
       <Card className="p-5"><SectionHeader icon={CheckCircle2} title="Histórico de status" /><p className="text-sm text-muted">As transições são auditadas no backend. A timeline detalhada de pausas ainda não existe no MVP.</p></Card>
-    </div>
+    </PageContentContainer>
   )
 }
 

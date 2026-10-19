@@ -1,7 +1,7 @@
 import { Briefcase, CalendarDays, CircleDollarSign, FileText, History, Link2, Pencil, Phone, ShieldCheck, Unlink, UserPlus, ArrowRightLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton, Tabs } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, PageContentContainer, PageHeader, Skeleton, Tabs } from '@/components/ui/core'
 import { Modal, Tooltip } from '@/components/ui/overlays'
 import { Timeline } from '@/components/ui/data'
 import { can, PERMISSIONS, STUDENT_STATUS_LABELS, type StudentStatus } from '@/lib/rbac'
@@ -51,7 +51,7 @@ export function StudentDetailsPage() {
   }
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <PageContentContainer className="space-y-6 md:space-y-8" width="wide">
       <Breadcrumb items={[{ label: 'Alunos', href: '/alunos' }, { label: student.student_code }]} />
       <PageHeader title="Aluno">
         <Button variant="secondary" onClick={() => navigate(-1)}>Voltar</Button>
@@ -108,7 +108,7 @@ export function StudentDetailsPage() {
       <Modal open={guardianOpen} onOpenChange={setGuardianOpen} title="Vincular responsável">
         <GuardianForm studentId={studentId} onDone={() => setGuardianOpen(false)} />
       </Modal>
-    </div>
+    </PageContentContainer>
   )
 }
 

@@ -89,7 +89,7 @@ export function Switch({ checked, onChange, ...props }: Omit<React.InputHTMLAttr
 }
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('rounded-card border bg-white shadow-ambient', className)} {...props} />
+  return <div className={cn('min-w-0 rounded-card border bg-white shadow-ambient', className)} {...props} />
 }
 
 const badgeVariants = cva('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold', {
@@ -176,6 +176,10 @@ export function EmptyState({ icon: Icon, title, description }: { icon: React.Ele
 
 export function PageHeader({ title, description, children }: { title: string; description?: string; children?: React.ReactNode }) {
   return <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div className="min-w-0"><h1 className="text-page-title font-bold tracking-tight text-balance">{title}</h1>{description && <p className="mt-1.5 text-sm text-muted md:text-base">{description}</p>}</div><div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div></header>
+}
+
+export function PageContentContainer({ children, className = '', width = 'standard' }: { children: React.ReactNode; className?: string; width?: 'standard' | 'wide' }) {
+  return <div className={cn('mx-auto w-full', width === 'wide' ? 'max-w-5xl' : 'max-w-4xl', className)}>{children}</div>
 }
 
 export function FilterBar({ children }: { children: React.ReactNode }) { return <Card className="flex flex-wrap items-center gap-3 p-4">{children}</Card> }

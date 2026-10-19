@@ -65,12 +65,6 @@ describe('contractsService.updateDraft / issue / sign / cancel', () => {
     expect(rpcMock).toHaveBeenCalledWith('issue_contract', { p_contract_id: 'ct-1' })
   })
 
-  it('calls mark_contract_signed', async () => {
-    rpcMock.mockResolvedValue({ data: { ...contractResult, status: 'SIGNED' }, error: null })
-    await contractsService.sign('ct-1')
-    expect(rpcMock).toHaveBeenCalledWith('mark_contract_signed', { p_contract_id: 'ct-1' })
-  })
-
   it('calls cancel_contract with reason', async () => {
     rpcMock.mockResolvedValue({ data: { ...contractResult, status: 'CANCELED' }, error: null })
     await contractsService.cancel({ contract_id: 'ct-1', cancellation_reason: 'Motivo' })
@@ -278,11 +272,20 @@ describe('contractsService — proteção offline em mutations', () => {
     ['createFromSale', () => contractsService.createFromSale({ sale_id: 's1', contractor_person_id: 'p1' })],
     ['updateDraft', () => contractsService.updateDraft({ contract_id: 'c1', contractor_person_id: 'p1', contract_notes: '' })],
     ['issue', () => contractsService.issue('c1')],
-    ['sign', () => contractsService.sign('c1')],
     ['cancel', () => contractsService.cancel({ contract_id: 'c1', cancellation_reason: 'Motivo' })],
     ['createPerson', () => contractsService.createPerson({ full_name: 'Teste' })],
     ['updatePerson', () => contractsService.updatePerson({ person_id: 'p1', full_name: 'Teste' })],
   ])('%s lança OfflineConnectionError quando offline', async (_name, fn) => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
+    await expect(fn()).rejects.toThrow('Sem conexão')
+    expect(rpcMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['uploadExecution', () => contractsService.uploadExecution({ execution_id: 'e1', file: new File(['%PDF'], 'signed.pdf', { type: 'application/pdf' }) })],
+    ['verifyExecution', () => contractsService.verifyExecution({ execution_id: 'e1', verification_method: 'GOV_BR_VALIDAR_MANUAL', signed_at: '2026-10-08T12:00:00.000Z' })],
+    ['rejectExecution', () => contractsService.rejectExecution({ execution_id: 'e1', rejection_reason: 'Motivo' })]
+  ])('%s falha imediatamente e não chama o serviço quando offline', async (_name, fn) => {
     Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false })
     await expect(fn()).rejects.toThrow('Sem conexão')
     expect(rpcMock).not.toHaveBeenCalled()

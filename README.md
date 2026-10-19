@@ -98,6 +98,42 @@ Consulte `docs/DATABASE.md` para o guia de migrations e `docs/RBAC.md` para o mo
 - **LGPD**: o repositório nunca deve conter dados reais de alunos, CPFs, telefones ou dados financeiros.
 - **Secrets**: nunca versionar `.env`, `service_role` ou qualquer credencial.
 
+## Estado atual
+
+O projeto está na Fase 2.6 com o fluxo documental e de formalização técnica
+implementado e validado em ambiente DEV. O sistema gera PDF versionado, recebe
+o arquivo assinado externamente e registra a conferência administrativa.
+
+Os métodos suportados são:
+
+- **GOV_BR**: assinatura externa no Gov.br, upload do PDF assinado, conferência
+  manual e transição `VERIFIED` → `SIGNED` → matrícula `PENDING`.
+- **PHYSICAL**: impressão, assinatura presencial, digitalização, upload,
+  conferência e as mesmas transições finais.
+
+Não existe integração automática com Gov.br, ICP Brasil ou provedor externo.
+
+Os documentos são armazenados em bucket privado, com signed URLs temporárias,
+SHA-256 e acesso sensível controlado por `contracts.view_sensitive`. As Edge
+Functions usam `SUPABASE_SECRET_KEYS.default`; o código atual não usa a chave
+legacy `SUPABASE_SERVICE_ROLE_KEY`.
+
+Financeiro e Pedagógico ainda não foram implementados.
+
+O dashboard exibe somente indicadores respaldados por backend. Indicadores
+financeiros, agenda, alertas e atividades sem fonte real aparecem como dados
+ainda não disponíveis, nunca como valores demonstrativos operacionais.
+
+Preview e Production do Cloudflare Pages continuam apontando para o Supabase
+DEV. Isso é um bloqueador para dados reais e não representa uma separação de
+ambientes de produção.
+
+### Production readiness blockers
+
+- `LEGAL_TEXT_PENDING_APPROVAL` ainda aguarda aprovação jurídica.
+- Preview e Production ainda usam o projeto Supabase DEV.
+- Não há separação DEV/STAGING/PRODUCTION para dados reais.
+
 Reporte vulnerabilidades de forma privada — veja `SECURITY.md`.
 
 ## Desenvolvimento

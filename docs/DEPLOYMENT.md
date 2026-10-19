@@ -74,11 +74,20 @@ Uma primeira build será disparada automaticamente ao conectar.
 
 Configure no dashboard (**Settings → Environment Variables**) para **ambos** os ambientes (Production e Preview/Pull Requests), ambas apontando para o Supabase **DEV**:
 
+> Estado atual: Preview e Production ainda apontam para DEV. Isso é aceitável
+> somente para homologação controlada e é **BLOCKER PARA DADOS REAIS**. Não há
+> STAGING/PROD separado neste momento.
+
 | Variável | Valor |
 | --- | --- |
 | `VITE_SUPABASE_URL` | URL do projeto Supabase DEV (ex.: `https://<ref>.supabase.co`) |
 | `VITE_SUPABASE_ANON_KEY` | Chave **anon** pública do projeto DEV |
 | `VITE_APP_ENV` | `development` (mostra o selo DEV) |
+
+As Edge Functions de documentos usam a variável server-side
+`SUPABASE_SECRET_KEYS`, em JSON com a chave `default`. Ela nunca deve ser
+exposta em `VITE_*`. A legacy `SUPABASE_SERVICE_ROLE_KEY` não é usada pelo
+código atual e só pode ser desativada após smoke autenticado DEV aprovado.
 
 > Nunca use `service_role`, senha do banco ou tokens no frontend. A chave `anon` é pública e os acessos são controlados por RLS/RBAC/RPC.
 

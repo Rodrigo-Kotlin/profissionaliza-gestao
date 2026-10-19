@@ -61,7 +61,7 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Merge do PR #14: aguardando autorização final.
 
 ## Fase 2.5 — Matrículas
-**Status: homologada manualmente (branch `feature/enrollments-phase-2-5`, PR aguardando decisão de merge)**
+**Status: homologada manualmente e merged em `main` (`6f880bf`)**
 
 - `enrollments` é uma entidade acadêmica independente de `students`.
 - Contract `SIGNED` cria Enrollment `PENDING` atomicamente; ativação, pausa,
@@ -85,14 +85,61 @@ Migration aplicada no Supabase DEV; tipos regenerados.
 - Busca mobile preserva espaços durante a digitação (`QA Manual`, `Maria da Silva` e códigos MAT)
 - Mobile cards sem overflow em Matrículas, Vendas, Contratos e Alunos
 - Espaçamento inferior consistente com `safe-bottom` (`max(2rem, var(--safe-bottom))`)
-- Homologação manual final concluída pelo usuário no HEAD `517c6e3`
-- Supabase DEV: 26 migrations locais = 26 remotas, sem drift
-- Quality gates: 589 testes Vitest / 50 arquivos, typecheck, lint e build aprovados
-- Merge: aguardando autorização final
+- Homologação manual final foi concluída antes do merge; o HEAD atual de `main` é `6f880bf`
+- Supabase DEV: 29 migrations locais = 29 remotas, sem drift
+- Quality gates da branch 2.6: 591 testes Vitest / 51 arquivos, typecheck, lint e build aprovados
+- O trabalho posterior de documentos contratuais permanece na branch `feature/contract-documents-phase-2-6`
 - Não iniciado: Financeiro, turmas, disciplinas, frequência e currículo.
 
-## Fase 2 — Cadastros mestres e núcleo acadêmico
-**Status: em desenvolvimento
+## Fase 2.6 — Contract Documents
+**Status: implementada e validada tecnicamente em ambiente DEV; aprovação jurídica e separação de ambientes pendentes**
+
+### Implementado e validado
+
+- 2.6A: domínio documental e invariantes de `ContractDocument`.
+- 2.6B1: `ContractDocument`, versionamento, imutabilidade e Storage privado.
+- 2.6B2: geração idempotente/download de PDF, hashes e signed URLs.
+- 2.6B3: formalização manual `GOV_BR` e `PHYSICAL`.
+- 2.6H: hardening de acesso sensível, SHA-256 e secrets.
+- Offline hardening: `assertOnline`, `networkMode: 'always'`, `retry: false` e timeouts controlados.
+- Homologação técnica: Vitest, Playwright autenticado, smoke DEV e cleanup determinístico.
+
+O fluxo `GOV_BR` é manual: o usuário assina externamente no Gov.br, envia o
+PDF e a operação confere o arquivo. Não existe integração automática com o
+Gov.br. O fluxo `PHYSICAL` cobre impressão, assinatura presencial,
+digitalização, upload e conferência.
+
+Estados implementados de `ContractExecution`:
+
+```text
+PENDING_UPLOAD -> RECEIVED -> VERIFIED
+RECEIVED -> REJECTED -> novo retry
+```
+
+Após `VERIFIED`, a conclusão atômica produz:
+
+```text
+ContractExecution VERIFIED -> Contract SIGNED -> Enrollment PENDING
+```
+
+### Futuro
+
+- Integração automática com Gov.br.
+- ICP Brasil automática.
+- Provedor externo e webhooks de assinatura.
+- Financeiro e Pedagógico.
+
+O dashboard mantém somente indicadores respaldados por backend; dados
+financeiros e operacionais indisponíveis são apresentados como empty state.
+
+As Edge Functions usam `SUPABASE_SECRET_KEYS.default`. O download completo
+exige `contracts.documents.view` e `contracts.view_sensitive`.
+
+`LEGAL_TEXT_PENDING_APPROVAL` e a ausência de ambientes separados DEV/STAGING/
+PRODUCTION continuam blockers de produção, não do merge técnico.
+
+## Fase 2 — Cadastros mestres e núcleo acadêmico (histórico legado)
+**Status: substituída pelas fases 2.1–2.5
 
 - Pessoas
 - Alunos

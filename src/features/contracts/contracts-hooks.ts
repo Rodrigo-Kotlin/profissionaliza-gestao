@@ -1,13 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { contractsService } from './contracts-service'
-import type { ContractListParams } from './contracts-types'
+import type { ContractListParams, ContractExecutionMethod } from './contracts-types'
 import { saleKeys } from '../sales/sales-hooks'
 
 export const contractKeys = {
   all: ['contracts'] as const,
   list: (params: ContractListParams) => ['contracts', 'list', params] as const,
   detail: (id: string) => ['contracts', 'detail', id] as const,
-  timeline: (id: string) => [...contractKeys.detail(id), 'timeline'] as const
+  timeline: (id: string) => [...contractKeys.detail(id), 'timeline'] as const,
+  documents: (id: string) => [...contractKeys.detail(id), 'documents'] as const,
+  executions: (id: string) => [...contractKeys.detail(id), 'executions'] as const
 }
 
 export function useContractList(params: ContractListParams) {
@@ -30,6 +32,96 @@ export function useContractTimeline(id: string) {
     queryKey: contractKeys.timeline(id),
     queryFn: () => contractsService.timeline(id),
     enabled: Boolean(id)
+  })
+}
+
+export function useContractDocuments(id: string) {
+  return useQuery({
+    queryKey: contractKeys.documents(id),
+    queryFn: () => contractsService.listDocuments(id),
+    enabled: Boolean(id)
+  })
+}
+
+export function useGenerateContractDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: contractsService.generateDocument,
+    onSuccess: (_data, contractId) => {
+      qc.invalidateQueries({ queryKey: contractKeys.documents(contractId) })
+      qc.invalidateQueries({ queryKey: contractKeys.detail(contractId) })
+      qc.invalidateQueries({ queryKey: contractKeys.timeline(contractId) })
+    }
+  })
+}
+
+export function useDownloadContractDocument() {
+  return useMutation({ mutationFn: contractsService.downloadDocument })
+}
+
+export function useDownloadContractExecution() {
+  return useMutation({ mutationFn: contractsService.downloadExecution })
+}
+
+export function useContractExecutions(documentId: string | undefined) {
+  return useQuery({
+    queryKey: contractKeys.executions(documentId ?? ''),
+    queryFn: () => contractsService.listExecutions(documentId!),
+    enabled: Boolean(documentId)
+  })
+}
+
+function invalidateExecutionContract(qc: ReturnType<typeof useQueryClient>, contractId: string, documentId: string) {
+  qc.invalidateQueries({ queryKey: contractKeys.executions(documentId) })
+  qc.invalidateQueries({ queryKey: contractKeys.detail(contractId) })
+  qc.invalidateQueries({ queryKey: contractKeys.timeline(contractId) })
+  qc.invalidateQueries({ queryKey: contractKeys.all })
+}
+
+export function useCreateContractExecution(contractId: string, documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { execution_method: ContractExecutionMethod; signer_person_id: string; signer_name_snapshot: string; signed_at?: string | null }) =>
+      contractsService.createExecution({ document_id: documentId, ...input }),
+    onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
+  })
+}
+
+export function useUploadContractExecution(contractId: string, documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: contractsService.uploadExecution,
+    networkMode: 'always',
+    retry: false,
+    onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
+  })
+}
+
+export function useVerifyContractExecution(contractId: string, documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: contractsService.verifyExecution,
+    networkMode: 'always',
+    retry: false,
+    onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
+  })
+}
+
+export function useRejectContractExecution(contractId: string, documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: contractsService.rejectExecution,
+    networkMode: 'always',
+    retry: false,
+    onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
+  })
+}
+
+export function useCompleteContractExecution(contractId: string, documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: contractsService.completeExecution,
+    onSuccess: () => invalidateExecutionContract(qc, contractId, documentId)
   })
 }
 
@@ -60,20 +152,6 @@ export function useIssueContract() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: contractsService.issue,
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: contractKeys.all })
-      qc.invalidateQueries({ queryKey: contractKeys.detail(data.contract_id) })
-      qc.invalidateQueries({ queryKey: contractKeys.timeline(data.contract_id) })
-      qc.invalidateQueries({ queryKey: saleKeys.all })
-      qc.invalidateQueries({ queryKey: ['enrollments'] })
-    }
-  })
-}
-
-export function useSignContract() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: contractsService.sign,
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: contractKeys.all })
       qc.invalidateQueries({ queryKey: contractKeys.detail(data.contract_id) })

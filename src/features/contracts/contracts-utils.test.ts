@@ -3,11 +3,8 @@ import {
   canCreateContractFromSale,
   generateContractCode,
   formatContractAddress,
-  getNextContractStatus,
-  describeContractAction,
   isEditDraftAllowed,
   isIssueAllowed,
-  isSignAllowed,
   isCancelAllowed,
   parseContractListParams
 } from './contracts-utils'
@@ -58,27 +55,12 @@ describe('transições de estado', () => {
     expect(isEditDraftAllowed('PENDING_SIGNATURE')).toBe(false)
     expect(isIssueAllowed('DRAFT')).toBe(true)
     expect(isIssueAllowed('PENDING_SIGNATURE')).toBe(false)
-    expect(isSignAllowed('PENDING_SIGNATURE')).toBe(true)
-    expect(isSignAllowed('SIGNED')).toBe(false)
     expect(isCancelAllowed('DRAFT')).toBe(true)
     expect(isCancelAllowed('PENDING_SIGNATURE')).toBe(true)
     expect(isCancelAllowed('SIGNED')).toBe(false)
     expect(isCancelAllowed('CANCELED')).toBe(false)
   })
 
-  it('próximo estado válido', () => {
-    expect(getNextContractStatus('DRAFT')).toBe('PENDING_SIGNATURE')
-    expect(getNextContractStatus('PENDING_SIGNATURE')).toBe('SIGNED')
-    expect(getNextContractStatus('SIGNED')).toBeNull()
-    expect(getNextContractStatus('CANCELED')).toBeNull()
-  })
-
-  it('descreve ações por estado', () => {
-    expect(describeContractAction('DRAFT')).toContain('Emitir contrato')
-    expect(describeContractAction('PENDING_SIGNATURE')).toContain('Registrar assinatura')
-    expect(describeContractAction('SIGNED')).toContain('sem ações adicionais')
-    expect(describeContractAction('CANCELED')).toContain('cancelado')
-  })
 })
 
 describe('formatContractAddress', () => {

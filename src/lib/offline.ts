@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 
 export const OFFLINE_MESSAGE = 'Sem conexão. Reconecte para salvar esta alteração.'
+export const REQUEST_TIMEOUT_MESSAGE = 'Não foi possível concluir a operação. Verifique sua conexão e tente novamente.'
 
 export class OfflineConnectionError extends Error {
   constructor(message = OFFLINE_MESSAGE) {
     super(message)
     this.name = 'OfflineConnectionError'
+  }
+}
+
+export class RequestTimeoutError extends Error {
+  constructor(message = REQUEST_TIMEOUT_MESSAGE) {
+    super(message)
+    this.name = 'RequestTimeoutError'
   }
 }
 
@@ -16,6 +24,22 @@ export function isOnline(): boolean {
 
 export function assertOnline(): void {
   if (!isOnline()) throw new OfflineConnectionError()
+}
+
+export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new RequestTimeoutError()), timeoutMs)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
 }
 
 export function isOfflineError(err: unknown): boolean {

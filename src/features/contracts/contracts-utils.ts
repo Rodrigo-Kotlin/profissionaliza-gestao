@@ -3,7 +3,6 @@ import {
   CONTRACT_CANCELABLE_STATUSES,
   CONTRACT_EDITABLE_STATUSES,
   CONTRACT_ISSUABLE_STATUSES,
-  CONTRACT_SIGNABLE_STATUSES,
   CONTRACT_STATUS_LABELS
 } from './contracts-constants'
 import type { ContractorAddressSnapshot, ContractStatus } from './contracts-types'
@@ -17,10 +16,12 @@ export type ContractListUrlParams = {
   date_to?: string
   page: number
 }
-
 export function parseContractListParams(url: URLSearchParams): ContractListUrlParams {
   const rawStatus = url.get('status')?.trim() || ''
-  const status = rawStatus && (CONTRACT_STATUS_LABELS as Record<string, string>)[rawStatus] ? rawStatus : undefined
+  const status =
+    rawStatus && (CONTRACT_STATUS_LABELS as Record<string, string>)[rawStatus]
+      ? rawStatus
+      : undefined
   return {
     q: url.get('q') || undefined,
     status,
@@ -55,30 +56,18 @@ export const isEditDraftAllowed = (status: ContractStatus): boolean =>
 export const isIssueAllowed = (status: ContractStatus): boolean =>
   (CONTRACT_ISSUABLE_STATUSES as readonly string[]).includes(status)
 
-export const isSignAllowed = (status: ContractStatus): boolean =>
-  (CONTRACT_SIGNABLE_STATUSES as readonly string[]).includes(status)
-
 export const isCancelAllowed = (status: ContractStatus): boolean =>
   (CONTRACT_CANCELABLE_STATUSES as readonly string[]).includes(status)
 
-export function formatContractAddress(address: ContractorAddressSnapshot | null | undefined): string {
+export function formatContractAddress(
+  address: ContractorAddressSnapshot | null | undefined
+): string {
   if (!address) return ''
-  const streetLine = [address.street, address.number && `nº ${address.number}`].filter(Boolean).join(', ')
+  const streetLine = [address.street, address.number && `nº ${address.number}`]
+    .filter(Boolean)
+    .join(', ')
   const rest = [address.complement, address.district].filter(Boolean).join(' - ')
   const cityLine = [address.city, address.state && `- ${address.state}`].filter(Boolean).join(' ')
   const zipLine = address.postal_code ? `CEP ${address.postal_code}` : ''
   return [streetLine, rest, cityLine, zipLine].filter(Boolean).join('\n')
-}
-
-export function getNextContractStatus(current: ContractStatus): ContractStatus | null {
-  if (current === 'DRAFT') return 'PENDING_SIGNATURE'
-  if (current === 'PENDING_SIGNATURE') return 'SIGNED'
-  return null
-}
-
-export function describeContractAction(status: ContractStatus): string {
-  if (status === 'DRAFT') return 'Editar rascunho · Emitir contrato · Cancelar'
-  if (status === 'PENDING_SIGNATURE') return 'Registrar assinatura · Cancelar'
-  if (status === 'SIGNED') return 'Contrato assinado, sem ações adicionais'
-  return 'Contrato cancelado, sem ações adicionais'
 }
