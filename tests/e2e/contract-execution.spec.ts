@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { cleanupE2eRun, createEnrollmentFixture } from './enrollment-fixture'
 import { hasAdminCredentials } from './helpers'
 
-test.describe('2.6B3 — formalização de execução contratual', () => {
+test.describe('@local-destructive 2.6B3 — formalização de execução contratual', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
   test('PHYSICAL conclui contrato e cria matrícula pendente', async ({ page }) => {

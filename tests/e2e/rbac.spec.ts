@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { e2eEnv, hasRestrictedCredentials, login } from './helpers'
 
 // E2E-02 — Conta VENDEDOR mantém courses.view, sem expor detalhes internos de RBAC.
-test.describe('E2E-02 RBAC — escopo do vendedor', () => {
+test.describe('@production-safe E2E-02 RBAC — escopo do vendedor', () => {
   test.skip(!hasRestrictedCredentials, 'Defina E2E_EMAIL_RESTRICTED e E2E_PASSWORD_RESTRICTED para executar este fluxo.')
 
   test('vendedor acessa o catálogo permitido', async ({ page }) => {

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { cleanupE2eRun, createEnrollmentFixture } from './enrollment-fixture'
 import { hasAdminCredentials } from './helpers'
 
-test.describe('Matrículas — navegação autenticada', () => {
+test.describe('@local-destructive Matrículas — navegação autenticada', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
   test('ADMIN cria, lista e abre o detalhe em mobile e desktop', async ({ page }) => {

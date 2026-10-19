@@ -41,7 +41,7 @@ function touchTargetOk(page: Page, min = 44) {
   }
 }
 
-test.describe('TRIAGEM 12A — página de login na matriz de viewports', () => {
+test.describe('@production-safe TRIAGEM 12A — página de login na matriz de viewports', () => {
   for (const vp of VIEWPORTS) {
     test(`${vp.name} — sem overflow, controles visíveis e alvos confortáveis`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
@@ -77,7 +77,7 @@ test.describe('TRIAGEM 12A — página de login na matriz de viewports', () => {
   }
 })
 
-test.describe('TRIAGEM 12A — emulação de dispositivos reais', () => {
+test.describe('@production-safe TRIAGEM 12A — emulação de dispositivos reais', () => {
   test.use({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
@@ -122,7 +122,7 @@ test.describe('TRIAGEM 12A — emulação de dispositivos reais', () => {
   })
 })
 
-test.describe('TRIAGEM 12A — PWA manifest e service worker', () => {
+test.describe('@production-safe TRIAGEM 12A — PWA manifest e service worker', () => {
   test('manifest.webmanifest válido e ícones servidos', async ({ request }) => {
     const res = await request.get('/manifest.webmanifest')
     expect(res.status()).toBe(200)
@@ -155,7 +155,7 @@ test.describe('TRIAGEM 12A — PWA manifest e service worker', () => {
   })
 })
 
-test.describe('TRIAGEM 12A — shell offline via service worker', () => {
+test.describe('@production-safe TRIAGEM 12A — shell offline via service worker', () => {
   test('recarrega o login offline a partir do precache', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'networkidle' })
     await expect(page.getByRole('heading', { name: 'Bem-vindo de volta' })).toBeVisible()
@@ -169,7 +169,7 @@ test.describe('TRIAGEM 12A — shell offline via service worker', () => {
   })
 })
 
-test.describe('TRIAGEM 12A — guardas de rota sem sessão', () => {
+test.describe('@production-safe TRIAGEM 12A — guardas de rota sem sessão', () => {
   for (const path of ['/', '/crm', '/alunos', '/vendas', '/contratos', '/crm/leads', '/administracao/usuarios']) {
     test(`rota protegida ${path} redireciona para /login`, async ({ page }) => {
       await page.goto(path, { waitUntil: 'domcontentloaded' })
@@ -179,7 +179,7 @@ test.describe('TRIAGEM 12A — guardas de rota sem sessão', () => {
   }
 })
 
-test.describe('TRIAGEM 12A — recuperar senha', () => {
+test.describe('@production-safe TRIAGEM 12A — recuperar senha', () => {
   for (const vp of [{ name: '320x568', width: 320, height: 568 }, { name: '390x844', width: 390, height: 844 }, { name: '1440x900', width: 1440, height: 900 }]) {
     test(`${vp.name} — recuperar senha sem overflow`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
@@ -193,7 +193,7 @@ test.describe('TRIAGEM 12A — recuperar senha', () => {
   }
 })
 
-test.describe('TRIAGEM 12A — credenciais inválidas', () => {
+test.describe('@production-safe TRIAGEM 12A — credenciais inválidas', () => {
   test('mantém na tela de login com mensagem de erro', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/login', { waitUntil: 'domcontentloaded' })

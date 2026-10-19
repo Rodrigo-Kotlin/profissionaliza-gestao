@@ -22,7 +22,7 @@ async function pageHasNoHorizontalOverflow(page: import('@playwright/test').Page
   })
 }
 
-test.describe('TRIAGEM 12B-1 — rotas autenticadas (fluxo principal)', () => {
+test.describe('@production-safe TRIAGEM 12B-1 — rotas autenticadas (fluxo principal)', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
   test.beforeEach(async ({ page }) => { await login(page, e2eEnv.email, e2eEnv.password) })
 
@@ -56,7 +56,7 @@ test.describe('TRIAGEM 12B-1 — rotas autenticadas (fluxo principal)', () => {
   })
 })
 
-test.describe('TRIAGEM 12B-2 — Kanban nos 3 modos responsivos', () => {
+test.describe('@production-safe TRIAGEM 12B-2 — Kanban nos 3 modos responsivos', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
   test.beforeEach(async ({ page }) => { await login(page, e2eEnv.email, e2eEnv.password) })
 
@@ -100,7 +100,7 @@ test.describe('TRIAGEM 12B-2 — Kanban nos 3 modos responsivos', () => {
   })
 })
 
-test.describe('TRIAGEM 12B-3 — filtros, paginação e retorno contextual', () => {
+test.describe('@production-safe TRIAGEM 12B-3 — filtros, paginação e retorno contextual', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
   test.beforeEach(async ({ page }) => { await login(page, e2eEnv.email, e2eEnv.password) })
 

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { e2eEnv, hasAdminCredentials, login } from './helpers'
 
 // E2E-04 — Detalhe do lead: abre via kanban e navega pelas abas.
-test.describe('E2E-04 Detalhe do lead', () => {
+test.describe('@local-destructive E2E-04 Detalhe do lead', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
   test('abre um lead pelo kanban e navega pelas abas', async ({ page }) => {

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { cleanupE2eRun, createEnrollmentFixture } from './enrollment-fixture'
 import { hasAdminCredentials } from './helpers'
 
-test.describe('12C5 — Lead → Venda → Contrato → Aluno (ADMIN)', () => {
+test.describe('@local-destructive 12C5 — Lead → Venda → Contrato → Aluno (ADMIN)', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
   test('cria e conclui o fluxo transacional pela UI', async ({ page }) => {

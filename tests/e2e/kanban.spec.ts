@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { dragTo, e2eEnv, hasAdminCredentials, login } from './helpers'
 
 // E2E-03 — Kanban: pipeline renderiza colunas e o arrasto otimista move o card de etapa.
-test.describe('E2E-03 Kanban — drag and drop', () => {
+test.describe('@local-destructive E2E-03 Kanban — drag and drop', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
   test('pipeline renderiza colunas e leads', async ({ page }) => {

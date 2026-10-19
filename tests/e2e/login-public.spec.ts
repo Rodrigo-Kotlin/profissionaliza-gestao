@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { hasE2eTarget } from './helpers'
 
-test.describe('Login público — responsividade e acessibilidade', () => {
+test.describe('@production-safe Login público — responsividade e acessibilidade', () => {
   test.skip(!hasE2eTarget, 'Defina E2E_BASE_URL para executar o fluxo público.')
 
   for (const viewport of [

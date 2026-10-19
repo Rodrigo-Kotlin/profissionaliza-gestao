@@ -11,7 +11,7 @@ const hasOfflinePrerequisites = Boolean(
   process.env.E2E_BASE_URL && process.env.E2E_EMAIL && process.env.E2E_PASSWORD && process.env.E2E_SECRET_KEY
 )
 
-test.describe('2.6B3 — mutations de execução offline autenticadas', () => {
+test.describe('@local-destructive 2.6B3 — mutations de execução offline autenticadas', () => {
   test.skip(!hasOfflinePrerequisites, 'E2E_BASE_URL, E2E_EMAIL, E2E_PASSWORD e E2E_SECRET_KEY são obrigatórios.')
   test.skip(!hasAdminCredentials, 'Credenciais ADMIN QA ausentes.')
 

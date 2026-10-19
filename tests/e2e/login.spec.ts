@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { e2eEnv, hasAdminCredentials, login } from './helpers'
 
 // E2E-01 — Login com perfil administrador e acesso ao dashboard.
-test.describe('E2E-01 Login', () => {
+test.describe('@production-safe E2E-01 Login', () => {
   test.skip(!hasAdminCredentials, 'Defina E2E_EMAIL e E2E_PASSWORD para executar este fluxo.')
 
   test('administrador entra e vê o dashboard', async ({ page }) => {
