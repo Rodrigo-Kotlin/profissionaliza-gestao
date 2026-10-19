@@ -10,56 +10,53 @@ import {
 import { getInstitutionSnapshot } from '../_shared/institution.ts'
 import { renderContractPdf } from '../_shared/contract-pdf.ts'
 import { getSupabaseSecretKey } from '../_shared/supabase-admin.ts'
+import { corsHeaders, originIsPresentAndDenied } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-}
-
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+const json = (body: unknown, status = 200, origin: string | null = null) => new Response(JSON.stringify(body), {
   status,
-  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' }
 })
 
 Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  const origin = request.headers.get('Origin')
+  if (originIsPresentAndDenied(origin)) return json({ error: 'Origin not allowed' }, 403, origin)
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) })
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, origin)
 
   const authorization = request.headers.get('Authorization')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!authorization || !supabaseUrl || !anonKey) return json({ error: 'Server configuration error' }, 500)
+  if (!authorization || !supabaseUrl || !anonKey) return json({ error: 'Server configuration error' }, 500, origin)
 
   const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authorization } } })
   let adminClient: ReturnType<typeof createClient>
   try {
     adminClient = createClient(supabaseUrl, getSupabaseSecretKey())
   } catch {
-    return json({ error: 'Server configuration error' }, 500)
+    return json({ error: 'Server configuration error' }, 500, origin)
   }
   const { data: authData, error: authError } = await userClient.auth.getUser()
-  if (authError || !authData.user) return json({ error: 'Authentication required' }, 401)
+  if (authError || !authData.user) return json({ error: 'Authentication required' }, 401, origin)
 
   const { data: permissions, error: permissionError } = await userClient.rpc('get_my_permissions')
   if (permissionError || !(permissions as string[] | null)?.includes('contracts.documents.generate')) {
-    return json({ error: 'Permission denied' }, 403)
+    return json({ error: 'Permission denied' }, 403, origin)
   }
 
   let body: { contract_id?: string }
-  try { body = await request.json() } catch { return json({ error: 'Invalid JSON body' }, 400) }
-  if (!body.contract_id) return json({ error: 'contract_id is required' }, 400)
+  try { body = await request.json() } catch { return json({ error: 'Invalid JSON body' }, 400, origin) }
+  if (!body.contract_id) return json({ error: 'contract_id is required' }, 400, origin)
 
   const { data: contractData, error: contractError } = await userClient.rpc('get_contract_detail', { p_contract_id: body.contract_id })
-  if (contractError || !contractData) return json({ error: 'Contract not found or not authorized' }, 404)
+  if (contractError || !contractData) return json({ error: 'Contract not found or not authorized' }, 404, origin)
   const contract = contractData as unknown as ContractDocumentContract
-  if (contract.status !== 'DRAFT') return json({ error: 'Only draft contracts can generate documents' }, 409)
+  if (contract.status !== 'DRAFT') return json({ error: 'Only draft contracts can generate documents' }, 409, origin)
 
   const { data: existingData, error: existingError } = await userClient.rpc('list_contract_documents', { p_contract_id: body.contract_id })
-  if (existingError) return json({ error: 'Unable to read contract documents' }, 502)
+  if (existingError) return json({ error: 'Unable to read contract documents' }, 502, origin)
   const existing = (existingData as { data?: Array<Record<string, unknown>> } | null)?.data ?? []
   const finalDocument = existing.find((document) => document.status === 'FINAL')
-  if (finalDocument) return json({ document: finalDocument, idempotent: true })
+  if (finalDocument) return json({ document: finalDocument, idempotent: true }, 200, origin)
 
   const payloadBase = buildContractDocumentPayload(contract, getInstitutionSnapshot(Deno.env))
   const payloadForDraft = payloadBase
@@ -69,9 +66,9 @@ Deno.serve(async (request) => {
     p_template_version: CONTRACT_TEMPLATE_VERSION,
     p_document_payload: payloadForDraft
   })
-  if (draftError || !draftData) return json({ error: 'Unable to prepare document draft' }, 502)
+  if (draftError || !draftData) return json({ error: 'Unable to prepare document draft' }, 502, origin)
   const draft = draftData as { document_id: string; document_code: string; version: number; status: string }
-  if (draft.status === 'FINAL') return json({ document: draft, idempotent: true })
+  if (draft.status === 'FINAL') return json({ document: draft, idempotent: true }, 200, origin)
 
   const payload = buildContractDocumentPayload(contract, getInstitutionSnapshot(Deno.env), draft.version, draft.document_code)
   const canonicalPayload = canonicalize(payload)
@@ -94,7 +91,7 @@ Deno.serve(async (request) => {
   }
   if (uploadError) {
     console.error('contract document upload failed', { code: uploadError.name ?? 'storage_error' })
-    return json({ error: 'Unable to store contract document' }, 502)
+    return json({ error: 'Unable to store contract document' }, 502, origin)
   }
 
   const { data: finalizedData, error: finalizeError } = await userClient.rpc('finalize_contract_document', {
@@ -109,8 +106,8 @@ Deno.serve(async (request) => {
   if (finalizeError || !finalizedData) {
     await adminClient.storage.from('contract-documents').remove([path])
     console.error('contract document finalization failed', { code: finalizeError?.code ?? 'database_error' })
-    return json({ error: 'Unable to finalize contract document' }, 502)
+    return json({ error: 'Unable to finalize contract document' }, 502, origin)
   }
 
-  return json({ document: finalizedData, idempotent: false })
+  return json({ document: finalizedData, idempotent: false }, 200, origin)
 })
