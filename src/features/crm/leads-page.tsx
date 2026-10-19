@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
-import { Drawer } from '@/components/ui/overlays'
+import { Modal } from '@/components/ui/overlays'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useCrmLeads } from './crm-hooks'
@@ -211,8 +211,8 @@ export function LeadsPage() {
         </div>
       </div>
 
-      <Drawer open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open && routedCreation) navigate('/crm/leads') }} title="Novo Lead">
-        <div className="h-full overflow-y-auto bg-white p-5">
+      <Modal open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open && routedCreation) navigate('/crm/leads') }} title="Novo Lead">
+        <div className="min-w-0">
           <LeadForm
             onCreated={(id) => {
               setDrawerOpen(false)
@@ -221,7 +221,7 @@ export function LeadsPage() {
             onCancel={() => { setDrawerOpen(false); if (routedCreation) navigate('/crm/leads') }}
           />
         </div>
-      </Drawer>
+      </Modal>
     </div>
   )
 }
