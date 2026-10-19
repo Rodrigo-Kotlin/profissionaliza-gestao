@@ -28,7 +28,7 @@ vi.mock('@/features/auth/auth-context', () => ({
 }))
 
 vi.mock('@/services/audit-service', () => ({
-  writeAuditLog: vi.fn().mockResolvedValue(undefined)
+  logSessionEvent: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('@/features/search/command-palette', () => ({

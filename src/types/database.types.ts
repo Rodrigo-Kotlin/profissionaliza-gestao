@@ -1408,6 +1408,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      log_session_event: {
+        Args: { p_event_type: string }
+        Returns: string
+      }
       _can_access_contract_document: {
         Args: { p_contract_id: string }
         Returns: boolean
