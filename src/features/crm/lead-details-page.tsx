@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { offlineAwareMessage } from '@/lib/offline'
-import { Badge, Button, Card, Breadcrumb, EmptyState, Input, PageHeader, Select, Skeleton, Tabs, Textarea } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, Input, PageContentContainer, PageHeader, Select, Skeleton, Tabs, Textarea } from '@/components/ui/core'
 import { Modal } from '@/components/ui/overlays'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
@@ -82,7 +82,7 @@ export function LeadDetailsPage() {
   const lead = detail.data
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <PageContentContainer className="space-y-6 md:space-y-8" width="wide">
       <Breadcrumb items={[
         { label: 'CRM', href: '/crm' },
         { label: 'Leads', href: '/crm/leads' },
@@ -167,7 +167,7 @@ export function LeadDetailsPage() {
       </Modal>
 
       <CloseSaleModal lead={lead} open={saleOpen} onOpenChange={setSaleOpen} />
-    </div>
+    </PageContentContainer>
   )
 }
 

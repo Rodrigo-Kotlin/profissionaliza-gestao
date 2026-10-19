@@ -4,7 +4,7 @@ import { Save, ShieldCheck, UserRoundX, Users } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Avatar, Badge, Button, Card, EmptyState, Input, PageHeader, Skeleton } from '@/components/ui/core'
+import { Avatar, Badge, Button, Card, EmptyState, Input, PageContentContainer, PageHeader, Skeleton } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
 import { can, canAny, PERMISSIONS } from '@/lib/rbac'
 import { supabase } from '@/lib/supabase'
@@ -24,7 +24,7 @@ export function ProfilePage() {
     await refreshProfile()
     toast.success('Perfil atualizado.')
   }
-  return <div className="space-y-8"><PageHeader title="Meu perfil" description="Mantenha seus dados de identificação atualizados." /><Card className="max-w-2xl p-6"><div className="mb-8 flex items-center gap-4"><Avatar name={profile?.full_name || 'Usuário'} src={profile?.avatar_url} className="size-16 text-lg" /><div><h2 className="text-lg font-semibold">{profile?.full_name || 'Usuário'}</h2><p className="text-sm text-muted">{profile?.email || user?.email}</p></div></div><form className="space-y-5" onSubmit={handleSubmit(submit)}><Input label="Nome completo" error={errors.full_name?.message} {...register('full_name')} /><Input label="E-mail" value={profile?.email || user?.email || ''} readOnly disabled /><Input label="Telefone" placeholder="(93) 99999-9999" error={errors.phone?.message} {...register('phone')} /><div className="flex justify-end"><Button disabled={isSubmitting}><Save className="size-4" />{isSubmitting ? 'Salvando...' : 'Salvar alterações'}</Button></div></form></Card></div>
+  return <PageContentContainer className="space-y-8" width="standard"><PageHeader title="Meu perfil" description="Mantenha seus dados de identificação atualizados." /><Card className="w-full p-6"><div className="mb-8 flex items-center gap-4"><Avatar name={profile?.full_name || 'Usuário'} src={profile?.avatar_url} className="size-16 text-lg" /><div><h2 className="text-lg font-semibold">{profile?.full_name || 'Usuário'}</h2><p className="text-sm text-muted">{profile?.email || user?.email}</p></div></div><form className="space-y-5" onSubmit={handleSubmit(submit)}><Input label="Nome completo" error={errors.full_name?.message} {...register('full_name')} /><Input label="E-mail" value={profile?.email || user?.email || ''} readOnly disabled /><Input label="Telefone" placeholder="(93) 99999-9999" error={errors.phone?.message} {...register('phone')} /><div className="flex justify-end"><Button disabled={isSubmitting}><Save className="size-4" />{isSubmitting ? 'Salvando...' : 'Salvar alterações'}</Button></div></form></Card></PageContentContainer>
 }
 
 export function UsersPage() {

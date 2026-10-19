@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button, Card, Input, Select, Skeleton, Textarea } from '@/components/ui/core'
+import { Button, Card, Input, PageContentContainer, Select, Skeleton, Textarea } from '@/components/ui/core'
 import { STUDENT_ORIGINS, STUDENT_ORIGIN_LABELS } from '@/lib/rbac'
 import { generateStudentUpdateSchema, type StudentUpdateValues } from './students-schemas'
 import { useStudentDetail, useUpdateStudent } from './students-hooks'
@@ -62,7 +62,8 @@ export function StudentEditPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
+    <PageContentContainer>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
       <Card className="p-5">
         <h2 className="mb-4 font-display text-lg font-semibold">Dados pessoais</h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -128,6 +129,7 @@ export function StudentEditPage() {
           <Save className="size-4" /> {isSubmitting ? 'Salvando...' : 'Salvar alterações'}
         </Button>
       </div>
-    </form>
+      </form>
+    </PageContentContainer>
   )
 }

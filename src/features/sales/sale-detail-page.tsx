@@ -1,7 +1,7 @@
 import { ArrowLeft, Ban, CalendarDays, Eye, FileSignature, ShoppingBag, User, CreditCard, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, PageContentContainer, PageHeader, Skeleton } from '@/components/ui/core'
 import { useAuth } from '@/features/auth/auth-context'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
@@ -40,7 +40,7 @@ export function SaleDetailPage() {
   const canCreateContract = canCreateContractFromSale(sale, permissions, user?.id ?? '')
 
   return (
-    <div className="space-y-6">
+    <PageContentContainer className="space-y-6" width="wide">
       <Breadcrumb items={[{ label: 'Vendas', href: '/vendas' }, { label: sale.sale_code }]} />
       <PageHeader title="Venda">
         <Button variant="secondary" onClick={() => navigate(-1)}>
@@ -229,7 +229,7 @@ export function SaleDetailPage() {
         open={contractOpen}
         onOpenChange={setContractOpen}
       />
-    </div>
+    </PageContentContainer>
   )
 }
 

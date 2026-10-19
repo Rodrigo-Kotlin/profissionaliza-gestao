@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
-import { Button, CloseButton, Pagination, Select, Tabs } from './core'
+import { Button, CloseButton, PageContentContainer, Pagination, Select, Tabs } from './core'
 
 function ControlledTabs({ initial = 'Resumo', onTrack }: { initial?: string; onTrack?: (next: string) => void }) {
   const [value, setValue] = React.useState(initial)
@@ -193,5 +193,20 @@ describe('Button sm e compartilhados — targets mínimos (Fase 5)', () => {
     const button = screen.getByRole('button', { name: 'Ação' })
     expect(button.className).toContain('min-h-11')
     expect(button.className).toContain('w-[120px]')
+  })
+})
+
+describe('PageContentContainer — centralização de formulários', () => {
+  it('centraliza conteúdo comum sem impor largura fixa', () => {
+    render(<PageContentContainer>Formulário</PageContentContainer>)
+    const container = screen.getByText('Formulário')
+    expect(container.className).toContain('mx-auto')
+    expect(container.className).toContain('w-full')
+    expect(container.className).toContain('max-w-4xl')
+  })
+
+  it('permite largura ampla para detalhes densos', () => {
+    render(<PageContentContainer width="wide">Detalhe</PageContentContainer>)
+    expect(screen.getByText('Detalhe').className).toContain('max-w-5xl')
   })
 })

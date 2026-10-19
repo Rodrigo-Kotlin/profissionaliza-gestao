@@ -5,7 +5,7 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Badge, Button, Card, Breadcrumb, EmptyState, PageHeader, Skeleton } from '@/components/ui/core'
+import { Badge, Button, Card, Breadcrumb, EmptyState, PageContentContainer, PageHeader, Skeleton } from '@/components/ui/core'
 import { useAuth } from '@/features/auth/auth-context'
 import { offlineAwareMessage } from '@/lib/offline'
 import { can, PERMISSIONS } from '@/lib/rbac'
@@ -48,7 +48,7 @@ export function ContractDetailPage() {
   const events = timeline.data?.data ?? []
 
   return (
-    <div className="space-y-6">
+    <PageContentContainer className="space-y-6" width="wide">
       <Breadcrumb items={[{ label: 'Contratos', href: '/contratos' }, { label: contract.contract_code }]} />
       <PageHeader title="Contrato">
         <Button variant="secondary" onClick={() => navigate(-1)}>
@@ -246,7 +246,7 @@ export function ContractDetailPage() {
         open={cancelOpen}
         onOpenChange={setCancelOpen}
       />
-    </div>
+    </PageContentContainer>
   )
 }
 

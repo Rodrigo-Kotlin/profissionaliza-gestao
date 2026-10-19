@@ -5,7 +5,7 @@ import { useId } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button, Card, Input, PageHeader, Select, Textarea } from '@/components/ui/core'
+import { Button, Card, Input, PageContentContainer, PageHeader, Select, Textarea } from '@/components/ui/core'
 import { STUDENT_ORIGINS, STUDENT_ORIGIN_LABELS } from '@/lib/rbac'
 import { generateStudentFormSchema, type StudentFormValues } from './students-schemas'
 import { useCreateStudent } from './students-hooks'
@@ -62,7 +62,7 @@ export function StudentForm({ defaultValues }: { defaultValues?: Partial<Student
   }
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <PageContentContainer className="space-y-6 md:space-y-8">
       <PageHeader title="Novo aluno" description="Preencha os dados para cadastrar o aluno.">
         <Button variant="ghost" onClick={() => navigate('/alunos')}>Cancelar</Button>
       </PageHeader>
@@ -137,7 +137,7 @@ export function StudentForm({ defaultValues }: { defaultValues?: Partial<Student
           </Button>
         </div>
       </form>
-    </div>
+    </PageContentContainer>
   )
 }
 
