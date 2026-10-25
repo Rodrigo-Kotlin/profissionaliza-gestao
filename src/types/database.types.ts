@@ -394,6 +394,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          business_review_status: string
           category: string | null
           code: string
           created_at: string
@@ -412,6 +413,7 @@ export type Database = {
           workload_hours: number | null
         }
         Insert: {
+          business_review_status?: string
           category?: string | null
           code: string
           created_at?: string
@@ -430,6 +432,7 @@ export type Database = {
           workload_hours?: number | null
         }
         Update: {
+          business_review_status?: string
           category?: string | null
           code?: string
           created_at?: string
