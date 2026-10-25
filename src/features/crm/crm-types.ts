@@ -3,7 +3,7 @@ export type CrmTemperature = 'HOT' | 'WARM' | 'COLD'
 export type CrmActivityType = 'CALL' | 'WHATSAPP' | 'EMAIL' | 'MEETING' | 'FOLLOW_UP' | 'OTHER'
 export type CrmActivityStatus = 'PENDING' | 'COMPLETED' | 'CANCELED'
 export type CourseStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED'
-export type CourseModality = 'PRESENCIAL' | 'ONLINE' | 'HIBRIDO'
+export type CourseModality = 'PRESENCIAL' | 'ONLINE' | 'EAD' | 'HIBRIDO' | 'OUTRO'
 
 export type CrmPipelineStage = {
   id: string
@@ -41,6 +41,7 @@ export type Course = {
   default_price: number | null
   description: string | null
   status: CourseStatus
+  business_review_status: 'NONE' | 'NEEDS_BUSINESS_REVIEW'
 }
 
 export type CrmLeadCard = {

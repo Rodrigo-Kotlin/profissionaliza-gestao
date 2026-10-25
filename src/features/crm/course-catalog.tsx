@@ -1,5 +1,5 @@
 import { BookOpen, Pencil, Plus, Save } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Skeleton, Textarea } from '@/components/ui/core'
 import { DataTable } from '@/components/ui/data'
@@ -30,14 +30,31 @@ const COURSE_STATUS_TONES: Record<CourseStatus, 'warning' | 'success' | 'neutral
 const MODALITY_LABELS: Record<string, string> = {
   PRESENCIAL: 'Presencial',
   ONLINE: 'Online',
-  HIBRIDO: 'Híbrido'
+  HIBRIDO: 'Híbrido',
+  EAD: 'EAD',
+  OUTRO: 'Outro'
+}
+
+function courseDuration(course: Course) {
+  if (course.duration_value && course.duration_unit) {
+    const labels: Record<string, string> = { HOURS: 'horas', DAYS: 'dias', MONTHS: 'meses' }
+    return `${course.duration_value} ${labels[course.duration_unit] ?? course.duration_unit.toLowerCase()}`
+  }
+  return course.workload_hours ? `${course.workload_hours}h` : '—'
 }
 
 export function CourseCatalog() {
   const { permissions } = useAuth()
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [modalityFilter, setModalityFilter] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const canManage = can(permissions, PERMISSIONS.COURSES_MANAGE)
   const courses = useCrmCourses(statusFilter ?? undefined)
+  const visibleCourses = useMemo(() => (courses.data ?? []).filter((course) => {
+    const query = search.trim().toLocaleLowerCase('pt-BR')
+    return (!query || course.name.toLocaleLowerCase('pt-BR').includes(query) || course.code.toLocaleLowerCase('pt-BR').includes(query)) &&
+      (!modalityFilter || course.modality === modalityFilter)
+  }), [courses.data, modalityFilter, search])
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
 
@@ -63,7 +80,16 @@ export function CourseCatalog() {
 
       <Card className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Select value={statusFilter ?? ''} onChange={(e) => setStatusFilter(e.target.value || null)} aria-label="Filtrar por status">
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou código" aria-label="Buscar cursos" />
+            <Select value={modalityFilter ?? ''} onChange={(e) => setModalityFilter(e.target.value || null)} aria-label="Filtrar por modalidade">
+              <option value="">Todas as modalidades</option>
+              <option value="PRESENCIAL">Presencial</option>
+              <option value="ONLINE">Online</option>
+              <option value="EAD">EAD</option>
+              <option value="HIBRIDO">Híbrido</option>
+              <option value="OUTRO">Outro</option>
+            </Select>
+            <Select value={statusFilter ?? ''} onChange={(e) => setStatusFilter(e.target.value || null)} aria-label="Filtrar por status">
             <option value="">Todos os status</option>
             <option value="ACTIVE">Ativos</option>
             <option value="INACTIVE">Inativos</option>
@@ -71,7 +97,7 @@ export function CourseCatalog() {
             <option value="ARCHIVED">Arquivados</option>
           </Select>
           <span className="text-sm text-muted">
-            {courses.data?.length ?? 0} curso{(courses.data?.length ?? 0) !== 1 ? 's' : ''}
+            {visibleCourses.length} curso{visibleCourses.length !== 1 ? 's' : ''}
           </span>
         </div>
       </Card>
@@ -81,24 +107,23 @@ export function CourseCatalog() {
           <div className="space-y-3 p-5">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-14" />)}</div>
         ) : courses.isError ? (
           <EmptyState icon={BookOpen} title="Erro ao carregar cursos" description="Verifique sua conexão e tente novamente." />
-        ) : !courses.data?.length ? (
+        ) : !visibleCourses.length ? (
           <EmptyState icon={BookOpen} title="Nenhum curso encontrado" description="Crie o primeiro curso do catálogo." />
         ) : (
           <DataTable
-            data={courses.data}
+            data={visibleCourses}
             getKey={(row) => row.id}
             mobileCard={(row) => <CourseMobileRow row={row} onEdit={() => handleEdit(row)} canManage={canManage} />}
             columns={[
               { key: 'code', header: 'Código', cell: (row) => <span className="font-mono text-xs text-muted">{row.code}</span> },
               {
                 key: 'name',
-                header: 'Nome',
+                header: 'Curso',
                 cell: (row) => <span className="text-sm font-semibold text-navy">{row.name}</span>
               },
               { key: 'category', header: 'Categoria', priority: 'medium', cell: (row) => <span className="text-muted">{row.category ?? '—'}</span> },
               { key: 'modality', header: 'Modalidade', priority: 'medium', cell: (row) => <Badge>{MODALITY_LABELS[row.modality]}</Badge> },
-              { key: 'workload', header: 'Carga horária', priority: 'low', cell: (row) => row.workload_hours ? `${row.workload_hours}h` : '—' },
-              { key: 'price', header: 'Valor', priority: 'low', cell: (row) => row.default_price ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.default_price) : '—' },
+              { key: 'duration', header: 'Duração/Carga horária', priority: 'medium', cell: (row) => courseDuration(row) },
               {
                 key: 'status',
                 header: 'Status',
@@ -142,8 +167,7 @@ function CourseMobileRow({ row, onEdit, canManage }: { row: Course; onEdit: () =
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted">
         <span>{MODALITY_LABELS[row.modality]}</span>
-        {row.workload_hours && <span>· {row.workload_hours}h</span>}
-        {row.default_price && <span>· {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.default_price)}</span>}
+        <span>· {courseDuration(row)}</span>
       </div>
       {canManage && (
         <Button variant="ghost" className="px-3" onClick={onEdit}>
@@ -169,7 +193,6 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
       workload_hours: course.workload_hours ?? undefined,
       duration_value: course.duration_value ?? undefined,
       duration_unit: course.duration_unit ?? '',
-      default_price: course.default_price ?? undefined,
       description: course.description ?? ''
     } : {
       modality: 'PRESENCIAL'
@@ -195,7 +218,6 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
             workload_hours: values.workload_hours ?? undefined,
             duration_value: values.duration_value ?? undefined,
             duration_unit: values.duration_unit || undefined,
-            default_price: values.default_price ?? undefined,
             description: values.description || undefined
           }
         })
@@ -210,7 +232,6 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
           workload_hours: values.workload_hours ?? undefined,
           duration_value: values.duration_value ?? undefined,
           duration_unit: values.duration_unit || undefined,
-          default_price: values.default_price ?? undefined,
           description: values.description || undefined
         })
         toast.success('Curso criado.')
@@ -270,7 +291,6 @@ function CourseForm({ course, onDone }: { course: Course | null; onDone: () => v
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Input label="Carga horária (h)" type="number" error={errors.workload_hours?.message} {...register('workload_hours', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
-        <Input label="Valor (R$)" type="number" step="0.01" error={errors.default_price?.message} {...register('default_price', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
         <Input label="Duração (valor)" type="number" error={errors.duration_value?.message} {...register('duration_value', { setValueAs: (v) => (v === '' ? undefined : Number(v)) })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

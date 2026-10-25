@@ -66,7 +66,6 @@ describe('CourseCatalog', () => {
     await user.type(screen.getAllByLabelText(/código/i)[0]!, 'ADM-TESTE')
     await user.type(screen.getAllByLabelText(/^nome/i)[0]!, 'Auxiliar Administrativo — Teste')
     await user.type(screen.getByLabelText(/carga horária \(/i), '40')
-    await user.type(screen.getByLabelText(/valor \(/i), '500')
     await user.click(screen.getByRole('button', { name: /criar curso/i }))
 
     await waitFor(() => {
