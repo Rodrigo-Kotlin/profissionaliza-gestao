@@ -1,8 +1,10 @@
+import type { CommercialSaleSnapshot } from '@/types/database'
+
 export type SaleStatus = 'CONFIRMED' | 'CANCELED'
 
 export type SalePaymentMethod = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'BOLETO' | 'TRANSFERENCIA' | 'OUTRO'
 
-export type SaleListItem = {
+export type SaleListItem = CommercialSaleSnapshot & {
   id: string
   sale_code: string
   status: SaleStatus
@@ -20,7 +22,7 @@ export type SaleListItem = {
   created_at: string
 }
 
-export type SaleDetail = {
+export type SaleDetail = CommercialSaleSnapshot & {
   id: string
   sale_code: string
   status: SaleStatus
