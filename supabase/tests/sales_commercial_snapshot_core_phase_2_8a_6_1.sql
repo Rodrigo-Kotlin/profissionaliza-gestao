@@ -105,14 +105,14 @@ begin
   if not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname = 'list_sales'
-      and pg_get_function_identity_arguments(p.oid) = 'text, text, uuid, uuid, date, date, integer, integer'
+      and pg_get_function_identity_arguments(p.oid) = 'p_search text, p_status text, p_seller_user_id uuid, p_course_id uuid, p_date_from date, p_date_to date, p_page integer, p_page_size integer'
       and p.prosecdef and 'search_path=pg_catalog, public' = any(p.proconfig)
       and 'row_security=off' = any(p.proconfig)
   ) then raise exception 'list_sales security contract changed'; end if;
   if not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname = 'get_sale_detail'
-      and pg_get_function_identity_arguments(p.oid) = 'uuid'
+      and pg_get_function_identity_arguments(p.oid) = 'p_sale_id uuid'
       and p.prosecdef and 'search_path=pg_catalog, public' = any(p.proconfig)
       and 'row_security=off' = any(p.proconfig)
   ) then raise exception 'get_sale_detail security contract changed'; end if;
