@@ -161,6 +161,24 @@ export type CommercialPricePlanInstallment = {
   created_at: string
 }
 
+export type CommercialSaleSnapshot = {
+  offer_id: string | null
+  price_plan_id: string | null
+  offer_code_snapshot: string | null
+  offer_name_snapshot: string | null
+  offer_type_snapshot: CommercialOfferType | string | null
+  price_plan_code_snapshot: string | null
+  payment_method_snapshot: CommercialPaymentMethod | string | null
+  pricing_model_snapshot: CommercialPricingModel | string | null
+  installment_count_snapshot: number | null
+  installment_amount_snapshot: number | null
+  quantity_min_snapshot: number | null
+  quantity_max_snapshot: number | null
+  cash_price_snapshot: number | null
+  enrollment_fee_snapshot: number | null
+  total_amount_snapshot: number | null
+}
+
 export type AuditAction =
   | 'auth.login'
   | 'auth.logout'

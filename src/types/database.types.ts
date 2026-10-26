@@ -1305,25 +1305,41 @@ export type Database = {
           course_id: string
           course_name_snapshot: string
           course_price_snapshot: number | null
+          cash_price_snapshot: number | null
           created_at: string
           created_by: string | null
           discount_value: number
+          enrollment_fee_snapshot: number | null
           gross_value: number
           id: string
           installments: number
+          installment_amount_snapshot: number | null
+          installment_count_snapshot: number | null
           lead_id: string
           net_value: number | null
+          offer_code_snapshot: string | null
+          offer_id: string | null
+          offer_name_snapshot: string | null
+          offer_type_snapshot: string | null
           payment_method: string
+          payment_method_snapshot: string | null
           person_id: string
+          price_plan_code_snapshot: string | null
+          price_plan_id: string | null
+          pricing_model_snapshot: string | null
+          quantity_max_snapshot: number | null
+          quantity_min_snapshot: number | null
           sale_code: string
           sale_date: string
           seller_user_id: string
           status: string
           student_id: string
+          total_amount_snapshot: number | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          cash_price_snapshot?: number | null
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
@@ -1334,22 +1350,37 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           discount_value?: number
+          enrollment_fee_snapshot?: number | null
           gross_value: number
           id?: string
           installments?: number
+          installment_amount_snapshot?: number | null
+          installment_count_snapshot?: number | null
           lead_id: string
           net_value?: number | null
+          offer_code_snapshot?: string | null
+          offer_id?: string | null
+          offer_name_snapshot?: string | null
+          offer_type_snapshot?: string | null
           payment_method: string
+          payment_method_snapshot?: string | null
           person_id: string
+          price_plan_code_snapshot?: string | null
+          price_plan_id?: string | null
+          pricing_model_snapshot?: string | null
+          quantity_max_snapshot?: number | null
+          quantity_min_snapshot?: number | null
           sale_code: string
           sale_date?: string
           seller_user_id: string
           status?: string
           student_id: string
+          total_amount_snapshot?: number | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          cash_price_snapshot?: number | null
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
@@ -1360,22 +1391,50 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           discount_value?: number
+          enrollment_fee_snapshot?: number | null
           gross_value?: number
           id?: string
           installments?: number
+          installment_amount_snapshot?: number | null
+          installment_count_snapshot?: number | null
           lead_id?: string
           net_value?: number | null
+          offer_code_snapshot?: string | null
+          offer_id?: string | null
+          offer_name_snapshot?: string | null
+          offer_type_snapshot?: string | null
           payment_method?: string
+          payment_method_snapshot?: string | null
           person_id?: string
+          price_plan_code_snapshot?: string | null
+          price_plan_id?: string | null
+          pricing_model_snapshot?: string | null
+          quantity_max_snapshot?: number | null
+          quantity_min_snapshot?: number | null
           sale_code?: string
           sale_date?: string
           seller_user_id?: string
           status?: string
           student_id?: string
+          total_amount_snapshot?: number | null
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "course_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_price_plan_id_fkey"
+            columns: ["price_plan_id"]
+            isOneToOne: false
+            referencedRelation: "price_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_course_id_fkey"
             columns: ["course_id"]
