@@ -452,6 +452,216 @@ export type Database = {
         }
         Relationships: []
       }
+      course_offers: {
+        Row: {
+          code: string
+          course_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          offer_type: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          offer_type: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          offer_type?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_offers_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_items: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          max_quantity: number | null
+          min_quantity: number | null
+          offer_id: string
+          selection_mode: string
+          sort_order: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          max_quantity?: number | null
+          min_quantity?: number | null
+          offer_id: string
+          selection_mode: string
+          sort_order?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          max_quantity?: number | null
+          min_quantity?: number | null
+          offer_id?: string
+          selection_mode?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_items_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_items_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "course_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_plan_installments: {
+        Row: {
+          amount: number
+          created_at: string
+          due_offset_days: number | null
+          id: string
+          installment_number: number
+          price_plan_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          due_offset_days?: number | null
+          id?: string
+          installment_number: number
+          price_plan_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_offset_days?: number | null
+          id?: string
+          installment_number?: number
+          price_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_plan_installments_price_plan_id_fkey"
+            columns: ["price_plan_id"]
+            isOneToOne: false
+            referencedRelation: "price_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_plans: {
+        Row: {
+          cash_price: number | null
+          code: string
+          created_at: string
+          created_by: string | null
+          enrollment_fee: number | null
+          id: string
+          installment_amount: number | null
+          installment_count: number | null
+          offer_id: string
+          payment_method: string
+          pricing_model: string
+          quantity_max: number | null
+          quantity_min: number | null
+          status: string
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          cash_price?: number | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          enrollment_fee?: number | null
+          id?: string
+          installment_amount?: number | null
+          installment_count?: number | null
+          offer_id: string
+          payment_method: string
+          pricing_model: string
+          quantity_max?: number | null
+          quantity_min?: number | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          cash_price?: number | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          enrollment_fee?: number | null
+          id?: string
+          installment_amount?: number | null
+          installment_count?: number | null
+          offer_id?: string
+          payment_method?: string
+          pricing_model?: string
+          quantity_max?: number | null
+          quantity_min?: number | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_plans_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "course_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           completed_at: string | null
@@ -1713,6 +1923,69 @@ export type Database = {
         }
         Returns: Json
       }
+      list_course_offers: { Args: { p_status?: string }; Returns: Json }
+      list_price_plans: { Args: { p_offer_id: string; p_status?: string }; Returns: Json }
+      create_course_offer: {
+        Args: {
+          p_code: string
+          p_course_id?: string
+          p_name: string
+          p_offer_type?: string
+          p_valid_from?: string
+          p_valid_until?: string
+        }
+        Returns: string
+      }
+      update_course_offer: {
+        Args: {
+          p_course_id?: string
+          p_name?: string
+          p_offer_id: string
+          p_offer_type?: string
+          p_valid_from?: string
+          p_valid_until?: string
+        }
+        Returns: undefined
+      }
+      activate_course_offer: { Args: { p_offer_id: string }; Returns: undefined }
+      deactivate_course_offer: { Args: { p_offer_id: string }; Returns: undefined }
+      create_price_plan: {
+        Args: {
+          p_cash_price?: number
+          p_code: string
+          p_enrollment_fee?: number
+          p_installment_amount?: number
+          p_installment_count?: number
+          p_offer_id: string
+          p_payment_method: string
+          p_pricing_model: string
+          p_quantity_max?: number
+          p_quantity_min?: number
+          p_total_amount: number
+          p_valid_from?: string
+          p_valid_until?: string
+        }
+        Returns: string
+      }
+      update_price_plan: {
+        Args: {
+          p_cash_price?: number
+          p_enrollment_fee?: number
+          p_installment_amount?: number
+          p_installment_count?: number
+          p_payment_method?: string
+          p_price_plan_id: string
+          p_pricing_model?: string
+          p_quantity_max?: number
+          p_quantity_min?: number
+          p_total_amount?: number
+          p_valid_from?: string
+          p_valid_until?: string
+        }
+        Returns: undefined
+      }
+      activate_price_plan: { Args: { p_price_plan_id: string }; Returns: undefined }
+      deactivate_price_plan: { Args: { p_price_plan_id: string }; Returns: undefined }
       list_courses: { Args: { p_status?: string }; Returns: Json }
       list_crm_lead_activities: {
         Args: {

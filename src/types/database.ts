@@ -34,6 +34,12 @@ export type PermissionCode =
   | 'crm.reports'
   | 'courses.view'
   | 'courses.manage'
+  | 'course_offers.view'
+  | 'course_offers.manage'
+  | 'course_offers.activate'
+  | 'price_plans.view'
+  | 'price_plans.manage'
+  | 'price_plans.activate'
   | 'sales.view'
   | 'sales.view_all'
   | 'sales.create'
@@ -89,6 +95,71 @@ export type PermissionCode =
   | 'enrollments.resume'
   | 'enrollments.complete'
   | 'enrollments.cancel'
+
+export type CommercialStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED'
+
+export type CommercialOfferType = 'COURSE' | 'ONLINE_CATALOG' | 'PROGRAM' | 'SERVICE' | 'MODULE' | 'OTHER'
+
+export type CommercialPaymentMethod = 'PIX' | 'CASH' | 'DEBIT' | 'BOLETO' | 'CREDIT_CARD' | 'OTHER'
+
+export type CommercialPricingModel = 'CASH' | 'FIXED_INSTALLMENT' | 'EXPLICIT_CARD_INSTALLMENT' | 'QUANTITY_TIER'
+
+export type CommercialOffer = {
+  id: string
+  code: string
+  name: string
+  course_id: string | null
+  offer_type: CommercialOfferType
+  status: CommercialStatus
+  valid_from: string
+  valid_until: string | null
+  created_at: string
+  created_by: string | null
+  updated_at: string
+  updated_by: string | null
+}
+
+export type CommercialPricePlan = {
+  id: string
+  code: string
+  offer_id: string
+  payment_method: CommercialPaymentMethod
+  pricing_model: CommercialPricingModel
+  cash_price: number | null
+  enrollment_fee: number | null
+  installment_count: number | null
+  installment_amount: number | null
+  total_amount: number
+  quantity_min: number | null
+  quantity_max: number | null
+  status: CommercialStatus
+  valid_from: string
+  valid_until: string | null
+  created_at: string
+  created_by: string | null
+  updated_at: string
+  updated_by: string | null
+}
+
+export type CommercialOfferItem = {
+  id: string
+  offer_id: string
+  course_id: string
+  selection_mode: 'INCLUDED' | 'SELECTABLE'
+  min_quantity: number | null
+  max_quantity: number | null
+  sort_order: number
+  created_at: string
+}
+
+export type CommercialPricePlanInstallment = {
+  id: string
+  price_plan_id: string
+  installment_number: number
+  due_offset_days: number | null
+  amount: number
+  created_at: string
+}
 
 export type AuditAction =
   | 'auth.login'
