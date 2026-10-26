@@ -5,7 +5,7 @@
 do $$
 declare
   r record;
-  c record;
+  v_card record;
   v_offer_id uuid;
   v_course_id uuid;
   v_plan public.price_plans%rowtype;
@@ -51,9 +51,9 @@ begin
     select * into v_plan from public.price_plans where code=r.offer||'-BOLETO-'||r.boleto_count||'X';
     if not found or v_plan.payment_method<>'BOLETO' or v_plan.pricing_model<>'FIXED_INSTALLMENT' or v_plan.installment_count<>r.boleto_count or v_plan.installment_amount is distinct from r.boleto_amount or v_plan.total_amount is distinct from r.boleto_count*r.boleto_amount or v_plan.status<>'DRAFT' then raise exception 'Boleto plan mismatch: %', r.offer; end if;
 
-    for c in select value::numeric as amount, ordinality::integer as installment_no from jsonb_array_elements_text(r.card) with ordinality loop
-      select * into v_plan from public.price_plans where code=r.offer||'-CARD-'||lpad(c.installment_no::text,2,'0');
-      if not found or v_plan.payment_method<>'CREDIT_CARD' or v_plan.pricing_model<>'EXPLICIT_CARD_INSTALLMENT' or v_plan.installment_count<>c.installment_no or v_plan.installment_amount is distinct from c.amount or v_plan.total_amount is distinct from c.installment_no*c.amount or v_plan.quantity_min is not null or v_plan.quantity_max is not null or v_plan.status<>'DRAFT' then raise exception 'Card plan mismatch: % installment %', r.offer, c.installment_no; end if;
+    for v_card in select value::numeric as amount, ordinality::integer as installment_no from jsonb_array_elements_text(r.card) with ordinality loop
+      select * into v_plan from public.price_plans where code=r.offer||'-CARD-'||lpad(v_card.installment_no::text,2,'0');
+      if not found or v_plan.payment_method<>'CREDIT_CARD' or v_plan.pricing_model<>'EXPLICIT_CARD_INSTALLMENT' or v_plan.installment_count<>v_card.installment_no or v_plan.installment_amount is distinct from v_card.amount or v_plan.total_amount is distinct from v_card.installment_no*v_card.amount or v_plan.quantity_min is not null or v_plan.quantity_max is not null or v_plan.status<>'DRAFT' then raise exception 'Card plan mismatch: % installment %', r.offer, v_card.installment_no; end if;
     end loop;
     if (select count(*) from public.price_plans where offer_id=v_offer_id) <> 14 and r.offer not in ('OFR-CUR-00010','OFR-CUR-00011') then raise exception 'Expected 14 plans for %', r.offer; end if;
     if (select count(*) from public.price_plans where offer_id=v_offer_id) <> 8 and r.offer in ('OFR-CUR-00010','OFR-CUR-00011') then raise exception 'Expected 8 plans for %', r.offer; end if;
@@ -69,9 +69,9 @@ begin
   for r in select * from jsonb_to_recordset(v_online) as x(qty integer,cash numeric,card jsonb) loop
     select * into v_plan from public.price_plans where code='OFR-ONLINE-CATALOG-QTY-'||r.qty||'-CASH';
     if not found or v_plan.pricing_model<>'QUANTITY_TIER' or v_plan.payment_method<>'OTHER' or v_plan.quantity_min<>r.qty or v_plan.quantity_max<>r.qty or v_plan.total_amount is distinct from r.cash or v_plan.status<>'DRAFT' then raise exception 'Online cash tier mismatch: %', r.qty; end if;
-    for c in select key::integer as installment_no, value::numeric as amount from jsonb_each_text(r.card) loop
-      select * into v_plan from public.price_plans where code='OFR-ONLINE-CATALOG-QTY-'||r.qty||'-CARD-'||c.installment_no||'X';
-      if not found or v_plan.pricing_model<>'EXPLICIT_CARD_INSTALLMENT' or v_plan.payment_method<>'CREDIT_CARD' or v_plan.quantity_min<>r.qty or v_plan.quantity_max<>r.qty or v_plan.installment_count<>c.installment_no or v_plan.installment_amount is distinct from c.amount or v_plan.total_amount is distinct from c.installment_no*c.amount or v_plan.status<>'DRAFT' then raise exception 'Online card tier mismatch: quantity %, installment %', r.qty, c.installment_no; end if;
+    for v_card in select key::integer as installment_no, value::numeric as amount from jsonb_each_text(r.card) loop
+      select * into v_plan from public.price_plans where code='OFR-ONLINE-CATALOG-QTY-'||r.qty||'-CARD-'||v_card.installment_no||'X';
+      if not found or v_plan.pricing_model<>'EXPLICIT_CARD_INSTALLMENT' or v_plan.payment_method<>'CREDIT_CARD' or v_plan.quantity_min<>r.qty or v_plan.quantity_max<>r.qty or v_plan.installment_count<>v_card.installment_no or v_plan.installment_amount is distinct from v_card.amount or v_plan.total_amount is distinct from v_card.installment_no*v_card.amount or v_plan.status<>'DRAFT' then raise exception 'Online card tier mismatch: quantity %, installment %', r.qty, v_card.installment_no; end if;
     end loop;
   end loop;
 
