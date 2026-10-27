@@ -31,7 +31,7 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='sales' and column_name='course_modality_snapshot') then
     raise exception 'Sale modality snapshot column missing';
   end if;
-  foreach v_column in array[
+  foreach v_column in array array[
     'offer_code_snapshot','offer_name_snapshot','offer_type_snapshot','price_plan_code_snapshot',
     'commercial_payment_method_snapshot','pricing_model_snapshot','installment_count_commercial_snapshot',
     'installment_amount_snapshot','cash_price_snapshot','enrollment_fee_snapshot','total_amount_snapshot'
@@ -111,7 +111,7 @@ begin
   if lower(v_definition) not like '%security definer%' or lower(v_definition) not like '%set search_path%' or lower(v_definition) not like '%row_security%' then
     raise exception 'Commercial Sale RPC security contract changed';
   end if;
-  foreach v_definition in array[
+  foreach v_definition in array array[
     'has_permission(''sales.create'')', 'for update', 'for share', 'offer_type <> ''COURSE''',
     'quantity-based price plans', 'discount value must be finite', 'student_status_history',
     'crm.lead_won', 'course_workload_snapshot', 'course_modality_snapshot'
@@ -142,6 +142,8 @@ declare
   v_incomplete_sale uuid;
   v_historical_sale uuid;
   v_historical_contract uuid;
+  v_incomplete_lead uuid;
+  v_historical_lead uuid;
   v_contract uuid;
   v_stage uuid;
   v_offer record;
@@ -169,26 +171,21 @@ begin
 
   insert into public.people(full_name, created_by, updated_by) values ('SMOKE CONTRACT SNAPSHOT', v_user, v_user) returning id into v_person;
   insert into public.crm_leads(lead_code, person_id, stage_id, owner_user_id, status, temperature, created_by, updated_by)
-    values ('SMOKE-CONTRACT-SNAPSHOT', v_person, v_stage, v_user, 'WON', 'HOT', v_user, v_user) returning id into v_lead;
-  insert into public.students(person_id, student_code, status, registration_date, created_by, updated_by)
-    values (v_person, 'ALU-SMOKE-CONTRACT', 'PRE_CADASTRO', current_date, v_user, v_user) returning id into v_student;
-  insert into public.sales(
-    sale_code, lead_id, person_id, student_id, course_id, course_name_snapshot, course_price_snapshot,
-    course_workload_snapshot, course_modality_snapshot, seller_user_id, sale_date, gross_value, discount_value,
-    payment_method, installments, commercial_notes, offer_id, price_plan_id, offer_code_snapshot,
-    offer_name_snapshot, offer_type_snapshot, price_plan_code_snapshot, payment_method_snapshot,
-    pricing_model_snapshot, installment_count_snapshot, installment_amount_snapshot, cash_price_snapshot,
-    enrollment_fee_snapshot, total_amount_snapshot, created_by, updated_by
-  ) values (
-    'VND-SMOKE-CONTRACT', v_lead, v_person, v_student, v_offer.course_id, v_offer.name, v_offer.total_amount,
-    (select workload_hours from public.courses where id=v_offer.course_id),
-    (select modality from public.courses where id=v_offer.course_id), v_user, current_date, v_offer.total_amount, 0,
-    case v_offer.plan_payment_method when 'PIX' then 'PIX' when 'CASH' then 'DINHEIRO' when 'DEBIT' then 'CARTAO_DEBITO' when 'BOLETO' then 'BOLETO' when 'CREDIT_CARD' then 'CARTAO_CREDITO' else 'OUTRO' end,
-    coalesce(v_offer.installment_count,1), 'snapshot smoke', v_offer.id, v_offer.plan_id, v_offer.code, v_offer.name,
-    v_offer.offer_type, v_offer.plan_code, v_offer.plan_payment_method, v_offer.plan_pricing_model,
-    v_offer.installment_count, v_offer.installment_amount, v_offer.cash_price, v_offer.enrollment_fee,
-    v_offer.total_amount, v_user, v_user
-  ) returning id into v_sale;
+    values ('SMOKE-CONTRACT-SNAPSHOT', v_person, v_stage, v_user, 'OPEN', 'HOT', v_user, v_user) returning id into v_lead;
+
+  -- Existing catalog courses may legitimately have NULL workload. Prepare the
+  -- fixture inside the transaction, then freeze it through the real Sale RPC.
+  update public.courses set workload_hours=120 where id=v_offer.course_id;
+  v_sale := (public.create_sale_from_commercial_offer(
+    v_lead, v_offer.id, v_offer.plan_id, 0, 'snapshot smoke'
+  )->>'sale_id')::uuid;
+
+  insert into public.crm_leads(lead_code, person_id, stage_id, owner_user_id, status, temperature, created_by, updated_by)
+    values ('SMOKE-CONTRACT-INCOMPLETE', v_person, v_stage, v_user, 'WON', 'HOT', v_user, v_user)
+    returning id into v_incomplete_lead;
+  insert into public.crm_leads(lead_code, person_id, stage_id, owner_user_id, status, temperature, created_by, updated_by)
+    values ('SMOKE-CONTRACT-HISTORICAL', v_person, v_stage, v_user, 'WON', 'HOT', v_user, v_user)
+    returning id into v_historical_lead;
 
   insert into public.sales(
     sale_code, lead_id, person_id, student_id, course_id, course_name_snapshot, course_price_snapshot,
@@ -198,7 +195,7 @@ begin
     pricing_model_snapshot, installment_count_snapshot, installment_amount_snapshot, cash_price_snapshot,
     enrollment_fee_snapshot, total_amount_snapshot, created_by, updated_by
   ) select
-    'VND-SMOKE-INCOMPLETE', lead_id, person_id, student_id, course_id, course_name_snapshot, course_price_snapshot,
+    'VND-SMOKE-INCOMPLETE', v_incomplete_lead, person_id, student_id, course_id, course_name_snapshot, course_price_snapshot,
     null, course_modality_snapshot, seller_user_id, sale_date, gross_value, discount_value,
     payment_method, installments, commercial_notes, offer_id, price_plan_id, offer_code_snapshot,
     offer_name_snapshot, offer_type_snapshot, price_plan_code_snapshot, payment_method_snapshot,
@@ -218,7 +215,7 @@ begin
     seller_user_id, sale_date, gross_value, discount_value, payment_method, installments,
     commercial_notes, created_by, updated_by
   ) select
-    'VND-SMOKE-HISTORICAL', lead_id, person_id, student_id, course_id, course_name_snapshot, course_price_snapshot,
+    'VND-SMOKE-HISTORICAL', v_historical_lead, person_id, student_id, course_id, course_name_snapshot, course_price_snapshot,
     seller_user_id, sale_date, gross_value, discount_value, payment_method, installments,
     commercial_notes, created_by, updated_by
   from public.sales where id=v_sale returning id into v_historical_sale;
@@ -239,7 +236,7 @@ begin
     raise exception 'Contract course snapshots do not match Sale';
   end if;
   if v_offer.plan_payment_method='CASH' or v_offer.plan_pricing_model='CASH' then
-    if v_before.commercial_payment_method_snapshot is distinct from 'CASH'
+    if v_before.commercial_payment_method_snapshot is distinct from v_offer.plan_payment_method
        or v_before.installment_count_commercial_snapshot is not null
        or v_before.installments_snapshot <> 1 then
       raise exception 'CASH commercial semantics failed';
@@ -253,7 +250,11 @@ begin
 
   update public.courses set name='SMOKE COURSE MUTATED', workload_hours=999, modality='ONLINE' where id=v_offer.course_id;
   update public.course_offers set name='SMOKE OFFER MUTATED', status='INACTIVE' where id=v_offer.id;
-  update public.price_plans set total_amount=99999, installment_amount=9999 where id=v_offer.plan_id;
+  update public.price_plans
+  set cash_price=case when pricing_model='CASH' then 99999 else cash_price end,
+      total_amount=case when pricing_model='CASH' then 99999 + coalesce(enrollment_fee, 0) else 99999 end,
+      installment_amount=case when pricing_model='CASH' then null else 9999 end
+  where id=v_offer.plan_id;
   select * into v_after from public.contracts where id=v_contract;
   if row_to_json(v_before)::jsonb - 'updated_at' <> row_to_json(v_after)::jsonb - 'updated_at' then raise exception 'Contract snapshots changed after catalog mutation'; end if;
   select * into v_after from public.contracts where id=v_historical_contract;
