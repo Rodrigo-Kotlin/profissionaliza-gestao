@@ -4,76 +4,29 @@ import { closeSaleSchema, cancelSaleSchema } from './sales-schemas'
 describe('closeSaleSchema', () => {
   it('accepts valid input', () => {
     const result = closeSaleSchema.safeParse({
-      course_id: 'course-1',
-      gross_value: 1500,
-      discount_value: 0,
-      payment_method: 'PIX',
-      installments: 1
+      offer_id: 'offer-1', price_plan_id: 'plan-1', discount_value: 0
     })
     expect(result.success).toBe(true)
   })
 
-  it('rejects empty course_id', () => {
-    const result = closeSaleSchema.safeParse({
-      course_id: '',
-      gross_value: 1500,
-      discount_value: 0,
-      payment_method: 'PIX',
-      installments: 1
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects zero gross_value', () => {
-    const result = closeSaleSchema.safeParse({
-      course_id: 'course-1',
-      gross_value: 0,
-      discount_value: 0,
-      payment_method: 'PIX',
-      installments: 1
-    })
+  it('rejects empty offer_id', () => {
+    const result = closeSaleSchema.safeParse({ offer_id: '', price_plan_id: 'plan-1' })
     expect(result.success).toBe(false)
   })
 
   it('rejects negative discount', () => {
-    const result = closeSaleSchema.safeParse({
-      course_id: 'course-1',
-      gross_value: 1500,
-      discount_value: -1,
-      payment_method: 'PIX',
-      installments: 1
-    })
+    const result = closeSaleSchema.safeParse({ offer_id: 'offer-1', price_plan_id: 'plan-1', discount_value: -1 })
     expect(result.success).toBe(false)
   })
 
-  it('rejects installments < 1', () => {
-    const result = closeSaleSchema.safeParse({
-      course_id: 'course-1',
-      gross_value: 1500,
-      discount_value: 0,
-      payment_method: 'PIX',
-      installments: 0
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it('rejects invalid payment_method', () => {
-    const result = closeSaleSchema.safeParse({
-      course_id: 'course-1',
-      gross_value: 1500,
-      discount_value: 0,
-      payment_method: 'INVALID',
-      installments: 1
-    })
+  it('rejects empty price_plan_id', () => {
+    const result = closeSaleSchema.safeParse({ offer_id: 'offer-1', price_plan_id: '' })
     expect(result.success).toBe(false)
   })
 
   it('defaults discount_value to 0', () => {
     const result = closeSaleSchema.safeParse({
-      course_id: 'course-1',
-      gross_value: 1500,
-      payment_method: 'PIX',
-      installments: 1
+      offer_id: 'offer-1', price_plan_id: 'plan-1'
     })
     expect(result.success).toBe(true)
     if (result.success) expect(result.data.discount_value).toBe(0)

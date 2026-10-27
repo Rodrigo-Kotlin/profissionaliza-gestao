@@ -1,11 +1,9 @@
 import { z } from 'zod'
 
 export const closeSaleSchema = z.object({
-  course_id: z.string().min(1, 'Curso obrigatório'),
-  gross_value: z.coerce.number().min(0.01, 'Valor deve ser maior que zero'),
+  offer_id: z.string().min(1, 'Oferta obrigatória'),
+  price_plan_id: z.string().min(1, 'Plano de preço obrigatório'),
   discount_value: z.coerce.number().min(0, 'Desconto não pode ser negativo').default(0),
-  payment_method: z.enum(['PIX', 'DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'BOLETO', 'TRANSFERENCIA', 'OUTRO'], 'Forma de pagamento obrigatória'),
-  installments: z.coerce.number().int().min(1, 'Parcelas mínimas: 1'),
   commercial_notes: z.string().max(2000).optional()
 })
 
