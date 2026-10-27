@@ -6,7 +6,21 @@ import { crmKeys } from '../crm/crm-hooks'
 export const saleKeys = {
   all: ['sales'] as const,
   list: (params: SaleListParams) => ['sales', 'list', params] as const,
-  detail: (id: string) => ['sales', 'detail', id] as const
+  detail: (id: string) => ['sales', 'detail', id] as const,
+  courseOffers: ['sales', 'course-offers'] as const,
+  pricePlans: (offerId: string) => ['sales', 'price-plans', offerId] as const
+}
+
+export function useCourseOffers() {
+  return useQuery({ queryKey: saleKeys.courseOffers, queryFn: salesService.listCourseOffers })
+}
+
+export function usePricePlans(offerId?: string) {
+  return useQuery({
+    queryKey: saleKeys.pricePlans(offerId ?? ''),
+    queryFn: () => salesService.listPricePlans(offerId as string),
+    enabled: Boolean(offerId)
+  })
 }
 
 export function useSaleList(params: SaleListParams) {
@@ -28,6 +42,25 @@ export function useCreateSaleFromLead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: salesService.createFromLead,
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: saleKeys.all })
+      qc.invalidateQueries({ queryKey: crmKeys.lead(variables.lead_id) })
+      qc.invalidateQueries({ queryKey: crmKeys.leadTimeline(variables.lead_id) })
+      qc.invalidateQueries({ queryKey: crmKeys.leadActivities(variables.lead_id) })
+      qc.invalidateQueries({ queryKey: crmKeys.pipeline() })
+      qc.invalidateQueries({ queryKey: crmKeys.kpis })
+      qc.invalidateQueries({ queryKey: ['crm', 'leads'] })
+      qc.invalidateQueries({ queryKey: ['crm', 'agenda'] })
+    }
+  })
+}
+
+export function useCreateSaleFromCommercialOffer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: salesService.createFromCommercialOffer,
+    networkMode: 'always',
+    retry: false,
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: saleKeys.all })
       qc.invalidateQueries({ queryKey: crmKeys.lead(variables.lead_id) })

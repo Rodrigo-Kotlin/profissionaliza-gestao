@@ -1,4 +1,8 @@
 import type { CommercialSaleSnapshot } from '@/types/database'
+import type { CommercialOffer, CommercialPricePlan } from '@/types/database'
+
+export type CourseOffer = CommercialOffer
+export type PricePlan = CommercialPricePlan
 
 export type SaleStatus = 'CONFIRMED' | 'CANCELED'
 

@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { assertOnline } from '@/lib/offline'
 import type { Database } from '@/types/database.types'
-import type { SaleListParams, SaleListResponse, SaleDetail, SaleTimelineResponse } from './sales-types'
+import type { SaleListParams, SaleListResponse, SaleDetail, SaleTimelineResponse, CourseOffer, PricePlan } from './sales-types'
 
 type Functions = Database['public']['Functions']
 
@@ -28,6 +28,37 @@ function emptyToUndefined<T>(v: T | '' | null | undefined): T | undefined {
 }
 
 export const salesService = {
+  async listCourseOffers(): Promise<CourseOffer[]> {
+    const { data, error } = await rpc('list_course_offers', { p_status: 'ACTIVE' })
+    if (error) throw error
+    return (data ?? []) as CourseOffer[]
+  },
+
+  async listPricePlans(offerId: string): Promise<PricePlan[]> {
+    const { data, error } = await rpc('list_price_plans', { p_offer_id: offerId, p_status: 'ACTIVE' })
+    if (error) throw error
+    return (data ?? []) as PricePlan[]
+  },
+
+  async createFromCommercialOffer(input: {
+    lead_id: string
+    offer_id: string
+    price_plan_id: string
+    discount_value: number
+    commercial_notes?: string
+  }): Promise<{ sale_id: string; sale_code: string }> {
+    assertOnline()
+    const { data, error } = await rpc('create_sale_from_commercial_offer', {
+      p_lead_id: input.lead_id,
+      p_offer_id: input.offer_id,
+      p_price_plan_id: input.price_plan_id,
+      p_discount_value: input.discount_value,
+      p_commercial_notes: emptyToUndefined(input.commercial_notes)
+    })
+    if (error) throw error
+    return data as { sale_id: string; sale_code: string }
+  },
+
   async createFromLead(input: {
     lead_id: string
     course_id: string

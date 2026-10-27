@@ -9,6 +9,26 @@ vi.mock('@/lib/supabase', () => ({
   }
 }))
 
+describe('salesService commercial catalog and sale', () => {
+  beforeEach(() => rpcMock.mockReset())
+
+  it('loads ACTIVE offers and plans through the existing catalog RPCs', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null })
+    await salesService.listCourseOffers()
+    expect(rpcMock).toHaveBeenCalledWith('list_course_offers', { p_status: 'ACTIVE' })
+    await salesService.listPricePlans('offer-1')
+    expect(rpcMock).toHaveBeenCalledWith('list_price_plans', { p_offer_id: 'offer-1', p_status: 'ACTIVE' })
+  })
+
+  it('does not send gross, payment or installments to the commercial RPC', async () => {
+    rpcMock.mockResolvedValue({ data: { sale_id: 'sale-1', sale_code: 'VND-2026-000001' }, error: null })
+    await salesService.createFromCommercialOffer({ lead_id: 'lead-1', offer_id: 'offer-1', price_plan_id: 'plan-1', discount_value: 50 })
+    expect(rpcMock).toHaveBeenCalledWith('create_sale_from_commercial_offer', {
+      p_lead_id: 'lead-1', p_offer_id: 'offer-1', p_price_plan_id: 'plan-1', p_discount_value: 50, p_commercial_notes: undefined
+    })
+  })
+})
+
 describe('salesService.createFromLead', () => {
   beforeEach(() => {
     rpcMock.mockReset()

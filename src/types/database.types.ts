@@ -1859,6 +1859,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_sale_from_commercial_offer: {
+        Args: {
+          p_commercial_notes?: string
+          p_discount_value?: number
+          p_lead_id: string
+          p_offer_id: string
+          p_price_plan_id: string
+        }
+        Returns: Json
+      }
       create_student: {
         Args: {
           p_birth_date?: string
