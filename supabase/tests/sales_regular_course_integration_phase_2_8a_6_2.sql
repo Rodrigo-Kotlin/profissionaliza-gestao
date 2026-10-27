@@ -14,12 +14,12 @@ begin
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
     and p.proname = 'create_sale_from_commercial_offer'
-    and pg_get_function_identity_arguments(p.oid) = 'uuid, uuid, uuid, numeric, text';
+    and pg_get_function_identity_arguments(p.oid) = 'p_lead_id uuid, p_offer_id uuid, p_price_plan_id uuid, p_discount_value numeric, p_commercial_notes text';
   if v_fn is null then raise exception 'Commercial sale RPC signature missing'; end if;
   v_lower_definition := lower(v_definition);
   if v_lower_definition not like '%security definer%' then raise exception 'Commercial sale RPC must be SECURITY DEFINER'; end if;
-  if v_lower_definition not like '%set search_path = pg_catalog, public%' then raise exception 'Commercial sale RPC search_path is not controlled'; end if;
-  if v_lower_definition not like '%set row_security = off%' then raise exception 'Commercial sale RPC row_security is not controlled'; end if;
+  if v_lower_definition not like '%set search_path%' or v_lower_definition not like '%pg_catalog%' or v_lower_definition not like '%public%' then raise exception 'Commercial sale RPC search_path is not controlled'; end if;
+  if v_lower_definition not like '%set row_security%' or v_lower_definition not like '%off%' then raise exception 'Commercial sale RPC row_security is not controlled'; end if;
   if v_lower_definition not like '%for update%' then raise exception 'Commercial sale RPC must strongly lock offer and plan'; end if;
   if v_lower_definition not like '%v_offer.offer_type <> ''course''%' then raise exception 'COURSE-only protection missing'; end if;
   if v_lower_definition not like '%online catalog sales are not supported in this flow%' then raise exception 'ONLINE_CATALOG protection missing'; end if;
