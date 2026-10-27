@@ -83,8 +83,8 @@ begin
     where n.nspname='public' and p.proname='list_sale_items'
       and pg_get_function_identity_arguments(p.oid)='p_sale_id uuid'
       and p.prosecdef
-      and pg_get_functiondef(p.oid) ilike '%set search_path = pg_catalog, public%'
-      and pg_get_functiondef(p.oid) ilike '%set row_security = off%'
+      and pg_get_functiondef(p.oid) ilike '%set search_path to ''pg_catalog'', ''public''%'
+      and pg_get_functiondef(p.oid) ilike '%set row_security to ''off''%'
   ) then raise exception 'list_sale_items security definition mismatch'; end if;
   if has_function_privilege('anon','public.list_sale_items(uuid)','EXECUTE') then raise exception 'anon can execute list_sale_items'; end if;
   if not has_function_privilege('authenticated','public.list_sale_items(uuid)','EXECUTE') then raise exception 'authenticated cannot execute list_sale_items'; end if;
@@ -99,8 +99,8 @@ begin
     where n.nspname='public' and p.proname='get_sale_detail'
       and pg_get_function_identity_arguments(p.oid)='p_sale_id uuid'
       and p.prosecdef
-      and pg_get_functiondef(p.oid) ilike '%set search_path = pg_catalog, public%'
-      and pg_get_functiondef(p.oid) ilike '%set row_security = off%'
+      and pg_get_functiondef(p.oid) ilike '%set search_path to ''pg_catalog'', ''public''%'
+      and pg_get_functiondef(p.oid) ilike '%set row_security to ''off''%'
   ) then raise exception 'get_sale_detail security definition mismatch'; end if;
 
   if (select count(*) from public.sales) <> 15 then raise exception 'Historical sales count changed'; end if;
