@@ -1,5 +1,5 @@
 import type { CommercialSaleSnapshot } from '@/types/database'
-import type { CommercialOffer, CommercialPricePlan } from '@/types/database'
+import type { CommercialOffer, CommercialPricePlan, SaleItem } from '@/types/database'
 
 export type CourseOffer = CommercialOffer
 export type PricePlan = CommercialPricePlan
@@ -23,6 +23,7 @@ export type SaleListItem = CommercialSaleSnapshot & {
   net_value: number
   payment_method: SalePaymentMethod
   installments: number
+  item_count: number
   created_at: string
 }
 
@@ -62,6 +63,8 @@ export type SaleDetail = CommercialSaleSnapshot & {
   enrollment_id?: string | null
   enrollment_code?: string | null
   enrollment_status?: string | null
+  item_count: number
+  items: SaleItem[]
 }
 
 export type SaleListParams = {

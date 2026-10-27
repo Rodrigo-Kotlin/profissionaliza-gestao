@@ -69,6 +69,7 @@ function makeSale(overrides: Partial<SaleListItem> = {}): SaleListItem {
     installment_amount_snapshot: null,
     quantity_min_snapshot: null,
     quantity_max_snapshot: null,
+    item_count: 0,
     cash_price_snapshot: null,
     enrollment_fee_snapshot: null,
     total_amount_snapshot: null,

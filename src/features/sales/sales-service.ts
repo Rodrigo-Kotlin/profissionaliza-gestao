@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { assertOnline } from '@/lib/offline'
 import type { Database } from '@/types/database.types'
+import type { SaleItem } from '@/types/database'
 import type { SaleListParams, SaleListResponse, SaleDetail, SaleTimelineResponse, CourseOffer, PricePlan } from './sales-types'
 
 type Functions = Database['public']['Functions']
@@ -101,6 +102,12 @@ export const salesService = {
     const { data, error } = await rpc('get_sale_detail', { p_sale_id: saleId })
     if (error) throw error
     return data as SaleDetail
+  },
+
+  async listSaleItems(saleId: string): Promise<SaleItem[]> {
+    const { data, error } = await rpc('list_sale_items', { p_sale_id: saleId })
+    if (error) throw error
+    return (data ?? []) as SaleItem[]
   },
 
   async cancelSale(saleId: string, cancellationReason: string): Promise<void> {
