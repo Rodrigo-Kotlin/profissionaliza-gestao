@@ -152,6 +152,19 @@ export type CommercialOfferItem = {
   created_at: string
 }
 
+export type SaleItem = {
+  id: string
+  sale_id: string
+  position: number
+  course_id: string
+  offer_item_id: string | null
+  course_code_snapshot: string | null
+  course_name_snapshot: string
+  course_workload_snapshot: number | null
+  course_modality_snapshot: 'PRESENCIAL' | 'ONLINE' | 'HIBRIDO' | string | null
+  created_at: string
+}
+
 export type CommercialPricePlanInstallment = {
   id: string
   price_plan_id: string

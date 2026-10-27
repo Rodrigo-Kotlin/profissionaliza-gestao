@@ -1329,6 +1329,70 @@ export type Database = {
         }
         Relationships: []
       }
+      sale_items: {
+        Row: {
+          course_code_snapshot: string | null
+          course_id: string
+          course_modality_snapshot: string | null
+          course_name_snapshot: string
+          course_workload_snapshot: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          offer_item_id: string | null
+          position: number
+          sale_id: string
+        }
+        Insert: {
+          course_code_snapshot?: string | null
+          course_id: string
+          course_modality_snapshot?: string | null
+          course_name_snapshot: string
+          course_workload_snapshot?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          offer_item_id?: string | null
+          position: number
+          sale_id: string
+        }
+        Update: {
+          course_code_snapshot?: string | null
+          course_id?: string
+          course_modality_snapshot?: string | null
+          course_name_snapshot?: string
+          course_workload_snapshot?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          offer_item_id?: string | null
+          position?: number
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_offer_item_id_fkey"
+            columns: ["offer_item_id"]
+            isOneToOne: false
+            referencedRelation: "offer_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           canceled_at: string | null
@@ -2136,6 +2200,7 @@ export type Database = {
         }
         Returns: Json
       }
+      list_sale_items: { Args: { p_sale_id: string }; Returns: Json }
       mark_contract_signed: { Args: { p_contract_id: string }; Returns: Json }
       mask_cpf: { Args: { p_value: string }; Returns: string }
       mask_email: { Args: { p_value: string }; Returns: string }

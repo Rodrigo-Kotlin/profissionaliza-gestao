@@ -105,6 +105,8 @@ function makeSale(): SaleDetail {
     cash_price_snapshot: null,
     enrollment_fee_snapshot: null,
     total_amount_snapshot: null,
+    item_count: 0,
+    items: [],
     commercial_notes: null,
     canceled_at: null,
     canceled_by: null,

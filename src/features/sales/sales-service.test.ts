@@ -143,6 +143,18 @@ describe('salesService.getSaleDetail', () => {
   })
 })
 
+describe('salesService.listSaleItems', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it('calls list_sale_items with p_sale_id', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null })
+    await expect(salesService.listSaleItems('sale-1')).resolves.toEqual([])
+    expect(rpcMock).toHaveBeenCalledWith('list_sale_items', { p_sale_id: 'sale-1' })
+  })
+})
+
 describe('salesService.cancelSale', () => {
   beforeEach(() => {
     rpcMock.mockReset()
