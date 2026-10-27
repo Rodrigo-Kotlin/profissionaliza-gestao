@@ -9,7 +9,7 @@ import { ContractorSearch, type SelectedContractor } from './contractor-search'
 import { can, PERMISSIONS } from '@/lib/rbac'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
-import { SALE_PAYMENT_METHOD_LABELS } from '../sales/sales-constants'
+import { formatContractInstallments, formatContractPayment } from './contracts-utils'
 import type { SaleDetail } from '../sales/sales-types'
 import type { CreateContractResult } from './contracts-types'
 
@@ -82,6 +82,8 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
   }
 
   const detail = contractorDetail.data
+  const paymentLabel = formatContractPayment(sale)
+  const installmentsLabel = formatContractInstallments(sale)
   const contactLine = detail
     ? [detail.email, detail.phone, detail.whatsapp].filter(Boolean).join(' · ') || 'Contato não informado'
     : '—'
@@ -182,8 +184,8 @@ export function ContractCreateWizard({ sale, open, onOpenChange }: Props) {
             <ReviewRow label="Valor bruto" value={formatCurrency(sale.gross_value)} />
             <ReviewRow label="Desconto" value={formatCurrency(sale.discount_value)} />
             <ReviewRow label="Valor líquido" value={formatCurrency(sale.net_value)} highlight />
-            <ReviewRow label="Pagamento" value={SALE_PAYMENT_METHOD_LABELS[sale.payment_method]} />
-            <ReviewRow label="Parcelas" value={String(sale.installments)} />
+            <ReviewRow label="Pagamento" value={paymentLabel} />
+            <ReviewRow label="Condição" value={installmentsLabel} />
             <ReviewRow label="Vendedor" value={sale.seller_name} />
           </div>
 

@@ -7,10 +7,10 @@ import { can, PERMISSIONS } from '@/lib/rbac'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
 import { useSaleDetail, useSaleTimeline } from './sales-hooks'
 import { CancelSaleDialog } from './cancel-sale-dialog'
-import { SALE_STATUS_LABELS, SALE_STATUS_TONES, SALE_PAYMENT_METHOD_LABELS } from './sales-constants'
+import { SALE_STATUS_LABELS, SALE_STATUS_TONES } from './sales-constants'
 import type { SaleTimelineEvent } from './sales-types'
 import { ContractCreateWizard } from '../contracts/contract-create-wizard'
-import { canCreateContractFromSale } from '../contracts/contracts-utils'
+import { canCreateContractFromSale, formatContractInstallments, formatContractPayment } from '../contracts/contracts-utils'
 
 export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -38,6 +38,8 @@ export function SaleDetailPage() {
   const showCancel = canCancel && sale.status === 'CONFIRMED'
   const events = timeline.data?.data ?? []
   const canCreateContract = canCreateContractFromSale(sale, permissions, user?.id ?? '')
+  const paymentLabel = formatContractPayment(sale)
+  const installmentsLabel = formatContractInstallments(sale)
 
   return (
     <PageContentContainer className="space-y-6" width="wide">
@@ -108,8 +110,8 @@ export function SaleDetailPage() {
         <Card className="p-5">
           <SectionHeader icon={CreditCard} title="Pagamento" />
           <dl className="space-y-2 text-sm">
-            <Row label="Forma" value={SALE_PAYMENT_METHOD_LABELS[sale.payment_method]} />
-            <Row label="Parcelas" value={String(sale.installments)} />
+            <Row label="Forma" value={paymentLabel} />
+            <Row label="Condição" value={installmentsLabel} />
             <Row label="Data da venda" value={formatDateOnly(sale.sale_date)} />
           </dl>
         </Card>

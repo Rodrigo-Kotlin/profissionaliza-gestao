@@ -58,6 +58,17 @@ export type ContractDetail = {
   payment_method_snapshot: string
   installments_snapshot: number
   commercial_notes_snapshot: string | null
+  offer_code_snapshot: string | null
+  offer_name_snapshot: string | null
+  offer_type_snapshot: string | null
+  price_plan_code_snapshot: string | null
+  commercial_payment_method_snapshot: string | null
+  pricing_model_snapshot: string | null
+  installment_count_commercial_snapshot: number | null
+  installment_amount_snapshot: number | null
+  cash_price_snapshot: number | null
+  enrollment_fee_snapshot: number | null
+  total_amount_snapshot: number | null
   contract_notes: string | null
   created_at: string
   updated_at: string

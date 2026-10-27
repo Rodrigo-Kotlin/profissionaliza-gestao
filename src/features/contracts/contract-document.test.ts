@@ -37,6 +37,17 @@ const contract: ContractDocumentContract = {
   payment_method_snapshot: 'PIX',
   installments_snapshot: 1,
   commercial_notes_snapshot: 'Observação comercial',
+  offer_code_snapshot: null,
+  offer_name_snapshot: null,
+  offer_type_snapshot: null,
+  price_plan_code_snapshot: null,
+  commercial_payment_method_snapshot: null,
+  pricing_model_snapshot: null,
+  installment_count_commercial_snapshot: null,
+  installment_amount_snapshot: null,
+  cash_price_snapshot: null,
+  enrollment_fee_snapshot: null,
+  total_amount_snapshot: null,
   contract_notes: null,
   created_at: '2026-10-07T12:00:00.000Z',
   issued_at: null
@@ -51,7 +62,30 @@ describe('contract document payload', () => {
     expect(payload.course.name).toBe(contract.course_name_snapshot)
     expect(payload.commercial.netValue).toBe(contract.net_value_snapshot)
     expect(payload.commercial.installments).toBe(1)
+    expect(payload.commercial.paymentMethod).toBe('PIX')
+    expect(payload.commercial.installmentsLabel).toBe('1')
     expect(payload.clauses.status).toBe('LEGAL_TEXT_PENDING_APPROVAL')
+  })
+
+  it('representa CASH como à vista e preserva parcela explícita', () => {
+    const payload = buildContractDocumentPayload({
+      ...contract,
+      commercial_payment_method_snapshot: 'CASH',
+      pricing_model_snapshot: 'CASH',
+      installment_count_commercial_snapshot: null,
+      installment_amount_snapshot: null
+    }, institution)
+    expect(payload.commercial.paymentMethod).toBe('À vista')
+    expect(payload.commercial.installmentsLabel).toBe('À vista')
+    const installmentPayload = buildContractDocumentPayload({
+      ...contract,
+      commercial_payment_method_snapshot: 'CREDIT_CARD',
+      pricing_model_snapshot: 'INSTALLMENT',
+      installment_count_commercial_snapshot: 12,
+      installment_amount_snapshot: 220
+    }, institution)
+    expect(installmentPayload.commercial.installmentsLabel).toBe('12 parcelas')
+    expect(installmentPayload.commercial.installmentAmount).toBe(220)
   })
 
   it('canonicaliza a mesma estrutura independentemente da ordem das propriedades', () => {

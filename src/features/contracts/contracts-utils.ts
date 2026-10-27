@@ -71,3 +71,42 @@ export function formatContractAddress(
   const zipLine = address.postal_code ? `CEP ${address.postal_code}` : ''
   return [streetLine, rest, cityLine, zipLine].filter(Boolean).join('\n')
 }
+
+const CONTRACT_PAYMENT_LABELS: Record<string, string> = {
+  PIX: 'PIX',
+  CASH: 'À vista',
+  DINHEIRO: 'Dinheiro',
+  DEBIT: 'Cartão de débito',
+  CARTAO_DEBITO: 'Cartão de débito',
+  BOLETO: 'Boleto',
+  CREDIT_CARD: 'Cartão de crédito',
+  CARTAO_CREDITO: 'Cartão de crédito',
+  OTHER: 'Outro',
+  OUTRO: 'Outro',
+  TRANSFERENCIA: 'Transferência'
+}
+
+export function formatContractPayment(contract: {
+  payment_method_snapshot?: string | null
+  payment_method?: string
+  commercial_payment_method_snapshot?: string | null
+  pricing_model_snapshot?: string | null
+}): string {
+  if (contract.commercial_payment_method_snapshot === 'CASH' || contract.pricing_model_snapshot === 'CASH') return 'À vista'
+  const key = contract.commercial_payment_method_snapshot ?? contract.payment_method_snapshot ?? contract.payment_method ?? '—'
+  return CONTRACT_PAYMENT_LABELS[key] ?? key
+}
+
+export function formatContractInstallments(contract: {
+  installments_snapshot?: number
+  installments?: number
+  installment_count_commercial_snapshot?: number | null
+  installment_amount_snapshot?: number | null
+  pricing_model_snapshot?: string | null
+}): string {
+  if (contract.pricing_model_snapshot === 'CASH') return 'À vista'
+  const count = contract.installment_count_commercial_snapshot ?? contract.installments_snapshot ?? contract.installments ?? 1
+  return contract.installment_amount_snapshot != null
+    ? `${count}x de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(contract.installment_amount_snapshot)}`
+    : `${count} parcela${count === 1 ? '' : 's'}`
+}

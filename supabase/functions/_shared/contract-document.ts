@@ -2,6 +2,20 @@ export const CONTRACT_TEMPLATE_VERSION = 'CONTRACT_PF_V1'
 export const CONTRACT_DOCUMENT_TYPE = 'CONTRACT'
 export const LEGAL_TEXT_STATUS = 'LEGAL_TEXT_PENDING_APPROVAL'
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  PIX: 'PIX',
+  CASH: 'À vista',
+  DINHEIRO: 'Dinheiro',
+  DEBIT: 'Cartão de débito',
+  CARTAO_DEBITO: 'Cartão de débito',
+  BOLETO: 'Boleto',
+  CREDIT_CARD: 'Cartão de crédito',
+  CARTAO_CREDITO: 'Cartão de crédito',
+  OTHER: 'Outro',
+  OUTRO: 'Outro',
+  TRANSFERENCIA: 'Transferência'
+}
+
 export type InstitutionSnapshot = {
   legalName: string
   tradeName: string
@@ -41,6 +55,17 @@ export type ContractDocumentContract = {
   payment_method_snapshot: string
   installments_snapshot: number
   commercial_notes_snapshot: string | null
+  offer_code_snapshot: string | null
+  offer_name_snapshot: string | null
+  offer_type_snapshot: string | null
+  price_plan_code_snapshot: string | null
+  commercial_payment_method_snapshot: string | null
+  pricing_model_snapshot: string | null
+  installment_count_commercial_snapshot: number | null
+  installment_amount_snapshot: number | null
+  cash_price_snapshot: number | null
+  enrollment_fee_snapshot: number | null
+  total_amount_snapshot: number | null
   contract_notes: string | null
   created_at: string
   issued_at: string | null
@@ -76,6 +101,8 @@ export type ContractDocumentPayload = {
     netValue: number
     paymentMethod: string
     installments: number
+    installmentsLabel: string
+    installmentAmount: number | null
     notes: string | null
   }
   dates: {
@@ -105,6 +132,29 @@ export function buildContractDocumentPayload(
   documentCode: string | null = null
 ): ContractDocumentPayload {
   const createdDate = contract.created_at.slice(0, 10)
+  const commercialPaymentMethod = contract.commercial_payment_method_snapshot
+  const hasCommercialSnapshot = commercialPaymentMethod != null
+    || contract.pricing_model_snapshot != null
+    || contract.offer_code_snapshot != null
+    || contract.price_plan_code_snapshot != null
+  const isCash = hasCommercialSnapshot
+    && (commercialPaymentMethod === 'CASH' || contract.pricing_model_snapshot === 'CASH')
+  const paymentMethod = !hasCommercialSnapshot
+    ? contract.payment_method_snapshot
+    : isCash
+    ? 'À vista'
+    : PAYMENT_METHOD_LABELS[commercialPaymentMethod ?? contract.payment_method_snapshot]
+      ?? commercialPaymentMethod
+      ?? PAYMENT_METHOD_LABELS[contract.payment_method_snapshot]
+      ?? contract.payment_method_snapshot
+  const commercialInstallmentCount = contract.installment_count_commercial_snapshot
+  const installmentsLabel = !hasCommercialSnapshot
+    ? String(contract.installments_snapshot)
+    : isCash
+    ? 'À vista'
+    : commercialInstallmentCount != null
+      ? `${commercialInstallmentCount} parcela${commercialInstallmentCount === 1 ? '' : 's'}`
+      : `${contract.installments_snapshot} parcela${contract.installments_snapshot === 1 ? '' : 's'}`
   return {
     institution,
     contract: {
@@ -133,8 +183,10 @@ export function buildContractDocumentPayload(
       grossValue: contract.gross_value_snapshot,
       discountValue: contract.discount_value_snapshot,
       netValue: contract.net_value_snapshot,
-      paymentMethod: contract.payment_method_snapshot,
+      paymentMethod,
       installments: contract.installments_snapshot,
+      installmentsLabel,
+      installmentAmount: contract.installment_amount_snapshot,
       notes: contract.commercial_notes_snapshot || contract.contract_notes
     },
     dates: {

@@ -162,6 +162,8 @@ export type CommercialPricePlanInstallment = {
 }
 
 export type CommercialSaleSnapshot = {
+  course_workload_snapshot?: number | null
+  course_modality_snapshot?: 'PRESENCIAL' | 'ONLINE' | 'HIBRIDO' | null
   offer_id: string | null
   price_plan_id: string | null
   offer_code_snapshot: string | null

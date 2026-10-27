@@ -18,6 +18,11 @@ const contract: ContractDocumentContract = {
   course_name_snapshot: 'Curso Teste', course_workload_snapshot: 120, course_modality_snapshot: 'PRESENCIAL',
   gross_value_snapshot: 1200, discount_value_snapshot: 100, net_value_snapshot: 1100,
   payment_method_snapshot: 'PIX', installments_snapshot: 1, commercial_notes_snapshot: null,
+  offer_code_snapshot: null, offer_name_snapshot: null, offer_type_snapshot: null,
+  price_plan_code_snapshot: null, commercial_payment_method_snapshot: null,
+  pricing_model_snapshot: null, installment_count_commercial_snapshot: null,
+  installment_amount_snapshot: null, cash_price_snapshot: null, enrollment_fee_snapshot: null,
+  total_amount_snapshot: null,
   contract_notes: null, created_at: '2026-10-07T12:00:00.000Z', issued_at: null
 }
 
