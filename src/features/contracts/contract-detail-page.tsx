@@ -16,8 +16,7 @@ import { IssueContractDialog } from './issue-contract-dialog'
 import { CancelContractDialog } from './cancel-contract-dialog'
 import { ContractExecutionSection } from './contract-execution-section'
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_TONES, CONTRACT_COURSE_MODALITY_LABELS } from './contracts-constants'
-import { isCancelAllowed, isEditDraftAllowed, isIssueAllowed, formatContractAddress } from './contracts-utils'
-import { SALE_PAYMENT_METHOD_LABELS } from '../sales/sales-constants'
+import { formatContractAddress, formatContractInstallments, formatContractPayment, isCancelAllowed, isEditDraftAllowed, isIssueAllowed } from './contracts-utils'
 import type { ContractDetail as ContractDetailType, ContractTimelineEvent } from './contracts-types'
 
 export function ContractDetailPage() {
@@ -46,6 +45,8 @@ export function ContractDetailPage() {
 
   const contract = detail.data
   const events = timeline.data?.data ?? []
+  const paymentLabel = formatContractPayment(contract)
+  const installmentsLabel = formatContractInstallments(contract)
 
   return (
     <PageContentContainer className="space-y-6" width="wide">
@@ -175,8 +176,8 @@ export function ContractDetailPage() {
             <Row label="Valor bruto" value={formatCurrency(contract.gross_value_snapshot)} />
             <Row label="Desconto" value={formatCurrency(contract.discount_value_snapshot)} />
             <Row label="Valor líquido" value={formatCurrency(contract.net_value_snapshot)} highlight />
-            <Row label="Pagamento" value={SALE_PAYMENT_METHOD_LABELS[contract.payment_method_snapshot as keyof typeof SALE_PAYMENT_METHOD_LABELS] ?? contract.payment_method_snapshot} />
-            <Row label="Parcelas" value={String(contract.installments_snapshot)} />
+            <Row label="Pagamento" value={paymentLabel} />
+            <Row label="Condição" value={installmentsLabel} />
           </dl>
         </Card>
 

@@ -279,9 +279,13 @@ export type Database = {
           contractor_name_snapshot: string
           contractor_person_id: string
           contractor_phone_snapshot: string | null
-          course_modality_snapshot: string
-          course_name_snapshot: string
-          course_workload_snapshot: number | null
+           course_modality_snapshot: string
+           course_name_snapshot: string
+           course_workload_snapshot: number | null
+          commercial_payment_method_snapshot: string | null
+          enrollment_fee_snapshot: number | null
+          installment_amount_snapshot: number | null
+          installment_count_commercial_snapshot: number | null
           created_at: string
           created_by: string | null
           discount_value_snapshot: number
@@ -290,6 +294,13 @@ export type Database = {
           installments_snapshot: number
           issued_at: string | null
           net_value_snapshot: number
+          offer_code_snapshot: string | null
+          offer_name_snapshot: string | null
+          offer_type_snapshot: string | null
+          price_plan_code_snapshot: string | null
+          pricing_model_snapshot: string | null
+          cash_price_snapshot: number | null
+          total_amount_snapshot: number | null
           payment_method_snapshot: string
           sale_id: string
           signature_confirmed_by: string | null
@@ -315,7 +326,11 @@ export type Database = {
           contractor_phone_snapshot?: string | null
           course_modality_snapshot: string
           course_name_snapshot: string
-          course_workload_snapshot?: number | null
+           course_workload_snapshot?: number | null
+          commercial_payment_method_snapshot?: string | null
+          enrollment_fee_snapshot?: number | null
+          installment_amount_snapshot?: number | null
+          installment_count_commercial_snapshot?: number | null
           created_at?: string
           created_by?: string | null
           discount_value_snapshot?: number
@@ -324,6 +339,13 @@ export type Database = {
           installments_snapshot?: number
           issued_at?: string | null
           net_value_snapshot: number
+          offer_code_snapshot?: string | null
+          offer_name_snapshot?: string | null
+          offer_type_snapshot?: string | null
+          price_plan_code_snapshot?: string | null
+          pricing_model_snapshot?: string | null
+          cash_price_snapshot?: number | null
+          total_amount_snapshot?: number | null
           payment_method_snapshot: string
           sale_id: string
           signature_confirmed_by?: string | null
@@ -349,7 +371,11 @@ export type Database = {
           contractor_phone_snapshot?: string | null
           course_modality_snapshot?: string
           course_name_snapshot?: string
-          course_workload_snapshot?: number | null
+           course_workload_snapshot?: number | null
+          commercial_payment_method_snapshot?: string | null
+          enrollment_fee_snapshot?: number | null
+          installment_amount_snapshot?: number | null
+          installment_count_commercial_snapshot?: number | null
           created_at?: string
           created_by?: string | null
           discount_value_snapshot?: number
@@ -358,6 +384,13 @@ export type Database = {
           installments_snapshot?: number
           issued_at?: string | null
           net_value_snapshot?: number
+          offer_code_snapshot?: string | null
+          offer_name_snapshot?: string | null
+          offer_type_snapshot?: string | null
+          price_plan_code_snapshot?: string | null
+          pricing_model_snapshot?: string | null
+          cash_price_snapshot?: number | null
+          total_amount_snapshot?: number | null
           payment_method_snapshot?: string
           sale_id?: string
           signature_confirmed_by?: string | null
@@ -1303,8 +1336,10 @@ export type Database = {
           cancellation_reason: string | null
           commercial_notes: string | null
           course_id: string
+          course_modality_snapshot: string | null
           course_name_snapshot: string
           course_price_snapshot: number | null
+          course_workload_snapshot: number | null
           cash_price_snapshot: number | null
           created_at: string
           created_by: string | null
@@ -1345,8 +1380,10 @@ export type Database = {
           cancellation_reason?: string | null
           commercial_notes?: string | null
           course_id: string
+          course_modality_snapshot?: string | null
           course_name_snapshot: string
           course_price_snapshot?: number | null
+          course_workload_snapshot?: number | null
           created_at?: string
           created_by?: string | null
           discount_value?: number
@@ -1386,8 +1423,10 @@ export type Database = {
           cancellation_reason?: string | null
           commercial_notes?: string | null
           course_id?: string
+          course_modality_snapshot?: string | null
           course_name_snapshot?: string
           course_price_snapshot?: number | null
+          course_workload_snapshot?: number | null
           created_at?: string
           created_by?: string | null
           discount_value?: number

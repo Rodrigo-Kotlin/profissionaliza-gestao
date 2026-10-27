@@ -101,7 +101,15 @@ export async function renderContractPdf(payload: ContractDocumentPayload): Promi
   field('Desconto', money(payload.commercial.discountValue))
   field('Valor líquido', money(payload.commercial.netValue))
   field('Forma de pagamento', payload.commercial.paymentMethod)
-  field('Parcelas', String(payload.commercial.installments))
+  const commercialCondition = payload.commercial.installmentsLabel === 'À vista'
+    || payload.commercial.installmentsLabel.includes(' parcela')
+    || payload.commercial.installmentAmount != null
+  field(
+    commercialCondition ? 'Condição de pagamento' : 'Parcelas',
+    commercialCondition && payload.commercial.installmentAmount != null
+      ? `${payload.commercial.installmentsLabel} de ${money(payload.commercial.installmentAmount)}`
+      : payload.commercial.installmentsLabel
+  )
   if (payload.commercial.notes) field('Observações', payload.commercial.notes)
   gap()
 
