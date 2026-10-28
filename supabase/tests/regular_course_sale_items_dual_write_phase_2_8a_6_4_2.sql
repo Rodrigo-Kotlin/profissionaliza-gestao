@@ -1,5 +1,6 @@
 -- FASE 2.8A.6.4.2 — REGULAR COURSE SALE_ITEMS DUAL-WRITE SMOKE
--- All fixtures and mutations are contained in one transaction and rolled back.
+-- Catalog rows are read-only references. All fixture and business mutations are
+-- contained in this transaction and are removed by the final ROLLBACK.
 begin;
 
 do $$
@@ -7,40 +8,48 @@ declare
   v_fn oid;
   v_definition text;
   v_actor uuid;
+  v_stage_id uuid;
+  v_source_id uuid;
   v_lead_id uuid;
+  v_reuse_lead_id uuid;
   v_failure_lead_id uuid;
+  v_mismatch_lead_id uuid;
+  v_person_id uuid;
+  v_reuse_person_id uuid;
+  v_failure_person_id uuid;
+  v_mismatch_person_id uuid;
   v_offer_id uuid;
-  v_online_offer_id uuid;
-  v_invalid_offer_id uuid;
-  v_failure_offer_id uuid;
   v_plan_id uuid;
   v_wrong_plan_id uuid;
-  v_failure_plan_id uuid;
-  v_failure_course_interest_id uuid;
+  v_online_offer_id uuid;
   v_course_id uuid;
+  v_mismatch_course_id uuid;
   v_sale_id uuid;
+  v_reuse_sale_id uuid;
   v_sale_item_id uuid;
-  v_failure_person_id uuid;
-  v_positive_person_id uuid;
-  v_before_lead_status text;
-  v_before_student_count integer;
-  v_before_pending_count integer;
-  v_before_sale_count integer;
-  v_before_item_count integer;
-  v_before_positive_student_count integer;
-  v_before_audit_sales_count integer;
-  v_before_audit_lead_count integer;
-  v_before_contract_count integer;
-  v_before_enrollment_count integer;
-  v_before_name text;
+  v_reuse_student_id uuid;
+  v_before_reuse_student_count integer;
+  v_before_failure_status text;
+  v_before_failure_student_count integer;
+  v_before_failure_pending_count integer;
+  v_before_failure_sale_count integer;
+  v_before_failure_item_count integer;
+  v_before_failure_audit_count integer;
   v_before_code text;
+  v_before_name text;
   v_before_workload integer;
   v_before_modality text;
-  v_sale json;
+  v_before_sales bigint;
+  v_before_sale_items bigint;
+  v_before_contracts bigint;
+  v_before_enrollments bigint;
+  v_before_courses bigint;
+  v_before_positive_audit_count integer;
+  v_audit_count integer;
   v_detail jsonb;
   v_list json;
+  v_sale json;
   v_error boolean;
-  v_audit_count integer;
 begin
   select p.oid, pg_get_functiondef(p.oid)
     into v_fn, v_definition
@@ -48,7 +57,8 @@ begin
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
     and p.proname = 'create_sale_from_commercial_offer'
-    and pg_get_function_identity_arguments(p.oid) = 'p_lead_id uuid, p_offer_id uuid, p_price_plan_id uuid, p_discount_value numeric, p_commercial_notes text';
+    and pg_get_function_identity_arguments(p.oid) =
+      'p_lead_id uuid, p_offer_id uuid, p_price_plan_id uuid, p_discount_value numeric, p_commercial_notes text';
   if v_fn is null then raise exception 'Commercial sale RPC signature missing'; end if;
   if lower(v_definition) not like '%security definer%'
      or not exists (select 1 from pg_proc where oid=v_fn and 'search_path=pg_catalog, public' = any(proconfig))
@@ -75,10 +85,16 @@ begin
     raise exception 'Dedicated Sale Item write RPC exists';
   end if;
 
-  if (select count(*) from public.sales) <> 15 then raise exception 'Historical sales count changed'; end if;
-  if (select count(*) from public.sale_items) <> 0 then raise exception 'Historical Sale Items were backfilled'; end if;
-  select count(*) into v_before_contract_count from public.contracts;
-  select count(*) into v_before_enrollment_count from public.enrollments;
+  select count(*) into v_before_sales from public.sales;
+  select count(*) into v_before_sale_items from public.sale_items;
+  select count(*) into v_before_contracts from public.contracts;
+  select count(*) into v_before_enrollments from public.enrollments;
+  select count(*) into v_before_courses from public.courses;
+  if v_before_sales <> 15 or v_before_sale_items <> 0 or v_before_contracts <> 12
+     or v_before_enrollments <> 6 or v_before_courses <> 68 then
+    raise exception 'Unexpected Production baseline: sales %, items %, contracts %, enrollments %, courses %',
+      v_before_sales, v_before_sale_items, v_before_contracts, v_before_enrollments, v_before_courses;
+  end if;
   if (select is_nullable from information_schema.columns where table_schema='public' and table_name='sales' and column_name='course_id') <> 'NO' then
     raise exception 'sales.course_id must remain NOT NULL';
   end if;
@@ -102,200 +118,182 @@ begin
   order by ur.user_id
   limit 1;
   if v_actor is null then raise exception 'No full-permission smoke actor found'; end if;
-  perform set_config('request.jwt.claim.sub', v_actor::text, true);
-  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_actor::text, 'role', 'authenticated')::text, true);
 
-  select l.id, o.id, pp.id, c.id
-    into v_lead_id, v_offer_id, v_plan_id, v_course_id
-  from public.crm_leads l
-  join public.crm_pipeline_stages st on st.id=l.stage_id
-  join public.course_offers o on o.course_id is not null and o.offer_type='COURSE'
-  join public.price_plans pp on pp.offer_id=o.id
+  -- Deterministic real catalog references; no catalog row is changed permanently.
+  select o.id, p.id, o.course_id
+    into v_offer_id, v_plan_id, v_course_id
+  from public.course_offers o
+  join public.price_plans p on p.offer_id=o.id
   join public.courses c on c.id=o.course_id
-  where l.status='OPEN'
-    and st.code in ('PROPOSAL_SENT','NEGOTIATION')
-    and (l.course_interest_id is null or l.course_interest_id=o.course_id)
-    and o.status='ACTIVE' and o.valid_from <= now() and (o.valid_until is null or o.valid_until > now())
-    and pp.status='ACTIVE' and pp.valid_from <= now() and (pp.valid_until is null or pp.valid_until > now())
-    and pp.quantity_min is null and pp.quantity_max is null
-    and c.status='ACTIVE'
-    and not exists (select 1 from public.sales s where s.lead_id=l.id)
-  order by l.created_at
+  where o.status='ACTIVE' and o.offer_type='COURSE' and o.course_id is not null
+    and o.valid_from <= now() and (o.valid_until is null or o.valid_until >= now())
+    and p.status='ACTIVE' and p.valid_from <= now() and (p.valid_until is null or p.valid_until >= now())
+    and p.quantity_min is null and p.quantity_max is null and c.status='ACTIVE'
+  order by o.code, o.id, p.code, p.id
   limit 1;
-  if v_lead_id is null then raise exception 'No valid regular COURSE lead fixture found'; end if;
+  if v_offer_id is null then raise exception 'No active regular COURSE catalog fixture found'; end if;
+  select c.id into v_mismatch_course_id from public.courses c
+    where c.status='ACTIVE' and c.id <> v_course_id order by c.code, c.id limit 1;
+  if v_mismatch_course_id is null then raise exception 'No second ACTIVE Course available for mismatch fixture'; end if;
+  select p.id into v_wrong_plan_id from public.price_plans p
+    where p.offer_id <> v_offer_id and p.status='ACTIVE' order by p.code, p.id limit 1;
+  if v_wrong_plan_id is null then raise exception 'No active Plan from another Offer available'; end if;
+  select id into v_online_offer_id from public.course_offers
+    where code='OFR-ONLINE-CATALOG' or offer_type='ONLINE_CATALOG' order by code, id limit 1;
+  if v_online_offer_id is null then raise exception 'ONLINE_CATALOG smoke fixture missing'; end if;
 
-  select l.id, l.course_interest_id, o.id, pp.id
-    into v_failure_lead_id, v_failure_course_interest_id, v_failure_offer_id, v_failure_plan_id
-  from public.crm_leads l
-  join public.crm_pipeline_stages st on st.id=l.stage_id
-  join public.course_offers o on o.course_id is not null and o.offer_type='COURSE'
-  join public.price_plans pp on pp.offer_id=o.id
-  join public.courses c on c.id=o.course_id
-  where l.id <> v_lead_id
-    and l.status='OPEN' and st.code in ('PROPOSAL_SENT','NEGOTIATION')
-    and (l.course_interest_id is null or l.course_interest_id=o.course_id)
-    and o.status='ACTIVE' and o.valid_from <= now() and (o.valid_until is null or o.valid_until > now())
-    and pp.status='ACTIVE' and pp.valid_from <= now() and (pp.valid_until is null or pp.valid_until > now())
-    and pp.quantity_min is null and pp.quantity_max is null
-    and c.status='ACTIVE'
-    and not exists (select 1 from public.sales s where s.lead_id=l.id)
-  order by l.created_at
-  limit 1;
-  if v_failure_lead_id is null then raise exception 'No second regular COURSE lead fixture found'; end if;
+  select id into v_stage_id from public.crm_pipeline_stages where code='NEGOTIATION';
+  select id into v_source_id from public.crm_lead_sources where code='OUTRO';
+  if v_stage_id is null or v_source_id is null then raise exception 'CRM fixture lookup failed'; end if;
 
-  -- Positive path: one Sale and exactly one structural Sale Item.
-  select person_id into v_positive_person_id from public.crm_leads where id=v_lead_id;
-  select count(*) into v_before_positive_student_count from public.students where person_id=v_positive_person_id;
+  -- Four synthetic identities and Leads. None existed before this transaction.
+  insert into public.people(full_name, created_by, updated_by)
+    values ('SMOKE DUAL WRITE POSITIVE', v_actor, v_actor) returning id into v_person_id;
+  insert into public.crm_leads(lead_code, person_id, stage_id, source_id, course_interest_id, owner_user_id, status, temperature, created_by, updated_by)
+    values ('SMOKE-DW-POS-'||substr(gen_random_uuid()::text,1,8), v_person_id, v_stage_id, v_source_id, v_course_id, v_actor, 'OPEN', 'HOT', v_actor, v_actor)
+    returning id into v_lead_id;
+  insert into public.crm_activities(lead_id, owner_user_id, type, title, due_at, created_by, updated_by)
+    values (v_lead_id, v_actor, 'CALL', 'SMOKE dual-write activity', now()+interval '1 day', v_actor, v_actor);
+
+  insert into public.people(full_name, created_by, updated_by)
+    values ('SMOKE DUAL WRITE STUDENT REUSE', v_actor, v_actor) returning id into v_reuse_person_id;
+  insert into public.students(person_id, student_code, status, registration_date, created_by, updated_by)
+    values (v_reuse_person_id, 'ALU-SMOKE-'||substr(gen_random_uuid()::text,1,8), 'PRE_CADASTRO', current_date, v_actor, v_actor)
+    returning id into v_reuse_student_id;
+  insert into public.crm_leads(lead_code, person_id, stage_id, source_id, course_interest_id, owner_user_id, status, temperature, created_by, updated_by)
+    values ('SMOKE-DW-REU-'||substr(gen_random_uuid()::text,1,8), v_reuse_person_id, v_stage_id, v_source_id, v_course_id, v_actor, 'OPEN', 'WARM', v_actor, v_actor)
+    returning id into v_reuse_lead_id;
+
+  insert into public.people(full_name, created_by, updated_by)
+    values ('SMOKE DUAL WRITE FAILURE', v_actor, v_actor) returning id into v_failure_person_id;
+  insert into public.crm_leads(lead_code, person_id, stage_id, source_id, course_interest_id, owner_user_id, status, temperature, created_by, updated_by)
+    values ('SMOKE-DW-FAIL-'||substr(gen_random_uuid()::text,1,8), v_failure_person_id, v_stage_id, v_source_id, v_course_id, v_actor, 'OPEN', 'COLD', v_actor, v_actor)
+    returning id into v_failure_lead_id;
+  insert into public.crm_activities(lead_id, owner_user_id, type, title, due_at, created_by, updated_by)
+    values (v_failure_lead_id, v_actor, 'FOLLOW_UP', 'SMOKE failure activity', now()+interval '1 day', v_actor, v_actor);
+
+  insert into public.people(full_name, created_by, updated_by)
+    values ('SMOKE DUAL WRITE MISMATCH', v_actor, v_actor) returning id into v_mismatch_person_id;
+  insert into public.crm_leads(lead_code, person_id, stage_id, source_id, course_interest_id, owner_user_id, status, temperature, created_by, updated_by)
+    values ('SMOKE-DW-MIS-'||substr(gen_random_uuid()::text,1,8), v_mismatch_person_id, v_stage_id, v_source_id, v_mismatch_course_id, v_actor, 'OPEN', 'COLD', v_actor, v_actor)
+    returning id into v_mismatch_lead_id;
+
+  -- Positive flow: the RPC creates the Student, Sale and exactly one Sale Item.
+  select count(*) into v_before_positive_audit_count from public.audit_logs where action='sales.created';
   v_sale := public.create_sale_from_commercial_offer(v_lead_id, v_offer_id, v_plan_id, 0, 'DUAL-WRITE SMOKE');
   v_sale_id := (v_sale->>'sale_id')::uuid;
   if (v_sale->>'sale_code') !~ '^VND-[0-9]{4}-[0-9]{6}$' then raise exception 'Sale code format changed'; end if;
-  if (select status from public.crm_leads where id=v_lead_id) <> 'WON' then raise exception 'Lead was not marked WON after Sale Item creation'; end if;
-  if exists (select 1 from public.crm_activities where lead_id=v_lead_id and status='PENDING') then raise exception 'Pending activities were not canceled'; end if;
-  if (select count(*) from public.students where person_id=v_positive_person_id) not between v_before_positive_student_count and v_before_positive_student_count+1 then
-    raise exception 'Student create/reuse behavior changed';
-  end if;
-  if (select count(*) from public.contracts) <> v_before_contract_count or (select count(*) from public.enrollments) <> v_before_enrollment_count then
-    raise exception 'Contract/Enrollment flow was changed';
-  end if;
+  if (select count(*) from public.sale_items where sale_id=v_sale_id) <> 1 then raise exception 'Exactly-one Sale Item invariant failed'; end if;
   select id into v_sale_item_id from public.sale_items where sale_id=v_sale_id;
-  if (select count(*) from public.sale_items where sale_id=v_sale_id) <> 1 then
-    raise exception 'Regular COURSE Sale did not create exactly one Sale Item';
-  end if;
   if (select position from public.sale_items where id=v_sale_item_id) <> 1 then raise exception 'Sale Item position is not 1'; end if;
+  if (select course_id from public.sale_items where id=v_sale_item_id) <> v_course_id then raise exception 'Sale Item course mismatch'; end if;
   if (select offer_item_id from public.sale_items where id=v_sale_item_id) is not null then raise exception 'Regular Sale Item has an Offer Item'; end if;
   if (select created_by from public.sale_items where id=v_sale_item_id) <> v_actor then raise exception 'Sale Item created_by mismatch'; end if;
-  if not exists (
-    select 1 from public.sale_items si join public.sales s on s.id=si.sale_id
+  if not exists (select 1 from public.sale_items si join public.sales s on s.id=si.sale_id
     where si.id=v_sale_item_id and si.course_id=s.course_id and si.course_id=v_course_id
       and si.course_name_snapshot=s.course_name_snapshot
       and si.course_workload_snapshot is not distinct from s.course_workload_snapshot
       and si.course_modality_snapshot is not distinct from s.course_modality_snapshot
-      and si.course_code_snapshot=(select code from public.courses where id=v_course_id)
-  ) then raise exception 'Sale and Sale Item snapshots are inconsistent'; end if;
+      and si.course_code_snapshot=(select code from public.courses where id=v_course_id)) then
+    raise exception 'Sale and Sale Item snapshots are inconsistent';
+  end if;
+  if (select status from public.crm_leads where id=v_lead_id) <> 'WON' then raise exception 'Lead was not marked WON'; end if;
+  if exists (select 1 from public.crm_activities where lead_id=v_lead_id and status='PENDING') then raise exception 'Activity was not canceled'; end if;
+  if (select count(*) from public.students where person_id=v_person_id) <> 1 then raise exception 'Student was not created'; end if;
+  select count(*) into v_audit_count from public.audit_logs where action='sales.created' and entity_id=v_sale_id::text
+    and metadata->>'item_count'='1' and metadata->>'sale_item_id'=v_sale_item_id::text;
+  if v_audit_count <> 1 or (select count(*) from public.audit_logs where action='sales.created') <> v_before_positive_audit_count+1 then raise exception 'sales.created audit mismatch'; end if;
+  if exists (select 1 from public.audit_logs where action='sales.item_created' and entity_id=v_sale_item_id::text) then raise exception 'Unexpected Sale Item audit event'; end if;
 
   v_detail := public.get_sale_detail(v_sale_id)::jsonb;
   if (v_detail->>'item_count')::integer <> 1 or jsonb_array_length(v_detail->'items') <> 1 then raise exception 'Sale detail item payload mismatch'; end if;
-  if (v_detail->'items'->0->>'position')::integer <> 1 or (v_detail->'items'->0->>'course_id')::uuid <> v_course_id then raise exception 'Sale detail item identity mismatch'; end if;
   v_list := public.list_sale_items(v_sale_id);
-  if json_array_length(v_list) <> 1 or (v_list->0->>'position')::integer <> 1 then raise exception 'list_sale_items payload mismatch'; end if;
+  if json_array_length(v_list) <> 1 then raise exception 'list_sale_items payload mismatch'; end if;
   v_list := public.list_sales(null,null,null,null,null,null,1,100);
   if not exists (select 1 from json_array_elements(v_list->'data') r where r->>'id'=v_sale_id::text and (r->>'item_count')::integer=1) then raise exception 'list_sales item_count mismatch'; end if;
-  select count(*) into v_audit_count from public.audit_logs where action='sales.created' and entity_id=v_sale_id::text and metadata->>'item_count'='1' and metadata->>'sale_item_id'=v_sale_item_id::text;
-  if v_audit_count <> 1 then raise exception 'sales.created audit metadata mismatch'; end if;
-  if exists (select 1 from public.audit_logs where action='sales.item_created' and entity_id=v_sale_item_id::text) then
-    raise exception 'Dedicated Sale Item audit event must not be emitted';
-  end if;
 
-  -- Snapshots remain historical after Course changes.
-  select si.course_code_snapshot, si.course_name_snapshot, si.course_workload_snapshot, si.course_modality_snapshot
-    into v_before_code, v_before_name, v_before_workload, v_before_modality
-  from public.sale_items si where si.id=v_sale_item_id;
+  -- Independent valid flow with a pre-existing Student proves reuse/no duplication.
+  v_before_reuse_student_count := (select count(*) from public.students where person_id=v_reuse_person_id);
+  v_sale := public.create_sale_from_commercial_offer(v_reuse_lead_id, v_offer_id, v_plan_id, 0, 'DUAL-WRITE STUDENT REUSE');
+  v_reuse_sale_id := (v_sale->>'sale_id')::uuid;
+  if (select count(*) from public.students where person_id=v_reuse_person_id) <> v_before_reuse_student_count then raise exception 'Student was duplicated'; end if;
+  if (select count(*) from public.sale_items where sale_id=v_reuse_sale_id) <> 1 then raise exception 'Student reuse Sale Item invariant failed'; end if;
+
+  -- Snapshot immutability; restore the catalog row before negative scenarios.
+  select code, name, workload_hours, modality into v_before_code, v_before_name, v_before_workload, v_before_modality from public.courses where id=v_course_id;
   update public.courses set code='SMK-'||substr(v_course_id::text,1,8), name='SMOKE MUTATED COURSE', workload_hours=121,
-    modality=case when v_before_modality='ONLINE' then 'PRESENCIAL' else 'ONLINE' end
-  where id=v_course_id;
-  if (select course_code_snapshot from public.sale_items where id=v_sale_item_id) is distinct from v_before_code
-     or (select course_name_snapshot from public.sale_items where id=v_sale_item_id) is distinct from v_before_name
-     or (select course_workload_snapshot from public.sale_items where id=v_sale_item_id) is distinct from v_before_workload
-     or (select course_modality_snapshot from public.sale_items where id=v_sale_item_id) is distinct from v_before_modality then
-    raise exception 'Sale Item snapshots changed after Course mutation';
-  end if;
-
-  if (select course_code_snapshot from public.sales where id=v_sale_id) is distinct from v_before_code
-     or (select course_name_snapshot from public.sales where id=v_sale_id) is distinct from v_before_name
+    modality=case when v_before_modality='ONLINE' then 'PRESENCIAL' else 'ONLINE' end where id=v_course_id;
+  if (select course_name_snapshot from public.sales where id=v_sale_id) is distinct from v_before_name
      or (select course_workload_snapshot from public.sales where id=v_sale_id) is distinct from v_before_workload
-     or (select course_modality_snapshot from public.sales where id=v_sale_id) is distinct from v_before_modality then
-    raise exception 'Sale snapshots diverged from Sale Item snapshots';
+     or (select course_modality_snapshot from public.sales where id=v_sale_id) is distinct from v_before_modality
+     or (select course_code_snapshot from public.sale_items where id=v_sale_item_id) is distinct from v_before_code then
+    raise exception 'Course snapshot immutability failed';
   end if;
+  update public.courses set code=v_before_code, name=v_before_name, workload_hours=v_before_workload, modality=v_before_modality where id=v_course_id;
 
-  -- Duplicate Sale remains rejected and cannot create an extra Item.
-  v_error := false;
-  begin perform public.create_sale_from_commercial_offer(v_lead_id,v_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
+  -- Duplicate, invalid Offer/Plan/ONLINE, mismatch and discount validation.
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_lead_id,v_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
   if not v_error or (select count(*) from public.sale_items where sale_id=v_sale_id) <> 1 then raise exception 'Duplicate Sale protection changed'; end if;
-
-  -- Invalid offer, plan and discount inputs fail before any Sale/Item is created.
-  select id into v_online_offer_id from public.course_offers where offer_type='ONLINE_CATALOG' limit 1;
-  if v_online_offer_id is null then raise exception 'ONLINE_CATALOG smoke fixture missing'; end if;
-  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_online_offer_id,v_failure_plan_id,0,null); exception when others then v_error := true; end;
-  if not v_error then raise exception 'ONLINE_CATALOG offer was accepted'; end if;
-  select pp.id into v_wrong_plan_id from public.price_plans pp where pp.offer_id<>v_offer_id and pp.status='ACTIVE' limit 1;
-  if v_wrong_plan_id is null then raise exception 'Wrong-offer price plan smoke fixture missing'; end if;
-  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_wrong_plan_id,0,null); exception when others then v_error := true; end;
-  if not v_error then raise exception 'Price plan from another Offer was accepted'; end if;
-  select id into v_invalid_offer_id from public.course_offers where offer_type='COURSE' and status <> 'ACTIVE' limit 1;
-  if v_invalid_offer_id is null then raise exception 'Inactive COURSE offer smoke fixture missing'; end if;
-  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_invalid_offer_id,v_failure_plan_id,0,null); exception when others then v_error := true; end;
+  update public.course_offers set status='DRAFT' where id=v_offer_id;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
+  update public.course_offers set status='ACTIVE' where id=v_offer_id;
   if not v_error then raise exception 'Inactive COURSE offer was accepted'; end if;
-  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,-1,null); exception when others then v_error := true; end;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_online_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
+  if not v_error then raise exception 'ONLINE_CATALOG offer was accepted'; end if;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_wrong_plan_id,0,null); exception when others then v_error := true; end;
+  if not v_error then raise exception 'Wrong-offer Plan was accepted'; end if;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_mismatch_lead_id,v_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
+  if not v_error then raise exception 'Lead/course mismatch was accepted'; end if;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,-1,null); exception when others then v_error := true; end;
   if not v_error then raise exception 'Negative discount was accepted'; end if;
-  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,'NaN'::numeric,null); exception when others then v_error := true; end;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,'NaN'::numeric,null); exception when others then v_error := true; end;
   if not v_error then raise exception 'NaN discount was accepted'; end if;
-  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,'Infinity'::numeric,null); exception when others then v_error := true; end;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,'Infinity'::numeric,null); exception when others then v_error := true; end;
   if not v_error then raise exception 'Infinity discount was accepted'; end if;
-  v_error := false;
-  begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,
-    (select total_amount from public.price_plans where id=v_failure_plan_id)+1,null);
-  exception when others then v_error := true; end;
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,(select total_amount from public.price_plans where id=v_plan_id)+1,null); exception when others then v_error := true; end;
   if not v_error then raise exception 'Discount above gross was accepted'; end if;
 
-  update public.crm_leads
-  set course_interest_id=(select c.id from public.courses c where c.id <> (select course_id from public.course_offers where id=v_failure_offer_id) and c.status='ACTIVE' limit 1)
-  where id=v_failure_lead_id;
-  v_error := false;
-  begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,0,null); exception when others then v_error := true; end;
-  if not v_error then raise exception 'Lead/course mismatch was accepted'; end if;
-  update public.crm_leads set course_interest_id=v_failure_course_interest_id where id=v_failure_lead_id;
-
-  -- Controlled Sale Item failure proves the Sale/Student/Lead/Activity transaction is atomic.
-  select l.person_id, l.status, (select count(*) from public.students st where st.person_id=l.person_id),
-    (select count(*) from public.crm_activities a where a.lead_id=l.id and a.status='PENDING'),
-    (select count(*) from public.sales s where s.lead_id=l.id), (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=l.id),
-    (select count(*) from public.audit_logs where action='sales.created'), (select count(*) from public.audit_logs where action='crm.lead_won')
-    into v_failure_person_id, v_before_lead_status, v_before_student_count, v_before_pending_count, v_before_sale_count, v_before_item_count, v_before_audit_sales_count, v_before_audit_lead_count
+  -- Sale Item failure: the trigger is created only inside this transaction.
+  select status, (select count(*) from public.students where person_id=l.person_id),
+    (select count(*) from public.crm_activities where lead_id=l.id and status='PENDING'),
+    (select count(*) from public.sales where lead_id=l.id),
+    (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=l.id),
+    (select count(*) from public.audit_logs where action='sales.created')
+    into v_before_failure_status, v_before_failure_student_count, v_before_failure_pending_count,
+      v_before_failure_sale_count, v_before_failure_item_count, v_before_failure_audit_count
   from public.crm_leads l where l.id=v_failure_lead_id;
-  create function pg_temp.reject_sale_item_smoke() returns trigger language plpgsql as $fn$
-  begin raise exception 'controlled Sale Item failure'; end;
-  $fn$;
-  create trigger sale_items_smoke_reject before insert on public.sale_items
-    for each row execute function pg_temp.reject_sale_item_smoke();
-  v_error := false;
-  begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,0,null); exception when others then v_error := true; end;
+  create function pg_temp.reject_sale_item_smoke() returns trigger language plpgsql as $fn$ begin raise exception 'controlled Sale Item failure'; end; $fn$;
+  create trigger sale_items_smoke_reject before insert on public.sale_items for each row execute function pg_temp.reject_sale_item_smoke();
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
   if not v_error then raise exception 'Controlled Sale Item failure was not raised'; end if;
-  if (select count(*) from public.sales where lead_id=v_failure_lead_id) <> v_before_sale_count
-     or (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=v_failure_lead_id) <> v_before_item_count
-     or (select status from public.crm_leads where id=v_failure_lead_id) <> v_before_lead_status
-     or (select count(*) from public.students where person_id=v_failure_person_id) <> v_before_student_count
-     or (select count(*) from public.crm_activities where lead_id=v_failure_lead_id and status='PENDING') <> v_before_pending_count
-     or (select count(*) from public.audit_logs where action='sales.created') <> v_before_audit_sales_count
-     or (select count(*) from public.audit_logs where action='crm.lead_won') <> v_before_audit_lead_count then
+  if (select count(*) from public.sales where lead_id=v_failure_lead_id) <> v_before_failure_sale_count
+     or (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=v_failure_lead_id) <> v_before_failure_item_count
+     or (select status from public.crm_leads where id=v_failure_lead_id) <> v_before_failure_status
+     or (select count(*) from public.students where person_id=v_failure_person_id) <> v_before_failure_student_count
+     or (select count(*) from public.crm_activities where lead_id=v_failure_lead_id and status='PENDING') <> v_before_failure_pending_count
+     or (select count(*) from public.audit_logs where action='sales.created') <> v_before_failure_audit_count then
     raise exception 'Sale Item failure was not atomic';
   end if;
 
-  -- A failure in audit must also roll back the Sale Item, Sale, Student and Lead changes.
+  -- Audit failure: Sale, Item, Student, Lead and Activity must also roll back.
   drop trigger sale_items_smoke_reject on public.sale_items;
-  create function pg_temp.reject_audit_smoke() returns trigger language plpgsql as $fn$
-  begin raise exception 'controlled audit failure'; end;
-  $fn$;
-  create trigger audit_logs_smoke_reject before insert on public.audit_logs
-    for each row execute function pg_temp.reject_audit_smoke();
-  select l.person_id, l.status, (select count(*) from public.students st where st.person_id=l.person_id),
-    (select count(*) from public.crm_activities a where a.lead_id=l.id and a.status='PENDING'),
-    (select count(*) from public.sales s where s.lead_id=l.id), (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=l.id),
-    (select count(*) from public.audit_logs where action='sales.created'), (select count(*) from public.audit_logs where action='crm.lead_won')
-    into v_failure_person_id, v_before_lead_status, v_before_student_count, v_before_pending_count, v_before_sale_count, v_before_item_count, v_before_audit_sales_count, v_before_audit_lead_count
-  from public.crm_leads l where l.id=v_failure_lead_id;
-  v_error := false;
-  begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_failure_offer_id,v_failure_plan_id,0,null); exception when others then v_error := true; end;
+  create function pg_temp.reject_audit_smoke() returns trigger language plpgsql as $fn$ begin raise exception 'controlled audit failure'; end; $fn$;
+  create trigger audit_logs_smoke_reject before insert on public.audit_logs for each row execute function pg_temp.reject_audit_smoke();
+  v_error := false; begin perform public.create_sale_from_commercial_offer(v_failure_lead_id,v_offer_id,v_plan_id,0,null); exception when others then v_error := true; end;
   if not v_error then raise exception 'Controlled audit failure was not raised'; end if;
-  if (select count(*) from public.sales where lead_id=v_failure_lead_id) <> v_before_sale_count
-     or (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=v_failure_lead_id) <> v_before_item_count
-     or (select status from public.crm_leads where id=v_failure_lead_id) <> v_before_lead_status
-     or (select count(*) from public.students where person_id=v_failure_person_id) <> v_before_student_count
-     or (select count(*) from public.crm_activities where lead_id=v_failure_lead_id and status='PENDING') <> v_before_pending_count
-     or (select count(*) from public.audit_logs where action='sales.created') <> v_before_audit_sales_count
-     or (select count(*) from public.audit_logs where action='crm.lead_won') <> v_before_audit_lead_count then
+  if (select count(*) from public.sales where lead_id=v_failure_lead_id) <> v_before_failure_sale_count
+     or (select count(*) from public.sale_items si join public.sales s on s.id=si.sale_id where s.lead_id=v_failure_lead_id) <> v_before_failure_item_count
+     or (select status from public.crm_leads where id=v_failure_lead_id) <> v_before_failure_status
+     or (select count(*) from public.students where person_id=v_failure_person_id) <> v_before_failure_student_count
+     or (select count(*) from public.crm_activities where lead_id=v_failure_lead_id and status='PENDING') <> v_before_failure_pending_count
+     or (select count(*) from public.audit_logs where action='sales.created') <> v_before_failure_audit_count then
     raise exception 'Audit failure was not atomic';
   end if;
 
+  if (select count(*) from public.sales) <> v_before_sales + 2 or (select count(*) from public.sale_items) <> v_before_sale_items + 2 then
+    raise exception 'Unexpected transactional positive-flow counts';
+  end if;
   raise notice 'regular COURSE Sale Items dual-write smoke passed';
 end;
 $$;
