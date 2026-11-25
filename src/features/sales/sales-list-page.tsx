@@ -15,6 +15,7 @@ import { updateSearchParams } from '@/lib/url-params'
 import { computeTotalPages, useNormalizedPage } from '@/lib/pagination'
 import { formatCurrency, formatDateOnly } from '@/lib/utils'
 import type { SaleListItem } from './sales-types'
+import { normalizeSaleReadModel } from './sales-read-model'
 
 export function SalesPage() {
   const navigate = useNavigate()
@@ -183,7 +184,12 @@ export function SalesPage() {
                     </button>
                   )
                 },
-                { key: 'course', header: 'Curso', priority: 'medium', cell: (row) => <span className="text-muted">{row.course_name}</span> },
+                {
+                  key: 'course',
+                  header: 'Curso',
+                  priority: 'medium',
+                  cell: (row) => <SaleCourseSummary row={row} />
+                },
                 { key: 'seller', header: 'Vendedor', priority: 'low', cell: (row) => <span className="text-muted">{row.seller_name}</span> },
                 { key: 'value', header: 'Valor', cell: (row) => <span className="font-medium">{formatCurrency(row.net_value)}</span> },
                 { key: 'payment', header: 'Pagamento', priority: 'low', cell: (row) => <span className="text-muted">{SALE_PAYMENT_METHOD_LABELS[row.payment_method]}</span> },
@@ -214,6 +220,20 @@ export function SalesPage() {
   )
 }
 
+function SaleCourseSummary({ row, className = '' }: { row: SaleListItem; className?: string }) {
+  const model = normalizeSaleReadModel(row)
+  return (
+    <span className={`${className} text-muted`.trim()}>
+      <span className="break-words">{model.course_summary}</span>
+      {!model.item_count_matches_items && (
+        <span className="ml-1 text-xs font-semibold text-red-600" role="status" title="Divergência entre item_count e items">
+          divergência
+        </span>
+      )}
+    </span>
+  )
+}
+
 function SaleMobileRow({ row }: { row: SaleListItem }) {
   const navigate = useNavigate()
   return (
@@ -229,7 +249,7 @@ function SaleMobileRow({ row }: { row: SaleListItem }) {
         </div>
         <Badge className="shrink-0" variant={SALE_STATUS_TONES[row.status]}>{SALE_STATUS_LABELS[row.status]}</Badge>
       </div>
-      <p className="break-words text-sm text-muted">{row.course_name}</p>
+      <SaleCourseSummary row={row} className="break-words text-sm" />
       <p className="truncate text-sm font-medium">{formatCurrency(row.net_value)}</p>
       <p className="break-words text-xs text-muted">{formatDateOnly(row.sale_date.slice(0, 10))}</p>
       <Button

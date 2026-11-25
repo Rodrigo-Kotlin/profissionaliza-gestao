@@ -9,6 +9,7 @@ import { useSaleDetail, useSaleTimeline } from './sales-hooks'
 import { CancelSaleDialog } from './cancel-sale-dialog'
 import { SALE_STATUS_LABELS, SALE_STATUS_TONES } from './sales-constants'
 import type { SaleTimelineEvent } from './sales-types'
+import { formatSaleCommercialType, normalizeSaleReadModel } from './sales-read-model'
 import { ContractCreateWizard } from '../contracts/contract-create-wizard'
 import { canCreateContractFromSale, formatContractInstallments, formatContractPayment } from '../contracts/contracts-utils'
 
@@ -35,6 +36,7 @@ export function SaleDetailPage() {
   }
 
   const sale = detail.data
+  const courseModel = normalizeSaleReadModel(sale)
   const showCancel = canCancel && sale.status === 'CONFIRMED'
   const events = timeline.data?.data ?? []
   const canCreateContract = canCreateContractFromSale(sale, permissions, user?.id ?? '')
@@ -97,13 +99,65 @@ export function SaleDetailPage() {
           )}
         </Card>
 
-        {/* Curso */}
+        {/* Curso / Cursos */}
         <Card className="p-5">
-          <SectionHeader icon={BookOpen} title="Curso" />
-          <dl className="space-y-2 text-sm">
-            <Row label="Curso" value={sale.course_name_snapshot} />
-            <Row label="Preço tabela" value={sale.course_price_snapshot != null ? formatCurrency(sale.course_price_snapshot) : 'Não informado'} />
-          </dl>
+          <SectionHeader
+            icon={BookOpen}
+            title={courseModel.course_display_mode === 'MULTIPLE' ? 'Cursos' : 'Curso'}
+          />
+          {courseModel.course_display_mode === 'MULTIPLE' ? (
+            <div className="space-y-3 text-sm">
+              <p className="font-semibold">{courseModel.course_summary}</p>
+              <p className="text-xs text-muted">
+                Tipo comercial: {formatSaleCommercialType(courseModel.commercial_type)}
+              </p>
+              <ul className="space-y-2">
+                {courseModel.items.map((item, index) => (
+                  <li key={item.id} className="rounded-md border border-line p-3">
+                    <p className="font-medium">
+                      {index + 1}. {item.course_name_snapshot}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {[
+                        item.course_code_snapshot,
+                        item.course_workload_snapshot != null ? `${item.course_workload_snapshot}h` : null,
+                        item.course_modality_snapshot
+                      ].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <dl className="space-y-2 text-sm">
+              <Row label="Curso" value={courseModel.course_summary} />
+              <Row label="Preço tabela" value={sale.course_price_snapshot != null ? formatCurrency(sale.course_price_snapshot) : 'Não informado'} />
+              <Row label="Tipo comercial" value={formatSaleCommercialType(courseModel.commercial_type)} />
+              {courseModel.course_display_mode === 'SINGLE' && courseModel.items[0] && (
+                <>
+                  <Row
+                    label="Carga horária"
+                    value={courseModel.items[0].course_workload_snapshot != null ? `${courseModel.items[0].course_workload_snapshot}h` : 'Não informada'}
+                  />
+                  <Row label="Modalidade" value={courseModel.items[0].course_modality_snapshot ?? 'Não informada'} />
+                </>
+              )}
+              {courseModel.course_display_mode === 'LEGACY' && (
+                <>
+                  <Row
+                    label="Carga horária"
+                    value={sale.course_workload_snapshot != null ? `${sale.course_workload_snapshot}h` : 'Não informada'}
+                  />
+                  <Row label="Modalidade" value={sale.course_modality_snapshot ?? 'Não informada'} />
+                </>
+              )}
+            </dl>
+          )}
+          {!courseModel.item_count_matches_items && (
+            <p className="mt-3 text-xs font-semibold text-red-600" role="status">
+              Divergência entre a quantidade informada e os itens desta venda.
+            </p>
+          )}
         </Card>
 
         {/* Pagamento */}

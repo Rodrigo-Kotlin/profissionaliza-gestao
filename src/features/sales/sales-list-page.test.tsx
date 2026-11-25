@@ -70,6 +70,12 @@ function makeSale(overrides: Partial<SaleListItem> = {}): SaleListItem {
     quantity_min_snapshot: null,
     quantity_max_snapshot: null,
     item_count: 0,
+    items: [],
+    item_count_matches_items: true,
+    course_display_mode: 'LEGACY',
+    course_summary: 'Curso de Enfermagem',
+    offer_type: null,
+    commercial_type: 'LEGACY',
     cash_price_snapshot: null,
     enrollment_fee_snapshot: null,
     total_amount_snapshot: null,
@@ -351,5 +357,43 @@ describe('SalesPage — normalização page > total (Fase 11.3)', () => {
     })
     expect(lastSaleListCall().page).toBe(2)
     expect(useSaleListMock.mock.calls.length).toBe(2)
+  })
+})
+
+describe('SalesPage — read model normalizado (Fase 2.8A.6.4.3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useAuthMock.mockReturnValue({ permissions: ['sales.view', 'sales.view_all'], profile: null, user: null, signOut: vi.fn() })
+  })
+
+  it('sinaliza divergência entre item_count e items sem escondê-la', () => {
+    renderSalesPage([makeSale({ item_count: 3, items: [], item_count_matches_items: false })])
+
+    expect(screen.getAllByText('divergência').length).toBeGreaterThan(0)
+  })
+
+  it('usa o resumo normalizado para cenário multi-curso simulado', () => {
+    const item = (id: string, position: number, courseId: string, name: string) => ({
+      id,
+      sale_id: 'sale-1',
+      position,
+      course_id: courseId,
+      offer_item_id: null,
+      course_code_snapshot: `CUR-${position}`,
+      course_name_snapshot: name,
+      course_workload_snapshot: 120,
+      course_modality_snapshot: 'ONLINE' as const,
+      created_at: '2026-10-28T10:00:00.000Z'
+    })
+    renderSalesPage([makeSale({
+      item_count: 2,
+      items: [item('item-2', 2, 'course-2', 'Curso B'), item('item-1', 1, 'course-1', 'Curso A')],
+      item_count_matches_items: true,
+      course_summary: '2 cursos',
+      course_display_mode: 'MULTIPLE'
+    })])
+
+    expect(screen.getAllByText('2 cursos').length).toBeGreaterThan(0)
+    expect(screen.queryByText('divergência')).toBeNull()
   })
 })
