@@ -146,3 +146,56 @@ describe('SaleDetailPage — continuidade E2E (Fase 10)', () => {
     expect(gerar).toHaveLength(1)
   })
 })
+
+describe('SaleDetailPage — read model normalizado (Fase 2.8A.6.4.3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useAuthMock.mockReturnValue({
+      permissions: ['sales.view', 'sales.cancel', 'contracts.create'],
+      user: { id: 'user-1' }
+    })
+  })
+
+  it('apresenta cursos simulados com snapshots, carga horária e modalidade', () => {
+    const item = (id: string, position: number, courseId: string, name: string) => ({
+      id,
+      sale_id: 's1',
+      position,
+      course_id: courseId,
+      offer_item_id: null,
+      course_code_snapshot: `CUR-${position}`,
+      course_name_snapshot: name,
+      course_workload_snapshot: 120,
+      course_modality_snapshot: 'ONLINE' as const,
+      created_at: '2026-10-28T10:00:00.000Z'
+    })
+
+    renderPage({
+      item_count: 2,
+      items: [item('item-2', 2, 'course-2', 'Curso B'), item('item-1', 1, 'course-1', 'Curso A')],
+      item_count_matches_items: true,
+      course_display_mode: 'MULTIPLE',
+      course_summary: '2 cursos',
+      offer_type_snapshot: 'ONLINE_CATALOG'
+    })
+
+    expect(screen.getByText('Cursos')).toBeTruthy()
+    expect(screen.getByText('2 cursos')).toBeTruthy()
+    expect(screen.getByText('Tipo comercial: Catálogo online')).toBeTruthy()
+    expect(screen.getByText('1. Curso A')).toBeTruthy()
+    expect(screen.getByText('2. Curso B')).toBeTruthy()
+    expect(screen.getAllByText('CUR-1 · 120h · ONLINE')).toHaveLength(1)
+    expect(screen.getAllByText('CUR-2 · 120h · ONLINE')).toHaveLength(1)
+  })
+
+  it('sinaliza divergência de cardinalidade no detalhe', () => {
+    renderPage({
+      item_count: 3,
+      items: [],
+      item_count_matches_items: false,
+      course_display_mode: 'MULTIPLE'
+    })
+
+    expect(screen.getByText(/Divergência entre a quantidade informada/)).toBeTruthy()
+  })
+})

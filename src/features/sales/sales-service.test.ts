@@ -141,6 +141,62 @@ describe('salesService.getSaleDetail', () => {
     await salesService.getSaleDetail('sale-1')
     expect(rpcMock).toHaveBeenCalledWith('get_sale_detail', { p_sale_id: 'sale-1' })
   })
+
+  it('normaliza o detalhe sem descartar os campos anteriores', async () => {
+    rpcMock.mockResolvedValue({
+      data: {
+        id: 'sale-1',
+        sale_code: 'VND-2026-000001',
+        course_name_snapshot: 'Nome legado',
+        item_count: 1,
+        items: [{ id: 'item-1', position: 1, course_id: 'course-1', course_name_snapshot: 'Snapshot congelado' }]
+      },
+      error: null
+    })
+    const result = await salesService.getSaleDetail('sale-1')
+
+    expect(result.sale_code).toBe('VND-2026-000001')
+    expect(result.course_display_mode).toBe('SINGLE')
+    expect(result.course_summary).toBe('Snapshot congelado')
+    expect(result.item_count_matches_items).toBe(true)
+  })
+})
+
+describe('salesService — normalização da lista preservando paginação', () => {
+  beforeEach(() => {
+    rpcMock.mockReset()
+  })
+
+  it('mantém total, página e tamanho enquanto normaliza os itens', async () => {
+    rpcMock.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 'sale-1',
+            course_name: 'Nome legado',
+            item_count: 2,
+            items: [
+              { id: 'item-2', position: 2, course_id: 'course-2', course_name_snapshot: 'Curso B' },
+              { id: 'item-1', position: 1, course_id: 'course-1', course_name_snapshot: 'Curso A' }
+            ]
+          }
+        ],
+        total: 7,
+        page: 2,
+        page_size: 1
+      },
+      error: null
+    })
+    const result = await salesService.listSales({ page: 2, page_size: 1 })
+
+    expect(result.total).toBe(7)
+    expect(result.page).toBe(2)
+    expect(result.page_size).toBe(1)
+    expect(result.data).toHaveLength(1)
+    expect(result.data[0]?.course_display_mode).toBe('MULTIPLE')
+    expect(result.data[0]?.course_summary).toBe('2 cursos')
+    expect(result.data[0]?.items.map((item) => item.position)).toEqual([1, 2])
+  })
 })
 
 describe('salesService.listSaleItems', () => {

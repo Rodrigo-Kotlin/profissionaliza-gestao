@@ -3,6 +3,7 @@ import { assertOnline } from '@/lib/offline'
 import type { Database } from '@/types/database.types'
 import type { SaleItem } from '@/types/database'
 import type { SaleListParams, SaleListResponse, SaleDetail, SaleTimelineResponse, CourseOffer, PricePlan } from './sales-types'
+import { normalizeSaleReadModel } from './sales-read-model'
 
 type Functions = Database['public']['Functions']
 
@@ -95,13 +96,23 @@ export const salesService = {
       p_page_size: params.page_size ?? 25
     })
     if (error) throw error
-    return data as SaleListResponse
+    if (!data) {
+      return { data: [], total: 0, page: params.page ?? 1, page_size: params.page_size ?? 25 }
+    }
+    const payload = data as SaleListResponse
+    if (!Array.isArray(payload.data)) throw new Error('Invalid list_sales payload')
+    return {
+      ...payload,
+      data: payload.data.map((row) => ({ ...row, ...normalizeSaleReadModel(row) }))
+    }
   },
 
   async getSaleDetail(saleId: string): Promise<SaleDetail> {
     const { data, error } = await rpc('get_sale_detail', { p_sale_id: saleId })
     if (error) throw error
-    return data as SaleDetail
+    const detail = data as SaleDetail
+    if (!data) return detail
+    return { ...detail, ...normalizeSaleReadModel(detail) }
   },
 
   async listSaleItems(saleId: string): Promise<SaleItem[]> {

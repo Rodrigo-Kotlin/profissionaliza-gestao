@@ -1,5 +1,6 @@
 import type { CommercialSaleSnapshot } from '@/types/database'
-import type { CommercialOffer, CommercialPricePlan, SaleItem } from '@/types/database'
+import type { CommercialOffer, CommercialPricePlan } from '@/types/database'
+import type { SaleReadModelPresentation } from './sales-read-model'
 
 export type CourseOffer = CommercialOffer
 export type PricePlan = CommercialPricePlan
@@ -8,7 +9,7 @@ export type SaleStatus = 'CONFIRMED' | 'CANCELED'
 
 export type SalePaymentMethod = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'BOLETO' | 'TRANSFERENCIA' | 'OUTRO'
 
-export type SaleListItem = CommercialSaleSnapshot & {
+export type SaleListItem = CommercialSaleSnapshot & SaleReadModelPresentation & {
   id: string
   sale_code: string
   status: SaleStatus
@@ -23,11 +24,10 @@ export type SaleListItem = CommercialSaleSnapshot & {
   net_value: number
   payment_method: SalePaymentMethod
   installments: number
-  item_count: number
   created_at: string
 }
 
-export type SaleDetail = CommercialSaleSnapshot & {
+export type SaleDetail = CommercialSaleSnapshot & SaleReadModelPresentation & {
   id: string
   sale_code: string
   status: SaleStatus
@@ -63,8 +63,6 @@ export type SaleDetail = CommercialSaleSnapshot & {
   enrollment_id?: string | null
   enrollment_code?: string | null
   enrollment_status?: string | null
-  item_count: number
-  items: SaleItem[]
 }
 
 export type SaleListParams = {
